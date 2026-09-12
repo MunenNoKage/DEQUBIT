@@ -1,11 +1,15 @@
-# Runtime dependencies, pinned for reproducibility.
-# Regenerate with `pip freeze` inside a fresh venv if you deliberately upgrade something —
-# don't hand-bump a single version without re-testing `make reproduce`.
-numpy==2.5.2
-pandas==3.0.5
-scikit-learn==1.9.0
-matplotlib==3.11.1
-joblib==1.5.3
+# Runtime dependencies, pinned for reproducibility. Add and remove as the project
+# needs; regenerate with `pip freeze` in a fresh venv after a deliberate upgrade.
+
+numpy==2.5.3
+scikit-learn==1.9.1
+matplotlib==3.11.2
 PyYAML==6.0.3
+joblib==1.6.0
+
+# The default wheel is a CUDA build; for CPU only, install from
+# https://download.pytorch.org/whl/cpu instead.
+torch==2.14.0
+
+# Only needed for app/streamlit_app.py.
 streamlit==1.61.1
-huggingface_hub==1.27.0

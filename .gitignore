@@ -219,7 +219,9 @@ __marimo__/
 
 # --- Project-specific ---
 
-# Data: never commit raw/interim/processed data, only the checksums and READMEs
+# Datasets: generated from the config and the seed, so they can always be rebuilt.
+# Only the checksum is committed -- a few dozen bytes that let anyone confirm they
+# regenerated exactly the same data (see data/README.md).
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/CHECKSUMS.txt
@@ -228,13 +230,14 @@ data/interim/*
 data/processed/*
 !data/processed/.gitkeep
 
-# Models: weights are published to Hugging Face Hub, not committed (see models/README.md)
+# Trained checkpoints: never committed (see models/README.md).
 models/*
 !models/.gitkeep
 !models/README.md
 
-# Note: results/metrics.json and results/figures/*.png ARE committed (small, and
-# they're what makes the numbers in README verifiable without rerunning training).
+# results/metrics.json, results/experiments.md and results/figures/*.png ARE committed.
+# They are small, and they are what makes the numbers in README.md checkable without
+# anyone having to retrain first.
 
 # Env secrets
 .env

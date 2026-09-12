@@ -1,3 +1,4 @@
-# sha256 checksums for files in data/raw/, so reproducibility can be checked
-# without the data itself being committed. Regenerate by rerunning this script.
-cd80158fad3d1e203d61dae42242620b02dd5f918e637b5f08381e39e7cf5204  wine.csv
+# sha256 checksums for the files in data/raw/, so a regenerated dataset can be verified
+# against the one a published result came from. This file is committed; the data is not.
+#
+# No entries yet.

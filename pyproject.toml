@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wine-origin"
+name = "dequbit"
 version = "0.1.0"
-description = "Wine cultivar classification example project (course template)"
+description = "Bitstring-to-bitstring denoising for quantum readout error mitigation"
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
@@ -24,3 +24,6 @@ line_length = 100
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+# Mark slow tests with @pytest.mark.slow so they can be skipped locally with
+# `pytest -m "not slow"`. CI should still run everything.
+markers = ["slow: takes more than a few seconds to run"]

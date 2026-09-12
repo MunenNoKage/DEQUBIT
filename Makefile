@@ -1,23 +1,45 @@
-# Deliberately minimal: two targets, as an example of the pattern (a "get me set up"
-# target and a "prove it works" target), not a wrapper around every command in the
-# project. Everything else — training, evaluating, the demo, linting, tests — is run
-# directly (see README.md's Quick start / Development sections for the exact
-# commands); add more targets here only if your team actually wants the shortcut.
+# Shortcuts for the commands that get run repeatedly. Anything that is a single
+# command is left to be typed directly, so this file stays readable rather than
+# becoming a second, undocumented CLI.
+#
+# Only `setup` works today; the rest fill in as the code lands.
 
 PYTHON ?= python3.13
 VENV   := .venv
-BIN    := $(VENV)/bin
 
-.PHONY: setup reproduce
+# venv puts executables in Scripts/ on Windows and bin/ everywhere else.
+ifeq ($(OS),Windows_NT)
+BIN := $(VENV)/Scripts
+else
+BIN := $(VENV)/bin
+endif
 
-setup: ## Create .venv, install runtime+dev deps and this package, install pre-commit hooks
+.PHONY: setup reproduce experiment test lint format
+
+setup: ## Create the venv, install runtime + dev deps and this package, install git hooks
 	$(PYTHON) -m venv $(VENV)
-	$(BIN)/pip install --upgrade pip
-	$(BIN)/pip install -r requirements.txt -r requirements-dev.txt
-	$(BIN)/pip install -e .
+	$(BIN)/python -m pip install --upgrade pip
+	$(BIN)/python -m pip install -r requirements.txt -r requirements-dev.txt
+	$(BIN)/python -m pip install -e .
 	$(BIN)/pre-commit install
 
-reproduce: ## data -> train -> evaluate; prints the same metric as README.md's results table
-	$(BIN)/python scripts/download_data.py
-	$(BIN)/python -m wine_origin train
-	$(BIN)/python -m wine_origin evaluate
+reproduce: ## prepare data -> train -> evaluate
+	$(BIN)/python scripts/prepare_data.py
+	$(BIN)/python -m dequbit train
+	$(BIN)/python -m dequbit evaluate
+
+experiment: ## Run the full experiment and regenerate results/
+	$(BIN)/python scripts/prepare_data.py
+	$(BIN)/python scripts/run_experiment.py
+
+test: ## Run the test suite
+	$(BIN)/python -m pytest
+
+lint: ## Exactly what CI checks
+	$(BIN)/python -m flake8 src/ scripts/ tests/ app/
+	$(BIN)/python -m black --check src/ scripts/ tests/ app/
+	$(BIN)/python -m isort --check src/ scripts/ tests/ app/
+
+format: ## Fix formatting in place
+	$(BIN)/python -m black src/ scripts/ tests/ app/
+	$(BIN)/python -m isort src/ scripts/ tests/ app/

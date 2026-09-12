@@ -33,20 +33,21 @@ For `exp:` commits specifically, put the result in the body — that's what turn
 git log into a second, lightweight experiment record alongside `results/experiments.md`:
 
 ```
-exp: try RandomForest with 200 trees
+exp: <what you tried>
 
-macro-F1 0.94 -> 0.96, CV std 0.02. Details: results/experiments.md
+<the metric before -> after, and what you concluded>
+Details: results/experiments.md
 ```
 
 ### Before / after
 
 | Before | After |
 |---|---|
-| `update` | `fix: handle empty test split when a class has <5 samples` |
-| `fix bug` | `fix: stratify train/test split so rare classes aren't dropped entirely` |
+| `update` | `fix: handle the empty-input case in the data loader` |
+| `fix bug` | `fix: correct the off-by-one in the sequence length check` |
 | `asdf` | `chore: remove unused import in evaluate.py` |
 | `final version FINAL` | `docs: fill in results table with run_experiment.py output` |
-| `changes` | `refactor: move confusion-matrix plotting out of cli.py into evaluate.py` |
+| `changes` | `refactor: move plotting out of cli.py into evaluate.py` |
 
 ## Authorship
 

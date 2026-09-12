@@ -1,10 +1,9 @@
 # docs/slides/
 
-Put your presentation decks here, one subfolder or clearly-named file per milestone:
+Presentation decks, one clearly-named file or subfolder per milestone:
 
-- `midterm/` (or `midterm.pdf`) — midterm check-in slides
-- `final/` (or `final.pdf`) — final defense slides
+- `midterm.pdf` (or `midterm/`) — midterm check-in
+- `final.pdf` (or `final/`) — final defense
 
-Same rule as the poster: pull numbers from `results/metrics.json` rather than
-hand-copying them, so slides don't quietly drift out of sync with what the code
-actually produces.
+Same rule as the poster: pull numbers from `results/metrics.json` and figures from
+`results/figures/`, so the slides cannot disagree with the repository.

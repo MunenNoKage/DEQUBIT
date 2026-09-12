@@ -11,9 +11,10 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-added-large-files
-        # Catches an accidental `git add` of a data file or model checkpoint before
-        # it ever reaches a commit. 1000 KB, matching the "> 10 MB never in git" rule
-        # in data/README.md and models/README.md — small enough to still fail loud.
+        # Catches an accidental `git add` of a dataset or a checkpoint before it ever
+        # reaches a commit. 1000 KB is well under GitHub's limits on purpose: both
+        # data/ and models/ are gitignored here, so anything this size showing up in a
+        # commit means something escaped, and failing loudly is the point.
         args: ["--maxkb=1000"]
 
   - repo: https://github.com/psf/black

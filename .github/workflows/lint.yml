@@ -1,9 +1,11 @@
-# Runs on every push and every pull request. This is the one CI workflow this template
-# ships, kept deliberately as a single example (no test/coverage/deploy workflows) —
-# it's cheap (no test data, no model training, just static analysis) and shows the
-# whole pattern: triggers, a runner, cached dependency install, a few commands. Add a
-# test.yml alongside it the same way once your project needs one — copy this file's
-# structure and swap the last steps for `pytest`.
+# The one CI workflow this repository starts with, kept deliberately as a single
+# example: static analysis only, so it needs no data and no dependencies beyond the
+# linters, and finishes in well under a minute.
+#
+# Add a `test.yml` alongside it once there are tests to run -- copy this file's
+# structure, install `requirements.txt` as well, and swap the last three steps for
+# `pytest`. Keeping them as separate workflows means formatting feedback does not have
+# to wait on a PyTorch download.
 name: lint
 
 on:
@@ -13,22 +15,24 @@ on:
 
 jobs:
   lint:
-    # "runner" = the (free, GitHub-hosted) virtual machine this job executes on.
-    # ubuntu-latest is the cheapest and fastest option for pure-Python CI; only
-    # switch to macos/windows runners if you have OS-specific code to test, since
-    # those runners cost several times more of your CI minutes.
+    # "runner" = the free, GitHub-hosted virtual machine this job executes on.
+    # ubuntu-latest is the cheapest option for pure-Python CI; macOS and Windows
+    # runners cost several times more of your CI minutes, so only switch if you have
+    # OS-specific code to check.
     runs-on: ubuntu-latest
     steps:
-      # A "step" is one command in the job. Steps run in order, top to bottom, and
-      # the whole job stops (and is reported red) the moment one of them fails.
+      # A "step" is one command. Steps run top to bottom, and the whole job stops and
+      # reports red the moment one fails.
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: "pip" # caches downloaded wheels between runs, saves ~20-30s per run
+          cache: "pip" # caches downloaded wheels between runs
 
-      - name: Install dependencies
+      - name: Install dev dependencies
+        # Linters only. The runtime dependencies (torch in particular) are not needed
+        # to check formatting, and skipping them keeps this job fast.
         run: pip install -r requirements-dev.txt
 
       - name: flake8
