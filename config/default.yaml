@@ -6,8 +6,7 @@
 seed: 42
 
 paths:
-  # Circuit i in a clean file and circuit i in the matching noisy file are the same
-  # circuit; see data/data_description.md.
+  # Circuit i is the same circuit in a clean file and in the matching noisy file.
   clean_train: data/1_clean_train.h5
   clean_test: data/2_clean_test.h5
   noisy_train: data/3_noisy_train.h5
@@ -18,15 +17,13 @@ paths:
 
 data:
   num_qubits: 5
-  # Validation circuits are taken from the training file, so the test file stays
-  # untouched until the final evaluation.
-  validation_fraction: # TODO: choose, e.g. 0.1.
-  # Shots of one circuit that are corrected together and averaged into one
-  # distribution during training.
-  shots_per_circuit: # TODO: choose; the files have 10000 shots per circuit.
+  # Share of the training circuits held out for validation.
+  validation_fraction: # TODO
+  # Shots of one circuit corrected together and averaged into one distribution.
+  shots_per_circuit: # TODO
 
 model:
-  # One of: mlp, transformer, perceiver.
+  # One of: mlp, transformer, perceiver, per_qubit.
   name: mlp
   mlp:
     # TODO: hidden layer sizes, dropout.
@@ -45,7 +42,7 @@ training:
 
 baselines:
   # Probabilities below this value are set to zero before renormalising.
-  threshold: # TODO: tune on the validation circuits.
+  threshold: # TODO
 
 logging:
   level: INFO
