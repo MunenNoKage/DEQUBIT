@@ -1,0 +1,91 @@
+% Приклад файлу джерел. Додавайте свої записи в цьому ж стилі.
+% Цитування в тексті: \cite{ключ}
+
+% ГОЛОВНЕ ДЖЕРЕЛО ПРОЄКТУ.
+% Deep learning для QEM на рівні повних розподілів. Порівнює багато архітектур
+% (MLP, RNN, transformer, Perceiver) на ~246,000 схемах, на симуляторі та реальних
+% IBM-пристроях до 5 кубітів. Два важливі для нас висновки: (1) шумний розподіл -
+% найважливіший вхід, схема майже не використовується; (2) підхід не масштабується,
+% і автори самі пропонують коригувати окремі бітстрінги - це і є наш проєкт.
+% Використовуємо в секціях: Problem and motivation, Related work, Evaluation.
+@article{placidi2026qem,
+  author  = {Placidi, Leonardo and Williams, Ifan and Rinaldi, Enrico and Mills, Daniel and Cîrstoiu, Cristina and Eccles, Vanya and Duncan, Ross},
+  title   = {Deep Learning Approaches to Quantum Error Mitigation},
+  journal = {arXiv preprint arXiv:2601.14226},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2601.14226},
+}
+
+@article{liao2024mlqem,
+  author  = {Liao, Haoran and Wang, Kang and Zhou, Zizhu and Zhang, Yi and Wang, Xin and others},
+  title   = {Machine Learning for Practical Quantum Error Mitigation},
+  journal = {Nature Machine Intelligence},
+  year    = {2024},
+  url     = {https://arxiv.org/abs/2309.17368},
+}
+
+@article{qcluster2025,
+  author  = {Patil, Hrushikesh and Baron, Dror and Zhou, Huiyang},
+  title   = {Q-Cluster: Quantum Error Mitigation Through Noise-Aware Unsupervised Learning},
+  journal = {arXiv preprint arXiv:2504.10801},
+  year    = {2025},
+  url     = {https://arxiv.org/abs/2504.10801},
+}
+
+% ЗАГАЛЬНИЙ ОГЛЯД QEM (review article).
+% Оглядова стаття в Reviews of Modern Physics про квантову мітигацію помилок
+% загалом: які бувають аналітичні методи, як вони працюють, які їхні межі.
+% Потрібна для загального контексту на початку Related work.
+@article{cai2023qem,
+  author  = {Cai, Zhenyu and Babbush, Ryan and Benjamin, Simon C. and Endo, Suguru and Huggins, William J. and Li, Ying and McClean, Jarrod R. and O'Brien, Thomas E.},
+  title   = {Quantum error mitigation},
+  journal = {Reviews of Modern Physics},
+  volume  = {95},
+  number  = {4},
+  pages   = {045005},
+  year    = {2023},
+}
+
+% ML для QEM: Clifford data regression.
+% Класичний приклад «навчального» підходу. Використовує схеми, які можна
+% симулювати класично, щоб вивчити лінійне відображення з шумних у ідеальні
+% expectation values. Приклад ML-методу, який працює НЕ з розподілами.
+@article{czarnik2021clifford,
+  author  = {Czarnik, Piotr and Arrasmith, Andrew and Coles, Patrick J. and Cincio, Lukasz},
+  title   = {Error mitigation with {C}lifford quantum-circuit data},
+  journal = {Quantum},
+  volume  = {5},
+  pages   = {592},
+  year    = {2021},
+  url     = {https://doi.org/10.22331/q-2021-11-26-592},
+}
+
+
+
+% ML для QEM: нейромережа коригує ймовірності результатів.
+% Найближче до нашої задачі з ранніх робіт: нейромережа вчиться передбачати
+% корекцію для ймовірності кожного результату, використовуючи шумний розподіл,
+% error rates, глибину схеми та кількість гейтів. Але тільки на неглибоких
+% випадкових схемах і на малому датасеті.
+@article{kim2020ann,
+  author  = {Kim, Changjun and Park, Kyungdeock Daniel and Rhee, June-Koo},
+  title   = {Quantum error mitigation with artificial neural network},
+  journal = {IEEE Access},
+  volume  = {8},
+  pages   = {188853--188860},
+  year    = {2020},
+}
+
+% ML для QEM: виправлення помилок зчитування (readout errors).
+% Deep learning виправляє складний нелінійний шум вимірювання, який стандартні
+% SPAM-методи не ловлять. Важливо для нас, бо помилки зчитування - це саме той
+% тип шуму, що псує окремі біти в бітстрінгу.
+@article{kim2022readout,
+  author  = {Kim, Jihye and Oh, Byungdu and Chong, Yonuk and Hwang, Euyheon and Park, Daniel K.},
+  title   = {Quantum readout error mitigation via deep learning},
+  journal = {New Journal of Physics},
+  volume  = {24},
+  number  = {7},
+  pages   = {073009},
+  year    = {2022},
+}

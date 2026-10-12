@@ -242,6 +242,16 @@ models/*
 # Env secrets
 .env
 
+# LaTeX build files from compiling docs/proposal/ (*.log is ignored above).
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.xdv
+
 # Local-only workspace: context notes, reference files, drafts. Never pushed.
 private/
 CLAUDE.local.md

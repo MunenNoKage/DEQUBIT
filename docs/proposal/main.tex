@@ -1,0 +1,120 @@
+% !TeX program = xelatex
+% ==========================================================================
+% Пропоузал семестрового проєкту — курс «Штучний інтелект», УКУ.
+% Це ЄДИНИЙ файл, який вам потрібно редагувати. Уся верстка й брендинг
+% живуть у ucuproposal.cls — не змінюйте шрифти, поля, кеглі й кольори.
+%
+% Компіляція: XeLaTeX + Biber (Overleaf робить це автоматично).
+% Локально:   latexmk (див. README.md).
+% ==========================================================================
+\documentclass[english]{ucuproposal}
+% Опції класу (можна комбінувати через кому):
+%   ukrainian | english  — мова документа й логотипу (за замовчуванням ukrainian)
+%   slogan                — додає гасло УКУ в колонтитул титулки (за замовчуванням вимкнено)
+
+% --------------------------------------------------------------------------
+% Метадані титульної сторінки
+% --------------------------------------------------------------------------
+\projecttitle{DEQUBIT}
+\projecttagline{Sequence-to-sequence denoising of quantum measurement bitstrings for scalable error mitigation}
+
+\teammember[www.linkedin.com/in/kateryna-suchok-4648a23a2]{Kateryna Suchok}
+\teammember[https://www.linkedin.com/in/roman-prokhorov-6507b7288]{Roman Prokhorov}
+
+\mentor{Yuriy Pryyma}
+
+\track{research} % research | engineering — не друкується на титулці, лише для внутрішньої категоризації
+
+\repo{https://github.com/MunenNoKage/DEQUBIT}
+
+\proposaldate{2026-09-21}
+
+\begin{document}
+\maketitlepage
+
+\section{Problem and motivation}
+Quantum computers return their results as measured bitstrings. Hardware noise corrupts
+many of these measurements. Quantum error mitigation (QEM) tries to recover the correct
+results by classical post-processing. Recent work shows that deep learning can do this
+well: a model learns to turn a noisy output distribution into the ideal
+one~\cite{placidi2026qem}. But this does not scale. The number of possible outcomes
+doubles with every added qubit, so the distribution soon becomes too large to model. The
+authors suggest a way around this: correct single bitstrings instead of the whole
+distribution. We study that idea. Our model reads one noisy bitstring and predicts which
+small correction to apply, for example leaving it unchanged or flipping one bit. We
+average these predictions over a batch of measurements to get a corrected distribution,
+and compare it to the ideal one during training. The model therefore works on single
+samples, but learns from a signal at the level of the whole distribution. The main
+advantage is size: the model chooses among a small number of corrections, which grows
+linearly with the number of qubits, instead of predicting an exponentially large
+distribution. The same paper also found that their models relied almost entirely on the
+noisy output and barely used the circuit description, which supports correcting
+measurements directly.
+
+\section{Related work}
+% Що вже зроблено у світі за цією темою? Спирайтесь на references.bib,
+% цитуйте через \cite{}. Орієнтовно 3-5 джерел.
+The core reference for this work is the recent paper~\cite{placidi2026qem} by Placidi et al., which systematically studies deep learning for quantum error mitigation (QEM) on noisy output probability distributions. Prior QEM methods include SPAM correction, the Repolarizer, thresholding, Clifford data regression, and feed-forward networks that mitigate expectation values. These learned approaches, however, were typically demonstrated on restricted datasets and simple models. Paper~\cite{placidi2026qem} addresses this gap with a much larger dataset (~{}246,000 circuits) and a wider range of architectures — MLPs, RNNs, transformers, a Perceiver, and correction-based models — tested on simulated data and real IBM QPUs at five qubits. Crucially for our work, their input-randomization experiments show the noisy output distribution is by far the most important input feature, while circuit and backend information are only secondary conditioning factors. They also note that mitigating full distributions faces an exponential scaling bottleneck, and explicitly suggest mitigating individual bitstrings as a future direction. A related line of work, Q-Cluster~\cite{qcluster2025}, already operates at the bitstring level, clustering noisy samples and correcting them via qubit-wise majority voting. Our work takes up the suggestion of~\cite{placidi2026qem} and uses the same Pauli gadget circuits, so our results are directly comparable to theirs.
+
+\section{Data}
+We do not use an existing dataset. We generate our own with the Qiskit Aer simulator,
+which is free and open source. We take several quantum algorithms with 5--10 qubits and
+run each circuit twice: once on an ideal simulator and once with a noise model. The
+ideal run gives the target distribution $P_\mathrm{target}$. The noisy run gives a batch
+of measured bitstrings, which are the input of our model. One training example is a
+batch of noisy bitstrings plus the ideal distribution of the same circuit. We do not need matching pairs of noisy and clean bitstrings, because no single correct
+answer exists for one noisy measurement. The input of the model is still a single
+bitstring. The supervision, however, is the ideal distribution: predictions are averaged
+over a batch and compared with it. We plan to generate a few thousand circuits, with several thousand shots each, and to vary circuit depth and noise strength so the data covers both easy and hard cases. All data is simulated, so there are no licensing or personal data issues. If free access to an IBM Quantum device is available, we may add a small test
+set from real hardware.
+
+\section{Approach and methods}
+% Які алгоритми/архітектури плануєте використати, чи спираєтесь на
+% існуючі реалізації та як плануєте їх покращити.
+We follow the data generation procedure of~\cite{placidi2026qem}: we build circuits from Pauli gadgets, randomly generated as reusable "bricks" that are stacked iteratively to increase circuit depth, producing a few thousand distinct circuits. For each circuit we train models to correct the measured bitstrings. We adapt three architectures from~\cite{placidi2026qem} — a sequence-to-sequence Transformer, a Perceiver, and an MLP-correction model, the latter found in~\cite{placidi2026qem} to be one of its weakest and serving here as a simpler comparison point. This mirrors broader benchmarks such as Liao et al.~\cite{liao2024mlqem}, where simpler MLPs are competitive at small scales but fail to capture complex noise structure. Instead of predicting a distribution, the model receives all shots from a circuit and corrects each bitstring individually. Training uses cross-entropy loss per bit. We then compare the distribution of corrected bitstrings against the clean distribution obtained before noise was added, which tells us whether the model did good work.
+
+\section{Evaluation}
+Our baseline is doing nothing, that is, the noisy distribution itself. We also compare
+against two simple methods from~\cite{placidi2026qem}: thresholding, which removes very
+small probabilities, and a global depolarising correction. As a learned baseline we use
+a small model that assigns one flip probability per qubit, ignoring the input bitstring.
+This tells us whether a per-bitstring model is actually needed.
+
+We measure how close the corrected distribution is to the ideal one, using the $L1$
+distance and the KL divergence. Our main metric is the $L1$ Relative Change
+from~\cite{placidi2026qem}, which shows the improvement as a fraction of the original
+error, so results stay comparable across noise levels. A negative value means the
+correction helped. We also report how many test circuits were improved, and the average
+number of flipped bits per correction, to check that the model makes small corrections
+instead of rewriting the measurements.
+
+We expect the model to help when noise is moderate, and to help little when the noisy
+distribution is already close to uniform, because then there is almost nothing left to
+recover. We will report results separately for different noise levels and circuit
+depths, to show where the method works and where it fails.
+
+\section{Plan and risks}
+% Етапи до midterm і до фінального захисту, ключові ризики та план Б.
+\begin{keyfacts}
+\textbf{Key numbers:} 5–12 qubits \textperiodcentered\ Pauli gadget circuits \textperiodcentered\ 6 depth levels \textperiodcentered\ a few thousand generated ``bricks'' \textperiodcentered\ a few thousand shots per circuit \textperiodcentered\ 3 model architectures
+\end{keyfacts}
+
+Plan: The project proceeds in three steps. Step 1: generate a few thousand Pauli gadget ``bricks'' and assemble fixed-depth circuits to establish a baseline. Step 2: stack the bricks iteratively across 6 depth levels (different numbers of repetitions), to test robustness across noise levels. Step 3: scale to different bitstring lengths, to test whether correction quality holds as the number of qubits grows.
+
+Risks: (1) Core idea may not work: the central risk is that bitstring-to-bitstring denoising fails entirely or performs worse than whole-distribution correction. (2) Noise simulation mismatch: our simulated noise may not reflect real hardware behaviour; we will validate against IBM calibration data if access is available. (3) Scaling failure: performance may degrade sharply as bitstring length grows, undermining the main claimed advantage of the approach. (4) Weak baselines: if the MLP-correction model performs as well as the attention-based models, the added complexity is not justified.
+
+
+\section{Contribution statement}
+% Хто за що відповідає. Відсотки не обов'язкові — якщо хочете їх вказати,
+% додайте в квадратних дужках: \contribution[50\%]{Прізвище Ім'я}{...}
+\begin{contributions}
+  \contribution{Kateryna Suchok}{circuit generation, data generation, noise simulation, preprocessing, EDA, documentation}
+  \contribution{Roman Prokhorov}{model architecture design, action-space formulation, training pipeline, loss functions and regularisation, hyperparameter tuning, baselines, evaluation and metrics, documentation}
+\end{contributions}
+
+% Примітка: декларація використання AI-інструментів (AI usage) до цього
+% пропоузалу не входить — вона живе в README.md вашого репозиторію.
+
+\ucuprintbibliography
+
+\end{document}
