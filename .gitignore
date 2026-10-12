@@ -241,3 +241,7 @@ models/*
 
 # Env secrets
 .env
+
+# Local-only workspace: context notes, reference files, drafts. Never pushed.
+private/
+CLAUDE.local.md
