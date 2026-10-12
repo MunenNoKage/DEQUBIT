@@ -7,4 +7,8 @@ README checkable without anyone rerunning training.
 Nothing here should be edited by hand except the written interpretation of the results,
 which is the one part that cannot be computed.
 
-Empty so far.
+| Path | Written by | Content |
+|---|---|---|
+| `metrics.json` | `python -m dequbit evaluate` | Metrics of every model and baseline on the test circuits |
+| `figures/` | `python -m dequbit evaluate` | Figures for the README, slides and poster |
+| `experiments.md` | by hand | One entry per experiment: hypothesis, setup, result, conclusion |
