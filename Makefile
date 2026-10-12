@@ -14,7 +14,7 @@ else
 BIN := $(VENV)/bin
 endif
 
-.PHONY: setup reproduce experiment test lint format
+.PHONY: setup data reproduce test lint format
 
 setup: ## Create the venv, install runtime + dev deps and this package, install git hooks
 	$(PYTHON) -m venv $(VENV)
@@ -23,23 +23,21 @@ setup: ## Create the venv, install runtime + dev deps and this package, install 
 	$(BIN)/python -m pip install -e .
 	$(BIN)/pre-commit install
 
-reproduce: ## prepare data -> train -> evaluate
-	$(BIN)/python scripts/prepare_data.py
+data: ## Regenerate the datasets in data/
+	$(BIN)/python data/generate_data.py
+
+reproduce: ## Train and evaluate on the datasets in data/
 	$(BIN)/python -m dequbit train
 	$(BIN)/python -m dequbit evaluate
-
-experiment: ## Run the full experiment and regenerate results/
-	$(BIN)/python scripts/prepare_data.py
-	$(BIN)/python scripts/run_experiment.py
 
 test: ## Run the test suite
 	$(BIN)/python -m pytest
 
 lint: ## Exactly what CI checks
-	$(BIN)/python -m flake8 src/ scripts/ tests/ app/
-	$(BIN)/python -m black --check src/ scripts/ tests/ app/
-	$(BIN)/python -m isort --check src/ scripts/ tests/ app/
+	$(BIN)/python -m flake8 src/ tests/ app/
+	$(BIN)/python -m black --check src/ tests/ app/
+	$(BIN)/python -m isort --check src/ tests/ app/
 
 format: ## Fix formatting in place
-	$(BIN)/python -m black src/ scripts/ tests/ app/
-	$(BIN)/python -m isort src/ scripts/ tests/ app/
+	$(BIN)/python -m black src/ tests/ app/
+	$(BIN)/python -m isort src/ tests/ app/

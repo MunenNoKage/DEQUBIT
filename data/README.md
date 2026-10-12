@@ -4,10 +4,6 @@ Fill this in early, not at the end: settling a dataset's provenance and license 
 building on it is much cheaper than discovering afterwards that it cannot be
 redistributed, or that its origin cannot be stated.
 
-`data/raw/`, `data/interim/`, and `data/processed/` are gitignored. `CHECKSUMS.txt` is
-committed, so anyone can rebuild the data and confirm they got the same bytes without
-the data itself ever entering version control.
-
 ## Name and source
 
 TODO

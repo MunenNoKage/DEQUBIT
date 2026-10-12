@@ -1,4 +1,0 @@
-# sha256 checksums for the files in data/raw/, so a regenerated dataset can be verified
-# against the one a published result came from. This file is committed; the data is not.
-#
-# No entries yet.

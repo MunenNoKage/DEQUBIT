@@ -219,17 +219,6 @@ __marimo__/
 
 # --- Project-specific ---
 
-# Datasets: generated from the config and the seed, so they can always be rebuilt.
-# Only the checksum is committed -- a few dozen bytes that let anyone confirm they
-# regenerated exactly the same data (see data/README.md).
-data/raw/*
-!data/raw/.gitkeep
-!data/raw/CHECKSUMS.txt
-data/interim/*
-!data/interim/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
-
 # Trained checkpoints: never committed (see models/README.md).
 models/*
 !models/.gitkeep
@@ -242,7 +231,7 @@ models/*
 # Env secrets
 .env
 
-# LaTeX build files from compiling docs/proposal/ (*.log is ignored above).
+# LaTeX build files from docs/proposal/.
 *.aux
 *.bbl
 *.blg
@@ -251,6 +240,9 @@ models/*
 *.out
 *.synctex.gz
 *.xdv
+
+# Editor settings are personal.
+.vscode/
 
 # Local-only workspace: context notes, reference files, drafts. Never pushed.
 private/
