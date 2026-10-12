@@ -6,6 +6,11 @@ scikit-learn==1.9.1
 matplotlib==3.11.2
 PyYAML==6.0.3
 joblib==1.6.0
+h5py==3.16.0
+
+# Only needed to regenerate the datasets with data/generate_data.py.
+qiskit==2.5.2
+qiskit-aer==0.17.2
 
 # The default wheel is a CUDA build; for CPU only, install from
 # https://download.pytorch.org/whl/cpu instead.

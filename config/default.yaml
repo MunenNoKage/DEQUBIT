@@ -6,16 +6,46 @@
 seed: 42
 
 paths:
-  raw_data: data/raw/
+  # Circuit i in a clean file and circuit i in the matching noisy file are the same
+  # circuit; see data/data_description.md.
+  clean_train: data/1_clean_train.h5
+  clean_test: data/2_clean_test.h5
+  noisy_train: data/3_noisy_train.h5
+  noisy_test: data/4_noisy_test.h5
   model: models/
   metrics: results/metrics.json
   figures_dir: results/figures
 
-split:
-  # TODO: fill in.
+data:
+  num_qubits: 5
+  # Validation circuits are taken from the training file, so the test file stays
+  # untouched until the final evaluation.
+  validation_fraction: # TODO: choose, e.g. 0.1.
+  # Shots of one circuit that are corrected together and averaged into one
+  # distribution during training.
+  shots_per_circuit: # TODO: choose; the files have 10000 shots per circuit.
 
 model:
-  # TODO: fill in.
+  # One of: mlp, transformer, perceiver.
+  name: mlp
+  mlp:
+    # TODO: hidden layer sizes, dropout.
+  transformer:
+    # TODO: embedding size, heads, layers, dropout.
+  perceiver:
+    # TODO: latent size, number of latents, layers, dropout.
+
+training:
+  epochs: # TODO
+  circuits_per_batch: # TODO
+  learning_rate: # TODO
+  weight_decay: # TODO
+  # Stop when the validation loss has not improved for this many epochs.
+  early_stopping_patience: # TODO
+
+baselines:
+  # Probabilities below this value are set to zero before renormalising.
+  threshold: # TODO: tune on the validation circuits.
 
 logging:
   level: INFO
