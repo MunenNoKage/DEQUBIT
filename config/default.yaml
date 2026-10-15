@@ -22,6 +22,10 @@ data:
   # Shots of one circuit corrected together and averaged into one distribution.
   shots_per_circuit: 10000
 
+actions:
+  # Largest number of bits one action flips: 1 gives single flips, 2 adds pair flips.
+  radius: 2
+
 model:
   # One of: mlp, transformer, perceiver, per_qubit.
   name: mlp
