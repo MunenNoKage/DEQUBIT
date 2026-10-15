@@ -11,6 +11,7 @@ from dequbit.dataset import (
     index_to_bits,
     load_circuits,
     make_dataset,
+    shot_counts,
     split_train_validation,
     unpack_shots,
 )
@@ -87,11 +88,32 @@ def test_load_circuits_rejects_wrong_number_of_qubits() -> None:
         load_circuits(CLEAN_TEST, NOISY_TEST, NUM_QUBITS + 1)
 
 
-def test_make_dataset_item_is_one_circuit() -> None:
+def test_shot_counts_counts_every_circuit_separately() -> None:
+    shots = np.array([[0, 3, 3], [31, 31, 0]])
+
+    counts = shot_counts(shots, NUM_QUBITS)
+
+    expected = np.zeros((2, 2**NUM_QUBITS), dtype=np.int64)
+    expected[0, [0, 3]] = [1, 2]
+    expected[1, [0, 31]] = [1, 2]
+    np.testing.assert_array_equal(counts, expected)
+
+
+def test_make_dataset_item_is_counts_of_first_shots() -> None:
+    shots = np.full((3, 50), 7, dtype=np.int64)
+    shots[:, :10] = 5
+    targets = np.full((3, 2**NUM_QUBITS), 1 / 2**NUM_QUBITS, dtype=np.float32)
+
+    counts, target = make_dataset(shots, targets, shots_per_circuit=10, num_qubits=NUM_QUBITS)[1]
+
+    assert counts.shape == target.shape == (2**NUM_QUBITS,)
+    assert counts.dtype == target.dtype == torch.float32
+    assert counts[5] == 10 and counts.sum() == 10
+
+
+def test_make_dataset_rejects_too_few_shots() -> None:
     shots = np.zeros((3, 50), dtype=np.int64)
     targets = np.full((3, 2**NUM_QUBITS), 1 / 2**NUM_QUBITS, dtype=np.float32)
 
-    circuit_shots, target = make_dataset(shots, targets, shots_per_circuit=10)[1]
-
-    assert circuit_shots.shape == (10,)
-    assert target.shape == (2**NUM_QUBITS,)
+    with pytest.raises(ValueError):
+        make_dataset(shots, targets, shots_per_circuit=51, num_qubits=NUM_QUBITS)

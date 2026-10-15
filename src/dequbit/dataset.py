@@ -95,23 +95,54 @@ def split_train_validation(
     return np.sort(order[num_validation:]), np.sort(order[:num_validation])
 
 
-def make_dataset(shots: np.ndarray, targets: np.ndarray, shots_per_circuit: int) -> TensorDataset:
-    """Build a dataset whose item is one circuit.
+def shot_counts(shots: np.ndarray, num_qubits: int) -> np.ndarray:
+    """Count how many shots of every circuit fall on each bitstring.
+
+    Args:
+        shots: Shots as integers, shape (circuits, shots).
+        num_qubits: Number of measured qubits.
+
+    Returns:
+        Counts, shape (circuits, 2**num_qubits).
+    """
+    num_bitstrings = 2**num_qubits
+
+    # Shifting the shots of circuit c by c * 2**num_qubits gives every circuit its own
+    # range of bins, so one bincount counts all circuits.
+    offsets = np.arange(len(shots))[:, np.newaxis] * num_bitstrings
+    counts = np.bincount((shots + offsets).ravel(), minlength=len(shots) * num_bitstrings)
+
+    return counts.reshape(len(shots), num_bitstrings)
+
+
+def make_dataset(
+    shots: np.ndarray, targets: np.ndarray, shots_per_circuit: int, num_qubits: int
+) -> TensorDataset:
+    """Build a dataset whose item is the shot counts of one circuit.
 
     The shots of a circuit are stored in random order, so the first shots_per_circuit
-    shots are a random sample of them.
+    shots are a random sample of them. Every input of the model is computed from the
+    counts, so the order of the shots is not kept.
 
     Args:
         shots: Shots as integers, shape (circuits, shots).
         targets: P_target of every circuit, shape (circuits, 2**num_qubits).
         shots_per_circuit: Number of shots kept for each circuit.
+        num_qubits: Number of measured qubits.
 
     Returns:
-        Dataset of pairs (shots of one circuit, its P_target).
-    """
-    circuit_shots = torch.from_numpy(shots[:, :shots_per_circuit])
+        Dataset of pairs (shot counts of one circuit, its P_target), both float32 of
+        shape (2**num_qubits,).
 
-    return TensorDataset(circuit_shots, torch.from_numpy(targets))
+    Raises:
+        ValueError: If the circuits have fewer than shots_per_circuit shots.
+    """
+    if shots.shape[1] < shots_per_circuit:
+        raise ValueError(f"circuits have {shots.shape[1]} shots, not {shots_per_circuit}")
+
+    counts = shot_counts(shots[:, :shots_per_circuit], num_qubits)
+
+    return TensorDataset(torch.from_numpy(counts).float(), torch.from_numpy(targets).float())
 
 
 def _read_circuits(path: Path, group: str, num_qubits: int) -> list[np.ndarray]:
