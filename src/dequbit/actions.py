@@ -43,7 +43,7 @@ def empirical_distribution(bits: torch.Tensor, num_qubits: int) -> torch.Tensor:
 def expected_distribution(bits: torch.Tensor, action_probs: torch.Tensor) -> torch.Tensor:
     """Corrected distribution averaged over the action probabilities of each shot.
 
-    Differentiable in ``action_probs``, so a loss against P_target trains the model.
+    Differentiable in action_probs, so a loss against P_target trains the model.
 
     Args:
         bits: noisy shots, shape (shots, num_qubits).

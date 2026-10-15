@@ -4,7 +4,7 @@ import numpy as np
 
 
 def threshold_correction(distribution: np.ndarray, threshold: float) -> np.ndarray:
-    """Zero the probabilities below ``threshold`` and renormalise."""
+    """Zero the probabilities below threshold and renormalise."""
     raise NotImplementedError  # TODO
 
 

@@ -21,12 +21,12 @@ def predict_distributions(model: nn.Module, shots: torch.Tensor) -> torch.Tensor
 
 
 def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer) -> float:
-    """One pass over ``loader``; returns the mean training loss."""
+    """One pass over loader; returns the mean training loss."""
     raise NotImplementedError  # TODO
 
 
 def validation_loss(model: nn.Module, loader: DataLoader) -> float:
-    """Mean loss on ``loader`` without updating the model."""
+    """Mean loss on loader without updating the model."""
     raise NotImplementedError  # TODO
 
 

@@ -18,9 +18,9 @@ paths:
 data:
   num_qubits: 5
   # Share of the training circuits held out for validation.
-  validation_fraction: # TODO
+  validation_fraction: 0.2
   # Shots of one circuit corrected together and averaged into one distribution.
-  shots_per_circuit: # TODO
+  shots_per_circuit: 10000
 
 model:
   # One of: mlp, transformer, perceiver, per_qubit.

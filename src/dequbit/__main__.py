@@ -1,4 +1,4 @@
-"""Entry point for ``python -m dequbit``."""
+"""Entry point for python -m dequbit."""
 
 from dequbit.cli import main
 

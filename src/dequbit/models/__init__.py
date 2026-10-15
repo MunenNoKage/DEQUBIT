@@ -8,7 +8,7 @@ from dequbit.config import Config
 
 
 def build_model(model_config: Config, num_qubits: int) -> nn.Module:
-    """Model named in ``model_config["name"]`` with its hyperparameters."""
+    """Model named in model_config["name"] with its hyperparameters."""
     raise NotImplementedError  # TODO
 
 
@@ -18,5 +18,5 @@ def save_model(model: nn.Module, model_config: Config, num_qubits: int, path: Pa
 
 
 def load_model(path: Path) -> nn.Module:
-    """Rebuild a model saved with ``save_model``."""
+    """Rebuild a model saved with save_model."""
     raise NotImplementedError  # TODO

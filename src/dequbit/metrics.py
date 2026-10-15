@@ -14,7 +14,7 @@ def kl_divergence(p: np.ndarray, q: np.ndarray) -> float:
 
 
 def l1_relative_change(noisy: np.ndarray, corrected: np.ndarray, target: np.ndarray) -> float:
-    """Change of the L1 distance to ``target`` as a fraction of the noisy L1 distance.
+    """Change of the L1 distance to target as a fraction of the noisy L1 distance.
 
     (L1(corrected, target) - L1(noisy, target)) / L1(noisy, target). Negative means the
     correction helped.
