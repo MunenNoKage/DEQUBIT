@@ -159,3 +159,49 @@ def readout_correction(distributions: np.ndarray, flip_probability: float) -> np
     clipped = np.maximum(inverted, 0)
 
     return clipped / clipped.sum(axis=-1, keepdims=True)
+
+
+def mix_correction(distributions: np.ndarray, rate: float, flip_probability: float) -> np.ndarray:
+    """Invert readout errors, then global depolarising noise, the MIX of Placidi et al.
+
+    Gate noise acts during the circuit and readout errors at the end, so the readout
+    errors are inverted first.
+
+    Args:
+        distributions: Noisy distributions, shape (circuits, 2**num_qubits).
+        rate: Share of shots replaced by uniform noise, at least 0 and below 1.
+        flip_probability: Probability that the readout of one qubit is wrong, at least 0
+            and below 0.5.
+
+    Returns:
+        Corrected distributions, same shape.
+    """
+    readout_corrected = readout_correction(distributions, flip_probability)
+
+    return depolarising_correction(readout_corrected, rate)
+
+
+def physical_depolarising_rate(two_qubit_error: float, num_two_qubit_gates: int) -> float:
+    """Estimate the depolarising rate of a circuit from its two-qubit gates.
+
+    A shot is free of gate noise only if no two-qubit gate depolarised it, which
+    happens with probability (1 - two_qubit_error)**num_two_qubit_gates.
+
+    Args:
+        two_qubit_error: Depolarising probability of one two-qubit gate, at least 0 and
+            below 1.
+        num_two_qubit_gates: Number of two-qubit gates in the circuit.
+
+    Returns:
+        Share of shots replaced by uniform noise.
+
+    Raises:
+        ValueError: If two_qubit_error is outside [0, 1) or num_two_qubit_gates is
+            negative.
+    """
+    if not 0 <= two_qubit_error < 1:
+        raise ValueError(f"two_qubit_error must be in [0, 1), got {two_qubit_error}")
+    if num_two_qubit_gates < 0:
+        raise ValueError(f"num_two_qubit_gates must be non-negative, got {num_two_qubit_gates}")
+
+    return 1 - (1 - two_qubit_error) ** num_two_qubit_gates

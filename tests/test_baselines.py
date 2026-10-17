@@ -6,7 +6,9 @@ import pytest
 from dequbit.baselines import (
     best_parameter,
     depolarising_correction,
+    mix_correction,
     oracle_distribution,
+    physical_depolarising_rate,
     readout_correction,
     threshold_correction,
 )
@@ -185,3 +187,49 @@ def test_readout_correction_rejects_length_that_is_not_power_of_two() -> None:
 
     with pytest.raises(ValueError):
         readout_correction(distributions, 0.1)
+
+
+def test_mix_correction_inverts_depolarising_then_readout_noise() -> None:
+    targets = np.random.default_rng(SEED).dirichlet(np.ones(8), size=3)
+    noisy = add_readout_noise(depolarise(targets, 0.2), 0.05)
+
+    corrected = mix_correction(noisy, rate=0.2, flip_probability=0.05)
+
+    np.testing.assert_allclose(corrected, targets)
+
+
+def test_mix_correction_without_readout_errors_is_depolarising_correction() -> None:
+    distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
+
+    corrected = mix_correction(distributions, rate=0.1, flip_probability=0.0)
+
+    np.testing.assert_allclose(corrected, depolarising_correction(distributions, 0.1))
+
+
+def test_mix_correction_without_depolarising_is_readout_correction() -> None:
+    distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
+
+    corrected = mix_correction(distributions, rate=0.0, flip_probability=0.05)
+
+    np.testing.assert_allclose(corrected, readout_correction(distributions, 0.05))
+
+
+@pytest.mark.parametrize(
+    ("num_two_qubit_gates", "expected"), [(0, 0.0), (1, 0.02), (12, 1 - 0.98**12)]
+)
+def test_physical_depolarising_rate_counts_shots_hit_by_any_gate(
+    num_two_qubit_gates: int, expected: float
+) -> None:
+    rate = physical_depolarising_rate(0.02, num_two_qubit_gates)
+
+    assert rate == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("two_qubit_error", "num_two_qubit_gates"), [(-0.1, 12), (1.0, 12), (0.02, -1)]
+)
+def test_physical_depolarising_rate_rejects_invalid_arguments(
+    two_qubit_error: float, num_two_qubit_gates: int
+) -> None:
+    with pytest.raises(ValueError):
+        physical_depolarising_rate(two_qubit_error, num_two_qubit_gates)
