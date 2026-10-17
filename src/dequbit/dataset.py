@@ -15,6 +15,7 @@ from torch.utils.data import TensorDataset
 
 TARGETS_GROUP = "probs"
 NOISY_SHOTS_GROUP = "noisy_bitstrings"
+NOISE_MODEL_GROUP = "noise_model"
 
 
 def unpack_shots(packed: np.ndarray, num_qubits: int) -> np.ndarray:
@@ -74,6 +75,22 @@ def load_circuits(
         raise ValueError(f"{noisy_path} has {len(shots)} circuits, {clean_path} has {len(targets)}")
 
     return shots, targets
+
+
+def load_noise_parameters(noisy_path: Path) -> dict[str, float]:
+    """Read the parameters of the noise model that produced the noisy shots.
+
+    Args:
+        noisy_path: File with the noisy shots, for example data/3_noisy_train.h5.
+
+    Returns:
+        Parameter name to value, for example "p_ro" (readout flip probability of one
+        qubit) and "p2" (depolarising probability of a two-qubit gate).
+    """
+    with h5py.File(noisy_path, "r") as file:
+        attributes = file[NOISE_MODEL_GROUP].attrs
+
+        return {name: float(value) for name, value in attributes.items()}
 
 
 def split_train_validation(

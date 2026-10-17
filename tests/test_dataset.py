@@ -10,6 +10,7 @@ import torch
 from dequbit.dataset import (
     index_to_bits,
     load_circuits,
+    load_noise_parameters,
     make_dataset,
     shot_counts,
     split_train_validation,
@@ -117,3 +118,10 @@ def test_make_dataset_rejects_too_few_shots() -> None:
 
     with pytest.raises(ValueError):
         make_dataset(shots, targets, shots_per_circuit=51, num_qubits=NUM_QUBITS)
+
+
+@requires_data
+def test_load_noise_parameters_reads_readout_flip_probability() -> None:
+    parameters = load_noise_parameters(NOISY_TEST)
+
+    assert 0 < parameters["p_ro"] < 0.5

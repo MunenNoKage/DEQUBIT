@@ -114,3 +114,48 @@ def depolarising_correction(distributions: np.ndarray, rate: float) -> np.ndarra
     clipped = np.maximum(inverted, 0)
 
     return clipped / clipped.sum(axis=-1, keepdims=True)
+
+
+def readout_correction(distributions: np.ndarray, flip_probability: float) -> np.ndarray:
+    """Invert independent readout errors, the SPAM baseline of Placidi et al.
+
+    Readout of every qubit reports the wrong bit with probability flip_probability,
+    independently of the other qubits. For one qubit j the noise mixes the probability
+    of x with the probability of x with bit j flipped:
+    p_noisy(x) = (1 - f) * p(x) + f * p(x ^ 2**j), where f is flip_probability.
+    Solving for p gives p(x) = ((1 - f) * p_noisy(x) - f * p_noisy(x ^ 2**j)) / (1 - 2f),
+    applied once for every qubit. Probabilities that become negative are clipped to
+    zero, then the result is renormalised.
+
+    Args:
+        distributions: Noisy distributions, shape (circuits, 2**num_qubits).
+        flip_probability: Probability that the readout of one qubit is wrong, at least 0
+            and below 0.5.
+
+    Returns:
+        Corrected distributions, same shape.
+
+    Raises:
+        ValueError: If flip_probability is outside [0, 0.5) or the number of
+            bitstrings is not a power of two.
+    """
+    if not 0 <= flip_probability < 0.5:
+        raise ValueError(f"flip_probability must be in [0, 0.5), got {flip_probability}")
+
+    num_bitstrings = distributions.shape[-1]
+    num_qubits = num_bitstrings.bit_length() - 1
+    if num_bitstrings != 2**num_qubits:
+        raise ValueError(f"{num_bitstrings} bitstrings is not a power of two")
+
+    bitstrings = np.arange(num_bitstrings)
+    inverted = distributions
+    for qubit in range(num_qubits):
+        flipped = inverted[..., bitstrings ^ (1 << qubit)]
+        inverted = ((1 - flip_probability) * inverted - flip_probability * flipped) / (
+            1 - 2 * flip_probability
+        )
+
+    # The inversion keeps the sum at 1, so at least one probability stays positive.
+    clipped = np.maximum(inverted, 0)
+
+    return clipped / clipped.sum(axis=-1, keepdims=True)
