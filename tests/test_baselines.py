@@ -19,6 +19,8 @@ SEED = 0
 
 
 def test_oracle_distribution_is_close_to_target_and_reproducible() -> None:
+    """Oracle samples of 100000 shots sum to 1, are within 0.01 of the target and repeat with the
+    same seed."""
     targets = np.array([[0.5, 0.0, 0.0, 0.5], [0.1, 0.2, 0.3, 0.4]], dtype=np.float32)
 
     first = oracle_distribution(targets, 100_000, np.random.default_rng(SEED))
@@ -30,6 +32,7 @@ def test_oracle_distribution_is_close_to_target_and_reproducible() -> None:
 
 
 def test_threshold_correction_removes_small_probabilities_and_sums_to_one() -> None:
+    """Threshold 0.1 removes the entry 0.05 and rescales the rest to sum 1."""
     distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
 
     corrected = threshold_correction(distributions, threshold=0.1)
@@ -38,6 +41,7 @@ def test_threshold_correction_removes_small_probabilities_and_sums_to_one() -> N
 
 
 def test_threshold_correction_with_zero_threshold_changes_nothing() -> None:
+    """Threshold 0 keeps every probability."""
     distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
 
     corrected = threshold_correction(distributions, threshold=0.0)
@@ -46,6 +50,7 @@ def test_threshold_correction_with_zero_threshold_changes_nothing() -> None:
 
 
 def test_threshold_correction_keeps_largest_probability() -> None:
+    """A threshold above every probability still keeps the largest ones."""
     distributions = np.array([[0.3, 0.2, 0.2, 0.3], [0.1, 0.6, 0.2, 0.1]])
 
     corrected = threshold_correction(distributions, threshold=0.9)
@@ -54,6 +59,7 @@ def test_threshold_correction_keeps_largest_probability() -> None:
 
 
 def test_best_parameter_picks_threshold_that_removes_noise() -> None:
+    """Of thresholds 0, 0.05 and 0.2 only 0.2 removes the three noise entries 0.1."""
     targets = np.array([[1.0, 0.0, 0.0, 0.0]])
     noisy = np.array([[0.7, 0.1, 0.1, 0.1]])
 
@@ -63,6 +69,7 @@ def test_best_parameter_picks_threshold_that_removes_noise() -> None:
 
 
 def test_best_parameter_rejects_empty_grid() -> None:
+    """An empty grid raises ValueError."""
     targets = np.array([[1.0, 0.0]])
 
     with pytest.raises(ValueError):
@@ -83,6 +90,7 @@ def depolarise(targets: np.ndarray, rate: float) -> np.ndarray:
 
 
 def test_depolarising_correction_inverts_depolarising_noise() -> None:
+    """Correcting with the rate that made the noise returns the ideal distribution."""
     targets = np.array([[0.4, 0.3, 0.2, 0.1]])
 
     corrected = depolarising_correction(depolarise(targets, 0.2), rate=0.2)
@@ -91,6 +99,7 @@ def test_depolarising_correction_inverts_depolarising_noise() -> None:
 
 
 def test_depolarising_correction_with_zero_rate_changes_nothing() -> None:
+    """Rate 0 keeps every probability."""
     distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
 
     corrected = depolarising_correction(distributions, rate=0.0)
@@ -99,6 +108,7 @@ def test_depolarising_correction_with_zero_rate_changes_nothing() -> None:
 
 
 def test_depolarising_correction_clips_negative_probabilities() -> None:
+    """Rate 0.5 makes the entries 0.1 negative; they become 0 and the result is [1, 0, 0, 0]."""
     distributions = np.array([[0.7, 0.1, 0.1, 0.1]])
 
     corrected = depolarising_correction(distributions, rate=0.5)
@@ -108,6 +118,11 @@ def test_depolarising_correction_clips_negative_probabilities() -> None:
 
 @pytest.mark.parametrize("rate", [-0.1, 1.0])
 def test_depolarising_correction_rejects_rate_outside_unit_interval(rate: float) -> None:
+    """A rate below 0 or of at least 1 raises ValueError.
+
+    Args:
+        rate: Invalid rate.
+    """
     distributions = np.array([[0.5, 0.5]])
 
     with pytest.raises(ValueError):
@@ -115,6 +130,7 @@ def test_depolarising_correction_rejects_rate_outside_unit_interval(rate: float)
 
 
 def test_best_parameter_recovers_known_depolarising_rate() -> None:
+    """On 20 random distributions with noise of rate 0.3, the grid search finds 0.3."""
     targets = np.random.default_rng(SEED).dirichlet(np.ones(8), size=20)
     noisy = depolarise(targets, 0.3)
 
@@ -145,6 +161,8 @@ def add_readout_noise(targets: np.ndarray, flip_probability: float) -> np.ndarra
 
 
 def test_add_readout_noise_flips_one_qubit_with_given_probability() -> None:
+    """Helper check: with flip probability 0.1, state 00 is read as 00 with 0.81, as 01 or 10 with
+    0.09 each and as 11 with 0.01."""
     targets = np.array([[1.0, 0.0, 0.0, 0.0]])
 
     noisy = add_readout_noise(targets, flip_probability=0.1)
@@ -153,6 +171,8 @@ def test_add_readout_noise_flips_one_qubit_with_given_probability() -> None:
 
 
 def test_readout_correction_inverts_readout_noise() -> None:
+    """Correcting with the flip probability that made the noise returns the ideal 3-qubit
+    distributions."""
     targets = np.random.default_rng(SEED).dirichlet(np.ones(8), size=3)
 
     corrected = readout_correction(add_readout_noise(targets, 0.05), flip_probability=0.05)
@@ -161,6 +181,7 @@ def test_readout_correction_inverts_readout_noise() -> None:
 
 
 def test_readout_correction_with_zero_probability_changes_nothing() -> None:
+    """Flip probability 0 keeps every probability."""
     distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
 
     corrected = readout_correction(distributions, flip_probability=0.0)
@@ -169,6 +190,8 @@ def test_readout_correction_with_zero_probability_changes_nothing() -> None:
 
 
 def test_readout_correction_clips_negative_probabilities() -> None:
+    """Flip probability 0.2 makes the entry of [0.9, 0.1] at bitstring 1 negative; it becomes 0 and
+    the result is [1, 0]."""
     distributions = np.array([[0.9, 0.1]])
 
     corrected = readout_correction(distributions, flip_probability=0.2)
@@ -178,6 +201,11 @@ def test_readout_correction_clips_negative_probabilities() -> None:
 
 @pytest.mark.parametrize("flip_probability", [-0.1, 0.5])
 def test_readout_correction_rejects_probability_outside_range(flip_probability: float) -> None:
+    """A flip probability below 0 or of at least 0.5 raises ValueError.
+
+    Args:
+        flip_probability: Invalid flip probability.
+    """
     distributions = np.array([[0.5, 0.5]])
 
     with pytest.raises(ValueError):
@@ -185,6 +213,8 @@ def test_readout_correction_rejects_probability_outside_range(flip_probability: 
 
 
 def test_readout_correction_rejects_length_that_is_not_power_of_two() -> None:
+    """A distribution over 3 bitstrings does not belong to any number of qubits and raises
+    ValueError."""
     distributions = np.array([[0.5, 0.25, 0.25]])
 
     with pytest.raises(ValueError):
@@ -192,6 +222,7 @@ def test_readout_correction_rejects_length_that_is_not_power_of_two() -> None:
 
 
 def test_mix_correction_inverts_depolarising_then_readout_noise() -> None:
+    """Depolarising noise followed by readout noise is undone by MIX with the same parameters."""
     targets = np.random.default_rng(SEED).dirichlet(np.ones(8), size=3)
     noisy = add_readout_noise(depolarise(targets, 0.2), 0.05)
 
@@ -201,6 +232,7 @@ def test_mix_correction_inverts_depolarising_then_readout_noise() -> None:
 
 
 def test_mix_correction_without_readout_errors_is_depolarising_correction() -> None:
+    """With flip probability 0, MIX is the repolarizer alone."""
     distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
 
     corrected = mix_correction(distributions, rate=0.1, flip_probability=0.0)
@@ -209,6 +241,7 @@ def test_mix_correction_without_readout_errors_is_depolarising_correction() -> N
 
 
 def test_mix_correction_without_depolarising_is_readout_correction() -> None:
+    """With rate 0, MIX is the readout correction alone."""
     distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
 
     corrected = mix_correction(distributions, rate=0.0, flip_probability=0.05)
@@ -222,6 +255,13 @@ def test_mix_correction_without_depolarising_is_readout_correction() -> None:
 def test_physical_depolarising_rate_counts_shots_hit_by_any_gate(
     num_two_qubit_gates: int, expected: float
 ) -> None:
+    """Rate is the share of shots hit by at least one gate: 0 for no gates, 0.02 for one, 1 -
+    0.98**12 for twelve.
+
+    Args:
+        num_two_qubit_gates: Number of two-qubit gates.
+        expected: Expected rate for gate error 0.02.
+    """
     rate = physical_depolarising_rate(0.02, num_two_qubit_gates)
 
     assert rate == pytest.approx(expected)
@@ -233,11 +273,18 @@ def test_physical_depolarising_rate_counts_shots_hit_by_any_gate(
 def test_physical_depolarising_rate_rejects_invalid_arguments(
     two_qubit_error: float, num_two_qubit_gates: int
 ) -> None:
+    """A gate error outside [0, 1) or a negative gate count raises ValueError.
+
+    Args:
+        two_qubit_error: Depolarising probability of one gate.
+        num_two_qubit_gates: Number of two-qubit gates.
+    """
     with pytest.raises(ValueError):
         physical_depolarising_rate(two_qubit_error, num_two_qubit_gates)
 
 
 def test_fit_linear_map_recovers_inverse_of_readout_noise() -> None:
+    """A map fitted on 50 circuits with readout noise undoes the noise exactly."""
     targets = np.random.default_rng(SEED).dirichlet(np.ones(4), size=50)
     noisy = add_readout_noise(targets, 0.1)
 
@@ -247,6 +294,7 @@ def test_fit_linear_map_recovers_inverse_of_readout_noise() -> None:
 
 
 def test_fit_linear_map_without_noise_is_identity() -> None:
+    """Fitting on noiseless data gives the identity matrix."""
     targets = np.random.default_rng(SEED).dirichlet(np.ones(4), size=10)
 
     weights = fit_linear_map(targets, targets)
@@ -255,6 +303,7 @@ def test_fit_linear_map_without_noise_is_identity() -> None:
 
 
 def test_fit_linear_map_rejects_fewer_circuits_than_bitstrings() -> None:
+    """3 circuits cannot determine the weights of 4 bitstrings, so it raises ValueError."""
     targets = np.random.default_rng(SEED).dirichlet(np.ones(4), size=3)
 
     with pytest.raises(ValueError):
@@ -262,6 +311,7 @@ def test_fit_linear_map_rejects_fewer_circuits_than_bitstrings() -> None:
 
 
 def test_linear_map_correction_clips_negative_probabilities() -> None:
+    """Weights that make the entry at bitstring 1 negative give [1, 0] after clipping."""
     distributions = np.array([[0.8, 0.2]])
     weights = np.array([[1.0, -0.5], [0.0, 1.5]])
 

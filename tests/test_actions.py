@@ -50,6 +50,12 @@ def random_action_probs(num_circuits: int, num_actions: int) -> torch.Tensor:
 
 @pytest.mark.parametrize("radius, num_actions", [(1, 6), (2, 16), (5, 32)])
 def test_build_masks_gives_all_flips_up_to_radius(radius: int, num_actions: int) -> None:
+    """Radius r gives the identity first and every mask with 1 to r flipped bits, each once.
+
+    Args:
+        radius: Largest number of flipped bits.
+        num_actions: Expected number of masks for 5 qubits.
+    """
     masks = build_masks(NUM_QUBITS, radius)
 
     assert len(masks) == num_actions
@@ -60,11 +66,17 @@ def test_build_masks_gives_all_flips_up_to_radius(radius: int, num_actions: int)
 
 @pytest.mark.parametrize("radius", [0, NUM_QUBITS + 1])
 def test_build_masks_rejects_radius_out_of_range(radius: int) -> None:
+    """A radius below 1 or above the number of qubits raises ValueError.
+
+    Args:
+        radius: Invalid radius.
+    """
     with pytest.raises(ValueError):
         build_masks(NUM_QUBITS, radius)
 
 
 def test_hamming_weights_are_sorted_by_number_of_flips() -> None:
+    """Masks come in order: the identity, then 5 single flips, then 10 pair flips."""
     masks = build_masks(NUM_QUBITS, radius=2)
 
     weights = hamming_weights(masks, NUM_QUBITS)
@@ -73,6 +85,7 @@ def test_hamming_weights_are_sorted_by_number_of_flips() -> None:
 
 
 def test_destinations_are_xor_and_undo_themselves() -> None:
+    """Bitstring x under mask m goes to x XOR m, and the same mask applied twice returns x."""
     masks = build_masks(NUM_QUBITS, radius=2)
 
     table = destinations(masks, NUM_QUBITS)
@@ -83,6 +96,7 @@ def test_destinations_are_xor_and_undo_themselves() -> None:
 
 
 def test_empirical_distribution_counts_shares() -> None:
+    """Shots 0, 3, 3, 31 give 0.25 to bitstrings 0 and 31 and 0.5 to bitstring 3."""
     shots = torch.tensor([[0, 3, 3, 31]])
 
     distribution = empirical_distribution(shots, NUM_QUBITS)
@@ -93,6 +107,7 @@ def test_empirical_distribution_counts_shares() -> None:
 
 
 def test_expected_distribution_sums_to_one() -> None:
+    """Moving probability with random action probabilities keeps the total at 1."""
     masks = build_masks(NUM_QUBITS, radius=2)
     noisy = random_distribution(3)
     action_probs = random_action_probs(3, len(masks))
@@ -103,6 +118,7 @@ def test_expected_distribution_sums_to_one() -> None:
 
 
 def test_expected_distribution_with_identity_equals_input() -> None:
+    """If every bitstring always takes the identity action, the distribution stays the same."""
     masks = build_masks(NUM_QUBITS, radius=2)
     noisy = random_distribution(3)
     action_probs = torch.zeros(3, 2**NUM_QUBITS, len(masks))
@@ -114,6 +130,8 @@ def test_expected_distribution_with_identity_equals_input() -> None:
 
 
 def test_expected_distribution_passes_gradient_to_action_probs() -> None:
+    """The corrected distribution has a gradient in the action probabilities, so a model can be
+    trained through it."""
     masks = build_masks(NUM_QUBITS, radius=1)
     noisy = random_distribution(2)
     action_probs = random_action_probs(2, len(masks)).requires_grad_()
@@ -126,6 +144,7 @@ def test_expected_distribution_passes_gradient_to_action_probs() -> None:
 
 
 def test_expected_distribution_rejects_wrong_shape() -> None:
+    """Action probabilities with one action too many raise ValueError."""
     masks = build_masks(NUM_QUBITS, radius=1)
     noisy = random_distribution(2)
     action_probs = random_action_probs(2, len(masks) + 1)
@@ -135,6 +154,8 @@ def test_expected_distribution_rejects_wrong_shape() -> None:
 
 
 def test_apply_actions_flips_only_the_chosen_bits() -> None:
+    """The identity keeps 00000, a single flip clears bit 0 of 10101, a pair flip clears bits 0 and
+    1 of 11111."""
     masks = build_masks(NUM_QUBITS, radius=2)
     shots = torch.tensor([0b00000, 0b10101, 0b11111])
     actions = torch.tensor([IDENTITY_ACTION, 1, 6])
@@ -145,6 +166,7 @@ def test_apply_actions_flips_only_the_chosen_bits() -> None:
 
 
 def test_sample_actions_follows_one_hot_probs() -> None:
+    """If action 3 has probability 1 for every bitstring, every shot gets action 3."""
     masks = build_masks(NUM_QUBITS, radius=1)
     generator = torch.Generator().manual_seed(SEED)
     shots = torch.randint(0, 2**NUM_QUBITS, (2, 50), generator=generator)
@@ -157,6 +179,7 @@ def test_sample_actions_follows_one_hot_probs() -> None:
 
 
 def test_sampled_corrections_match_expected_distribution_on_average() -> None:
+    """With many shots, sampled corrected shots are within L1 0.02 of the expected distribution."""
     masks = build_masks(NUM_QUBITS, radius=2)
     generator = torch.Generator().manual_seed(SEED)
     shots = torch.randint(0, 2**NUM_QUBITS, (2, 200_000), generator=generator)

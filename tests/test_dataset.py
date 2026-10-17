@@ -29,6 +29,11 @@ requires_data = pytest.mark.skipif(
 
 @pytest.mark.parametrize("num_qubits", [5, 10])
 def test_unpack_shots_gives_bit_j_weight_two_to_the_j(num_qubits: int) -> None:
+    """Packed bits unpack to the integer sum(b_j * 2**j), also for shots longer than a byte.
+
+    Args:
+        num_qubits: Number of bits of a shot.
+    """
     bits = np.random.default_rng(0).integers(0, 2, size=(100, num_qubits), dtype=np.uint8)
     expected = sum(bits[:, j].astype(np.int64) << j for j in range(num_qubits))
 
@@ -38,6 +43,7 @@ def test_unpack_shots_gives_bit_j_weight_two_to_the_j(num_qubits: int) -> None:
 
 
 def test_index_to_bits_inverts_integer_encoding() -> None:
+    """Bits of every integer 0..31, weighted by 2**j, add up to the integer again."""
     shots = torch.arange(2**NUM_QUBITS)
     weights = 1 << torch.arange(NUM_QUBITS)
 
@@ -48,6 +54,7 @@ def test_index_to_bits_inverts_integer_encoding() -> None:
 
 @requires_data
 def test_clean_shots_match_target_in_integer_order() -> None:
+    """Histogram of noiseless shots is close to P_target, so both use the same bit order."""
     with h5py.File(CLEAN_TEST, "r") as file:
         target = file["probs/circuit_0000"][:]
         packed = file["clean_bitstrings/circuit_0000"][:]
@@ -59,6 +66,7 @@ def test_clean_shots_match_target_in_integer_order() -> None:
 
 
 def test_split_train_validation_is_disjoint_and_covers_all_circuits() -> None:
+    """20 of 100 circuits go to validation, none is in both sets and none is lost."""
     train, validation = split_train_validation(100, 0.2, seed=0)
 
     assert len(validation) == 20
@@ -67,6 +75,7 @@ def test_split_train_validation_is_disjoint_and_covers_all_circuits() -> None:
 
 
 def test_split_train_validation_depends_only_on_seed() -> None:
+    """Two splits with the same seed are identical."""
     first = split_train_validation(100, 0.2, seed=0)
     second = split_train_validation(100, 0.2, seed=0)
 
@@ -75,6 +84,7 @@ def test_split_train_validation_depends_only_on_seed() -> None:
 
 @requires_data
 def test_load_circuits_shapes_and_normalised_targets() -> None:
+    """Test file gives 200 circuits of 10000 shots in 0..31 and targets that sum to 1."""
     shots, targets = load_circuits(CLEAN_TEST, NOISY_TEST, NUM_QUBITS)
 
     assert shots.shape == (200, 10000)
@@ -85,11 +95,13 @@ def test_load_circuits_shapes_and_normalised_targets() -> None:
 
 @requires_data
 def test_load_circuits_rejects_wrong_number_of_qubits() -> None:
+    """Reading a 5-qubit file as 6 qubits raises ValueError."""
     with pytest.raises(ValueError):
         load_circuits(CLEAN_TEST, NOISY_TEST, NUM_QUBITS + 1)
 
 
 def test_shot_counts_counts_every_circuit_separately() -> None:
+    """Shots of one circuit are not counted in another circuit."""
     shots = np.array([[0, 3, 3], [31, 31, 0]])
 
     counts = shot_counts(shots, NUM_QUBITS)
@@ -101,6 +113,7 @@ def test_shot_counts_counts_every_circuit_separately() -> None:
 
 
 def test_make_dataset_item_is_counts_of_first_shots() -> None:
+    """An item is the float32 counts of the first 10 shots only, all on bitstring 5."""
     shots = np.full((3, 50), 7, dtype=np.int64)
     shots[:, :10] = 5
     targets = np.full((3, 2**NUM_QUBITS), 1 / 2**NUM_QUBITS, dtype=np.float32)
@@ -113,6 +126,7 @@ def test_make_dataset_item_is_counts_of_first_shots() -> None:
 
 
 def test_make_dataset_rejects_too_few_shots() -> None:
+    """Asking for 51 shots of circuits with 50 shots raises ValueError."""
     shots = np.zeros((3, 50), dtype=np.int64)
     targets = np.full((3, 2**NUM_QUBITS), 1 / 2**NUM_QUBITS, dtype=np.float32)
 
@@ -122,6 +136,7 @@ def test_make_dataset_rejects_too_few_shots() -> None:
 
 @requires_data
 def test_load_noise_parameters_reads_readout_flip_probability() -> None:
+    """Noise parameters of the test file have a readout flip probability in (0, 0.5)."""
     parameters = load_noise_parameters(NOISY_TEST)
 
     assert 0 < parameters["p_ro"] < 0.5
