@@ -85,21 +85,32 @@ def best_parameter(
     return float(grid[int(np.argmin(medians))])
 
 
-def fit_depolarising_rate(noisy: np.ndarray, targets: np.ndarray) -> float:
-    """Depolarising rate that best explains the noisy distributions.
+def depolarising_correction(distributions: np.ndarray, rate: float) -> np.ndarray:
+    """Invert global depolarising noise, the Repolarizer of Placidi et al.
+
+    The noise model replaces a share rate of the shots by uniformly random bitstrings:
+    p_noisy = (1 - rate) * p + rate / 2**num_qubits. Solving for p gives the
+    correction. Probabilities that become negative are clipped to zero, then the result
+    is renormalised.
 
     Args:
-        noisy: noisy distributions of the training circuits, shape (circuits, 2**num_qubits).
-        targets: their ideal distributions, same shape.
+        distributions: Noisy distributions, shape (circuits, 2**num_qubits).
+        rate: Share of shots replaced by uniform noise, at least 0 and below 1.
+
+    Returns:
+        Corrected distributions, same shape.
+
+    Raises:
+        ValueError: If rate is outside [0, 1).
     """
-    raise NotImplementedError  # TODO
+    if not 0 <= rate < 1:
+        raise ValueError(f"rate must be in [0, 1), got {rate}")
 
+    num_bitstrings = distributions.shape[-1]
 
-def depolarising_correction(distribution: np.ndarray, rate: float) -> np.ndarray:
-    """Invert global depolarising noise.
+    # At least one probability stays positive: the mean of a distribution is
+    # 1 / num_bitstrings, more than rate / num_bitstrings.
+    inverted = (distributions - rate / num_bitstrings) / (1 - rate)
+    clipped = np.maximum(inverted, 0)
 
-    The noise model is p_noisy = (1 - rate) * p + rate / 2**num_qubits. Probabilities
-    that become negative after the inversion are clipped to zero, then the result is
-    renormalised.
-    """
-    raise NotImplementedError  # TODO
+    return clipped / clipped.sum(axis=-1, keepdims=True)

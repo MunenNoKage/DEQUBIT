@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 
-from dequbit.baselines import best_parameter, oracle_distribution, threshold_correction
+from dequbit.baselines import (
+    best_parameter,
+    depolarising_correction,
+    oracle_distribution,
+    threshold_correction,
+)
 
 SEED = 0
 
@@ -59,11 +64,55 @@ def test_best_parameter_rejects_empty_grid() -> None:
         best_parameter(threshold_correction, [], targets, targets)
 
 
-@pytest.mark.skip(reason="TODO")
+def depolarise(targets: np.ndarray, rate: float) -> np.ndarray:
+    """Apply global depolarising noise to ideal distributions.
+
+    Args:
+        targets: Ideal distributions, shape (circuits, 2**num_qubits).
+        rate: Share of shots replaced by uniform noise.
+
+    Returns:
+        Noisy distributions, same shape.
+    """
+    return (1 - rate) * targets + rate / targets.shape[-1]
+
+
 def test_depolarising_correction_inverts_depolarising_noise() -> None:
-    raise NotImplementedError
+    targets = np.array([[0.4, 0.3, 0.2, 0.1]])
+
+    corrected = depolarising_correction(depolarise(targets, 0.2), rate=0.2)
+
+    np.testing.assert_allclose(corrected, targets)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_fit_depolarising_rate_recovers_known_rate() -> None:
-    raise NotImplementedError
+def test_depolarising_correction_with_zero_rate_changes_nothing() -> None:
+    distributions = np.array([[0.6, 0.05, 0.1, 0.25]])
+
+    corrected = depolarising_correction(distributions, rate=0.0)
+
+    np.testing.assert_allclose(corrected, distributions)
+
+
+def test_depolarising_correction_clips_negative_probabilities() -> None:
+    distributions = np.array([[0.7, 0.1, 0.1, 0.1]])
+
+    corrected = depolarising_correction(distributions, rate=0.5)
+
+    np.testing.assert_allclose(corrected, [[1.0, 0.0, 0.0, 0.0]])
+
+
+@pytest.mark.parametrize("rate", [-0.1, 1.0])
+def test_depolarising_correction_rejects_rate_outside_unit_interval(rate: float) -> None:
+    distributions = np.array([[0.5, 0.5]])
+
+    with pytest.raises(ValueError):
+        depolarising_correction(distributions, rate)
+
+
+def test_best_parameter_recovers_known_depolarising_rate() -> None:
+    targets = np.random.default_rng(SEED).dirichlet(np.ones(8), size=20)
+    noisy = depolarise(targets, 0.3)
+
+    best = best_parameter(depolarising_correction, [0.0, 0.1, 0.2, 0.3, 0.4], noisy, targets)
+
+    assert best == 0.3
