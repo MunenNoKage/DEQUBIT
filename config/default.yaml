@@ -45,8 +45,10 @@ training:
   early_stopping_patience: # TODO
 
 baselines:
-  # Probabilities below this value are set to zero before renormalising.
-  threshold: # TODO
+  # Thresholds tried on the training circuits: threshold_steps values from 0 to
+  # threshold_max, as in Placidi et al.
+  threshold_max: 0.5
+  threshold_steps: 30
 
 logging:
   level: INFO
