@@ -6,6 +6,8 @@ import pytest
 from dequbit.baselines import (
     best_parameter,
     depolarising_correction,
+    fit_linear_map,
+    linear_map_correction,
     mix_correction,
     oracle_distribution,
     physical_depolarising_rate,
@@ -233,3 +235,36 @@ def test_physical_depolarising_rate_rejects_invalid_arguments(
 ) -> None:
     with pytest.raises(ValueError):
         physical_depolarising_rate(two_qubit_error, num_two_qubit_gates)
+
+
+def test_fit_linear_map_recovers_inverse_of_readout_noise() -> None:
+    targets = np.random.default_rng(SEED).dirichlet(np.ones(4), size=50)
+    noisy = add_readout_noise(targets, 0.1)
+
+    weights = fit_linear_map(noisy, targets)
+
+    np.testing.assert_allclose(linear_map_correction(noisy, weights), targets, atol=1e-10)
+
+
+def test_fit_linear_map_without_noise_is_identity() -> None:
+    targets = np.random.default_rng(SEED).dirichlet(np.ones(4), size=10)
+
+    weights = fit_linear_map(targets, targets)
+
+    np.testing.assert_allclose(weights, np.eye(4), atol=1e-10)
+
+
+def test_fit_linear_map_rejects_fewer_circuits_than_bitstrings() -> None:
+    targets = np.random.default_rng(SEED).dirichlet(np.ones(4), size=3)
+
+    with pytest.raises(ValueError):
+        fit_linear_map(targets, targets)
+
+
+def test_linear_map_correction_clips_negative_probabilities() -> None:
+    distributions = np.array([[0.8, 0.2]])
+    weights = np.array([[1.0, -0.5], [0.0, 1.5]])
+
+    corrected = linear_map_correction(distributions, weights)
+
+    np.testing.assert_allclose(corrected, [[1.0, 0.0]])

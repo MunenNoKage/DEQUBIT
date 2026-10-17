@@ -111,9 +111,8 @@ def depolarising_correction(distributions: np.ndarray, rate: float) -> np.ndarra
     # At least one probability stays positive: the mean of a distribution is
     # 1 / num_bitstrings, more than rate / num_bitstrings.
     inverted = (distributions - rate / num_bitstrings) / (1 - rate)
-    clipped = np.maximum(inverted, 0)
 
-    return clipped / clipped.sum(axis=-1, keepdims=True)
+    return _clip_and_normalise(inverted)
 
 
 def readout_correction(distributions: np.ndarray, flip_probability: float) -> np.ndarray:
@@ -156,9 +155,7 @@ def readout_correction(distributions: np.ndarray, flip_probability: float) -> np
         )
 
     # The inversion keeps the sum at 1, so at least one probability stays positive.
-    clipped = np.maximum(inverted, 0)
-
-    return clipped / clipped.sum(axis=-1, keepdims=True)
+    return _clip_and_normalise(inverted)
 
 
 def mix_correction(distributions: np.ndarray, rate: float, flip_probability: float) -> np.ndarray:
@@ -205,3 +202,62 @@ def physical_depolarising_rate(two_qubit_error: float, num_two_qubit_gates: int)
         raise ValueError(f"num_two_qubit_gates must be non-negative, got {num_two_qubit_gates}")
 
     return 1 - (1 - two_qubit_error) ** num_two_qubit_gates
+
+
+def fit_linear_map(noisy: np.ndarray, targets: np.ndarray) -> np.ndarray:
+    """Fit one matrix that maps noisy distributions to ideal ones, by least squares.
+
+    The map has 4**num_qubits weights, so it is only practical for few qubits. A
+    constant term is not needed: every distribution sums to 1, so the sum of the
+    columns of noisy is already a constant input.
+
+    Args:
+        noisy: Noisy distributions of the training circuits, shape
+            (circuits, 2**num_qubits).
+        targets: P_target of the same circuits, same shape.
+
+    Returns:
+        Weights, shape (2**num_qubits, 2**num_qubits); the corrected distribution of
+        a circuit is its noisy distribution times the weights.
+
+    Raises:
+        ValueError: If there are fewer circuits than bitstrings, so the weights are not
+            determined.
+    """
+    num_circuits, num_bitstrings = noisy.shape
+    if num_circuits < num_bitstrings:
+        raise ValueError(f"{num_circuits} circuits cannot determine {num_bitstrings} weights")
+
+    weights, *_ = np.linalg.lstsq(noisy, targets, rcond=None)
+
+    return weights
+
+
+def linear_map_correction(distributions: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    """Apply a fitted linear map, then clip negative probabilities and renormalise.
+
+    Args:
+        distributions: Noisy distributions, shape (circuits, 2**num_qubits).
+        weights: Matrix from fit_linear_map, shape (2**num_qubits, 2**num_qubits).
+
+    Returns:
+        Corrected distributions, same shape as distributions.
+    """
+    # The least-squares map keeps the sum near 1, so at least one probability stays
+    # positive.
+    return _clip_and_normalise(distributions @ weights)
+
+
+def _clip_and_normalise(distributions: np.ndarray) -> np.ndarray:
+    """Set negative probabilities to zero and rescale every distribution to sum 1.
+
+    Args:
+        distributions: Corrected distributions that may have negative entries, shape
+            (circuits, 2**num_qubits), with a positive entry in every row.
+
+    Returns:
+        Valid distributions, same shape.
+    """
+    clipped = np.maximum(distributions, 0)
+
+    return clipped / clipped.sum(axis=-1, keepdims=True)
