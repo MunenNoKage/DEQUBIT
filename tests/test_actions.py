@@ -1,5 +1,7 @@
 """Tests for dequbit.actions."""
 
+import math
+
 import pytest
 import torch
 
@@ -11,6 +13,7 @@ from dequbit.actions import (
     empirical_distribution,
     expected_distribution,
     hamming_weights,
+    initial_logits,
     sample_actions,
 )
 
@@ -191,3 +194,12 @@ def test_sampled_corrections_match_expected_distribution_on_average() -> None:
     noisy = empirical_distribution(shots, NUM_QUBITS)
     expected = expected_distribution(noisy, action_probs, destinations(masks, NUM_QUBITS))
     assert (sampled - expected).abs().sum(dim=-1).max() < 0.02
+
+
+def test_initial_logits_give_identity_about_three_quarters() -> None:
+    """With 16 actions the identity starts with probability 16e / (16e + 15), the rest equal."""
+    probs = initial_logits(16).softmax(dim=-1)
+
+    expected_identity = 16 * math.e / (16 * math.e + 15)
+    torch.testing.assert_close(probs[IDENTITY_ACTION], torch.tensor(expected_identity))
+    torch.testing.assert_close(probs[1:], torch.full((15,), (1 - expected_identity) / 15))

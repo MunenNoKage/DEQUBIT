@@ -5,6 +5,7 @@ mask: applying action a to shot x gives x ^ masks[a]. Action 0 is the identity, 
 come the flips of one bit, then the flips of two bits, up to radius flipped bits.
 """
 
+import math
 from itertools import combinations
 
 import torch
@@ -66,6 +67,27 @@ def destinations(masks: torch.Tensor, num_qubits: int) -> torch.Tensor:
     bitstrings = torch.arange(2**num_qubits, device=masks.device)
 
     return bitstrings.unsqueeze(-1) ^ masks
+
+
+def initial_logits(num_actions: int) -> torch.Tensor:
+    """Give the action logits a model outputs before training.
+
+    The identity gets log(num_actions) + 1 and every other action 0, so the identity has
+    probability e * A / (e * A + A - 1) for A actions, about 0.75, and the flips share
+    the rest. With equal logits most of every bitstring would move to random
+    neighbours. With the identity near probability 1 the softmax saturates and the
+    flips get almost no gradient, so training stays at changing nothing.
+
+    Args:
+        num_actions: Number of actions, the identity included.
+
+    Returns:
+        Logits, shape (num_actions,).
+    """
+    logits = torch.zeros(num_actions)
+    logits[IDENTITY_ACTION] = math.log(num_actions) + 1
+
+    return logits
 
 
 def empirical_distribution(shots: torch.Tensor, num_qubits: int) -> torch.Tensor:

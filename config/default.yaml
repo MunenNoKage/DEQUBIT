@@ -30,7 +30,7 @@ model:
   # One of: mlp, transformer, perceiver, per_qubit.
   name: mlp
   mlp:
-    # TODO: hidden layer sizes, dropout.
+    hidden_sizes: [128, 128]
   transformer:
     # TODO: embedding size, heads, layers, dropout.
   perceiver:
