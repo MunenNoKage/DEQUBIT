@@ -1,10 +1,14 @@
 """Tests for dequbit.models."""
 
+from pathlib import Path
+
 import pytest
 import torch
 
 from dequbit.actions import build_masks, hamming_weights, initial_logits
+from dequbit.config import Config
 from dequbit.dataset import index_to_bits
+from dequbit.models import MODEL_NAMES, build_model, load_model, save_model
 from dequbit.models.mlp import MLPCorrector
 from dequbit.models.per_qubit import PerQubitFlipModel
 from dequbit.models.shared_scorer import SharedScorer
@@ -37,6 +41,30 @@ def randomise_head(model: torch.nn.Module) -> None:
     """
     torch.manual_seed(SEED)
     torch.nn.init.normal_(model.head.weight)
+
+
+def perturb_parameters(model: torch.nn.Module) -> None:
+    """Add random noise to every parameter, as after some training.
+
+    Args:
+        model: Any model.
+    """
+    torch.manual_seed(SEED)
+    with torch.no_grad():
+        for parameter in model.parameters():
+            parameter.add_(torch.randn_like(parameter))
+
+
+def model_config(name: str) -> Config:
+    """Build a small model section of the config.
+
+    Args:
+        name: Model name.
+
+    Returns:
+        Model config with the name and small hidden layers for every model.
+    """
+    return {"name": name, "mlp": {"hidden_sizes": [16]}, "shared_scorer": {"hidden_sizes": [16]}}
 
 
 def test_per_qubit_model_gives_same_logits_for_every_bitstring() -> None:
@@ -140,3 +168,46 @@ def test_shared_scorer_rejects_counts_of_wrong_length() -> None:
 
     with pytest.raises(ValueError):
         model(torch.ones(1, 16))
+
+
+@pytest.mark.parametrize(
+    ("name", "model_class"),
+    [("mlp", MLPCorrector), ("shared_scorer", SharedScorer), ("per_qubit", PerQubitFlipModel)],
+)
+def test_build_model_creates_named_model(name: str, model_class: type) -> None:
+    """build_model creates the model named in the config, ready for counts of 3 qubits."""
+    model = build_model(model_config(name), NUM_QUBITS, RADIUS)
+
+    logits = model(random_counts(2))
+
+    assert isinstance(model, model_class)
+    assert logits.shape == (2, 2**NUM_QUBITS, NUM_ACTIONS)
+
+
+def test_build_model_rejects_unknown_name() -> None:
+    """A model name that is not in MODEL_NAMES raises ValueError."""
+    with pytest.raises(ValueError):
+        build_model(model_config("transformer"), NUM_QUBITS, RADIUS)
+
+
+@pytest.mark.parametrize("name", MODEL_NAMES)
+def test_saved_model_loads_with_same_logits(name: str, tmp_path: Path) -> None:
+    """A model saved and loaded again gives the same logits as before saving.
+
+    The weights are perturbed first, so the test fails if the trained weights are lost
+    and the loaded model falls back to its initial logits.
+    """
+    config = model_config(name)
+    model = build_model(config, NUM_QUBITS, RADIUS)
+    perturb_parameters(model)
+    path = tmp_path / "models" / "model.pt"
+
+    save_model(model, config, NUM_QUBITS, RADIUS, path)
+    loaded = load_model(path)
+
+    counts = random_counts(2)
+    assert type(loaded) is type(model)
+    assert not torch.allclose(
+        model(counts), initial_logits(NUM_ACTIONS).expand(2, 2**NUM_QUBITS, -1)
+    )
+    torch.testing.assert_close(loaded(counts), model(counts))
