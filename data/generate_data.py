@@ -1,6 +1,4 @@
 """
-Генерує 4 файли для QEM-проєкту (5 кубітів):
-
   1_clean_train.h5 — 2000 схем: точний розподіл + сирі чисті shots
   2_clean_test.h5  — 200 схем:  точний розподіл + сирі чисті shots
   3_noisy_train.h5 — 2000 схем: ті самі схеми з накладеним шумом (сирі шумні shots)
@@ -36,7 +34,7 @@ N_TRAIN_CIRCUITS = 2000
 N_TEST_CIRCUITS = 200
 
 N_SHOTS = 10_000
-N_BITSTRINGS = 2 ** NUM_QUBITS  # 32
+N_BITSTRINGS = 2 ** NUM_QUBITS
 
 SEED_TRAIN_CIRCUITS = 42
 SEED_TEST_CIRCUITS = 9999
