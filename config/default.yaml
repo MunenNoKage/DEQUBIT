@@ -35,12 +35,19 @@ model:
     hidden_sizes: [64, 64]
 
 training:
-  epochs: # TODO
-  circuits_per_batch: # TODO
-  learning_rate: # TODO
-  weight_decay: # TODO
-  # Stop when the validation loss has not improved for this many epochs.
-  early_stopping_patience: # TODO
+  # Upper limit of optimizer steps; early stopping usually ends training sooner.
+  max_steps: 10000
+  circuits_per_batch: 128
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  # Validation loss and median L1 relative change every this many steps.
+  validation_interval: 200
+  # Stop when the validation loss has not improved for this many validations.
+  early_stopping_patience: 8
+  # Weight of the expected flipped bits per shot in the loss; 0 turns it off.
+  flip_penalty: 0.0
+  # Divide the KL of every circuit by KL(P_target || noisy) to weigh circuits equally.
+  relative_loss: false
 
 baselines:
   # Thresholds tried on the training circuits: threshold_steps values from 0 to
