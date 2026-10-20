@@ -128,7 +128,7 @@ src/dequbit/
     config.py           loads config/default.yaml
     dataset.py          reads the .h5 files, train/validation split, CircuitDataset
     actions.py          action space, distributions built from corrected shots
-    models/             mlp, transformer, perceiver, per_qubit; build, save, load
+    models/             mlp, shared_scorer, per_qubit; build, save, load
     baselines.py        thresholding, global depolarising correction
     training.py         loss, training loop, early stopping
     metrics.py          L1, KL, L1 relative change, improved share, flipped bits

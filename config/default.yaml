@@ -27,14 +27,12 @@ actions:
   radius: 2
 
 model:
-  # One of: mlp, transformer, perceiver, per_qubit.
+  # One of: mlp, shared_scorer, per_qubit.
   name: mlp
   mlp:
     hidden_sizes: [128, 128]
-  transformer:
-    # TODO: embedding size, heads, layers, dropout.
-  perceiver:
-    # TODO: latent size, number of latents, layers, dropout.
+  shared_scorer:
+    hidden_sizes: [64, 64]
 
 training:
   epochs: # TODO
