@@ -12,7 +12,8 @@ paths:
   noisy_train: data/3_noisy_train.h5
   noisy_test: data/4_noisy_test.h5
   model: models/
-  metrics: results/metrics.json
+  # {split} is replaced by validation or test.
+  metrics: results/metrics_{split}.json
   figures_dir: results/figures
 
 data:
@@ -58,6 +59,15 @@ baselines:
   # rate_max.
   rate_max: 0.95
   rate_steps: 100
+
+evaluation:
+  # Circuits to evaluate: validation while developing, test only for final results.
+  split: validation
+  # Every model and seed needs a model file from python -m dequbit train.
+  models: [mlp, shared_scorer, per_qubit]
+  seeds: [0, 1, 2, 3, 4]
+  # Inference mode of the reported numbers: expected, sample or argmax.
+  inference: sample
 
 logging:
   level: INFO

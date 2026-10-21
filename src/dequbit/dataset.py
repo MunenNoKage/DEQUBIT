@@ -16,6 +16,8 @@ from torch.utils.data import TensorDataset
 TARGETS_GROUP = "probs"
 NOISY_SHOTS_GROUP = "noisy_bitstrings"
 NOISE_MODEL_GROUP = "noise_model"
+QASM_GROUP = "qasm"
+TWO_QUBIT_GATES = ("cx", "cz")
 
 
 def unpack_shots(packed: np.ndarray, num_qubits: int) -> np.ndarray:
@@ -91,6 +93,22 @@ def load_noise_parameters(noisy_path: Path) -> dict[str, float]:
         attributes = file[NOISE_MODEL_GROUP].attrs
 
         return {name: float(value) for name, value in attributes.items()}
+
+
+def load_two_qubit_gate_counts(clean_path: Path) -> np.ndarray:
+    """Count the two-qubit gates of every circuit in its stored OpenQASM code.
+
+    Args:
+        clean_path: File with the circuits, for example data/1_clean_train.h5.
+
+    Returns:
+        Number of two-qubit gates of every circuit, shape (circuits,).
+    """
+    with h5py.File(clean_path, "r") as file:
+        circuits = file[QASM_GROUP]
+        codes = [circuits[f"circuit_{index:04d}"][()].decode() for index in range(len(circuits))]
+
+    return np.array([_count_two_qubit_gates(code) for code in codes])
 
 
 def split_train_validation(
@@ -183,3 +201,17 @@ def _read_circuits(path: Path, group: str, num_qubits: int) -> list[np.ndarray]:
         circuits = file[group]
 
         return [circuits[f"circuit_{index:04d}"][:] for index in range(len(circuits))]
+
+
+def _count_two_qubit_gates(qasm: str) -> int:
+    """Count the two-qubit gate instructions of one OpenQASM program.
+
+    Args:
+        qasm: OpenQASM 2 code with one instruction per line.
+
+    Returns:
+        Number of lines whose instruction is one of TWO_QUBIT_GATES.
+    """
+    instructions = [line.split(maxsplit=1)[0] for line in qasm.splitlines() if line.strip()]
+
+    return sum(instruction in TWO_QUBIT_GATES for instruction in instructions)

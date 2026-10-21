@@ -9,6 +9,6 @@ which is the one part that cannot be computed.
 
 | Path | Written by | Content |
 |---|---|---|
-| `metrics.json` | `python -m dequbit evaluate` | Metrics of every model and baseline on the test circuits |
+| `metrics_validation.json`, `metrics_test.json` | `python -m dequbit evaluate` | Metrics of every model and baseline on the validation or test circuits |
 | `figures/` | `python -m dequbit evaluate` | Figures for the README, slides and poster |
 | `experiments.md` | by hand | One entry per experiment: hypothesis, setup, result, conclusion |

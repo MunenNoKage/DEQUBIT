@@ -11,6 +11,7 @@ from dequbit.dataset import (
     index_to_bits,
     load_circuits,
     load_noise_parameters,
+    load_two_qubit_gate_counts,
     make_dataset,
     shot_counts,
     split_train_validation,
@@ -140,3 +141,15 @@ def test_load_noise_parameters_reads_readout_flip_probability() -> None:
     parameters = load_noise_parameters(NOISY_TEST)
 
     assert 0 < parameters["p_ro"] < 0.5
+
+
+def test_load_two_qubit_gate_counts_counts_cx_and_cz(tmp_path: Path) -> None:
+    """Two-qubit gates are counted per circuit; one-qubit gates and headers are not."""
+    path = tmp_path / "clean.h5"
+    with h5py.File(path, "w") as file:
+        file["qasm/circuit_0000"] = b"OPENQASM 2.0;\nrx(0.1) q[0];\ncx q[0],q[1];\ncz q[1],q[2];\n"
+        file["qasm/circuit_0001"] = b"OPENQASM 2.0;\nh q[0];\n"
+
+    counts = load_two_qubit_gate_counts(path)
+
+    np.testing.assert_array_equal(counts, [2, 0])
