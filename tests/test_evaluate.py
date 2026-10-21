@@ -15,6 +15,7 @@ from dequbit.evaluate import (
     correct_circuits,
     method_metrics,
     plot_l1_relative_change,
+    plot_training_histories,
     write_json,
 )
 from dequbit.models.per_qubit import PerQubitFlipModel
@@ -177,5 +178,18 @@ def test_plot_l1_relative_change_writes_image(tmp_path: Path) -> None:
     changes = {"mlp": np.array([-0.7, -0.6]), "identity": np.zeros(2)}
 
     plot_l1_relative_change(changes, path, models=["mlp"])
+
+    assert path.read_bytes().startswith(b"\x89PNG")
+
+
+def test_plot_training_histories_writes_image(tmp_path: Path) -> None:
+    """Curves of two seeds of one model are written as a non-empty PNG file."""
+    path = tmp_path / "figures" / "curves.png"
+    history = [
+        {"step": 0, "validation_loss": 0.3, "validation_l1rc": 0.7},
+        {"step": 200, "validation_loss": 0.1, "validation_l1rc": -0.6},
+    ]
+
+    plot_training_histories({"mlp": [history, history]}, path)
 
     assert path.read_bytes().startswith(b"\x89PNG")

@@ -211,3 +211,14 @@ def test_saved_model_loads_with_same_logits(name: str, tmp_path: Path) -> None:
         model(counts), initial_logits(NUM_ACTIONS).expand(2, 2**NUM_QUBITS, -1)
     )
     torch.testing.assert_close(loaded(counts), model(counts))
+
+
+def test_mlp_without_counts_and_context_ignores_counts() -> None:
+    """With only the bits as input, the MLP gives the same logits for any shot counts."""
+    model = MLPCorrector(
+        NUM_QUBITS, RADIUS, hidden_sizes=[16], use_local_counts=False, use_context=False
+    )
+    randomise_head(model)
+    counts = random_counts(2)
+
+    torch.testing.assert_close(model(counts[:1]), model(counts[1:]))

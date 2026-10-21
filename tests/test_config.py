@@ -2,7 +2,9 @@
 
 from pathlib import Path
 
-from dequbit.config import load_config
+import pytest
+
+from dequbit.config import apply_overrides, load_config
 from dequbit.evaluate import INFERENCE_MODES
 from dequbit.models import MODEL_NAMES
 
@@ -33,3 +35,24 @@ def test_default_config_names_existing_models_and_modes() -> None:
     assert config["model"]["name"] in MODEL_NAMES
     assert set(config["evaluation"]["models"]) <= set(MODEL_NAMES)
     assert config["evaluation"]["inference"] in INFERENCE_MODES
+
+
+def test_apply_overrides_replaces_nested_values_as_yaml() -> None:
+    """Dotted keys reach nested sections and values are read as YAML numbers and lists."""
+    config = {"actions": {"radius": 2}, "evaluation": {"seeds": [0]}}
+
+    changed = apply_overrides(config, ["actions.radius=1", "evaluation.seeds=[0, 1]"])
+
+    assert changed == {"actions": {"radius": 1}, "evaluation": {"seeds": [0, 1]}}
+    assert config["actions"]["radius"] == 2
+
+
+@pytest.mark.parametrize("override", ["actions.radius", "actions.radus=1", "missing.key=1"])
+def test_apply_overrides_rejects_bad_overrides(override: str) -> None:
+    """An override without "=" or with a key that is not in the config raises ValueError.
+
+    Args:
+        override: Malformed or misspelled override.
+    """
+    with pytest.raises(ValueError):
+        apply_overrides({"actions": {"radius": 2}}, [override])

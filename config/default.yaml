@@ -32,6 +32,9 @@ model:
   name: mlp
   mlp:
     hidden_sizes: [128, 128]
+    # Inputs besides the bits; false only in ablations.
+    use_local_counts: true
+    use_context: true
   shared_scorer:
     hidden_sizes: [64, 64]
 

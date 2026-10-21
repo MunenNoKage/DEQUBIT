@@ -35,9 +35,9 @@ def build_model(model_config: Config, num_qubits: int, radius: int) -> nn.Module
         raise ValueError(f"unknown model {name!r}, expected one of {MODEL_NAMES}")
 
     if name == "mlp":
-        return MLPCorrector(num_qubits, radius, model_config["mlp"]["hidden_sizes"])
+        return MLPCorrector(num_qubits, radius, **model_config["mlp"])
     if name == "shared_scorer":
-        return SharedScorer(num_qubits, radius, model_config["shared_scorer"]["hidden_sizes"])
+        return SharedScorer(num_qubits, radius, **model_config["shared_scorer"])
 
     return PerQubitFlipModel(num_qubits, radius)
 

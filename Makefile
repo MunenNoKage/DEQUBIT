@@ -2,7 +2,7 @@
 # command is left to be typed directly, so this file stays readable rather than
 # becoming a second, undocumented CLI.
 #
-# Only `setup` works today; the rest fill in as the code lands.
+# `reproduce` trains every model with every seed, then evaluates them.
 
 PYTHON ?= python3.13
 VENV   := .venv
@@ -27,7 +27,7 @@ data: ## Regenerate the datasets in data/
 	$(BIN)/python data/generate_data.py
 
 reproduce: ## Train and evaluate on the datasets in data/
-	$(BIN)/python -m dequbit train
+	$(BIN)/python -m dequbit train --all
 	$(BIN)/python -m dequbit evaluate
 
 test: ## Run the test suite

@@ -66,6 +66,10 @@ REFERENCE_METHODS = ("identity", "oracle")
 MODEL_COLOUR = "#90CAF9"
 BASELINE_COLOUR = "#E0E0E0"
 REFERENCE_COLOUR = "#FFFFFF"
+# Line colours of the models in the training curves, in matplotlib's default cycle.
+HISTORY_COLOURS = ("C0", "C1", "C2", "C3", "C4")
+HISTORY_LOWEST_CHANGE = -0.8
+HISTORY_HIGHEST_CHANGE = 0.1
 
 
 def correct_circuits(
@@ -228,6 +232,7 @@ def write_json(content: dict[str, Any] | list[Any], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as file:
         json.dump(content, file, indent=2)
+        file.write("\n")
 
 
 def plot_l1_relative_change(
@@ -287,6 +292,42 @@ def plot_l1_relative_change(
         ],
         loc="lower left",
     )
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(path, dpi=150, bbox_inches="tight")
+
+
+def plot_training_histories(histories: dict[str, list[list[dict[str, float]]]], path: Path) -> None:
+    """Draw the validation median L1 relative change of every model during training.
+
+    Every model gets one colour and one line per seed. A dot marks the validation with
+    the lowest loss, whose weights the model keeps.
+
+    Args:
+        histories: Training histories of every seed, by model name, as returned by
+            dequbit.training.train.
+        path: Image file to write; missing parent folders are created.
+    """
+    figure = Figure(figsize=(8, 4.5))
+    axes = figure.add_subplot()
+    for colour, (name, seeds) in zip(HISTORY_COLOURS, histories.items()):
+        for seed_index, history in enumerate(seeds):
+            steps = [record["step"] for record in history]
+            changes = [record["validation_l1rc"] for record in history]
+            best = min(history, key=lambda record: record["validation_loss"])
+            label = METHOD_LABELS.get(name, name) if seed_index == 0 else None
+            axes.plot(steps, changes, color=colour, linewidth=1, alpha=0.8, label=label)
+            axes.plot(best["step"], best["validation_l1rc"], "o", color=colour, markersize=4)
+
+    # Every model starts from initial_logits far above zero; the interesting range is below.
+    start = next(iter(histories.values()))[0][0]["validation_l1rc"]
+    axes.set_ylim(HISTORY_LOWEST_CHANGE, HISTORY_HIGHEST_CHANGE)
+    axes.axhline(0, color="grey", linestyle="--", linewidth=1)
+    axes.set_xlabel("training step")
+    axes.set_ylabel("median L1 relative change (validation)")
+    axes.set_title(f"Training curves; every model starts at {start:+.2f} (step 0)")
+    axes.grid(alpha=0.3)
+    axes.legend()
 
     path.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(path, dpi=150, bbox_inches="tight")
