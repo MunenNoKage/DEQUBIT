@@ -1,6 +1,7 @@
 """Evaluation of the trained models and the baselines on held-out circuits."""
 
 import json
+from collections.abc import Sequence
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,7 @@ from typing import Any
 import numpy as np
 import torch
 from matplotlib.figure import Figure
+from matplotlib.patches import Patch
 from torch import nn
 
 from dequbit.actions import (
@@ -44,6 +46,26 @@ INFERENCE_MODES = ("expected", "sample", "argmax")
 
 # Circuits corrected at once; bounds the memory of the model inputs for many qubits.
 EVALUATION_BATCH_SIZE = 64
+
+# Names of the methods in figures.
+METHOD_LABELS = {
+    "identity": "No correction",
+    "oracle": "Oracle (best possible)",
+    "threshold": "Thresholding",
+    "repolarizer": "Repolarizer",
+    "readout": "Readout inversion",
+    "mix": "MIX, fitted rate",
+    "mix_physical": "MIX, physical rate",
+    "linear_map": "Linear map",
+    "mlp": "MLP",
+    "shared_scorer": "Shared scorer",
+    "per_qubit": "Per-qubit flip",
+}
+# Methods that only mark the scale: nothing corrected and the best possible correction.
+REFERENCE_METHODS = ("identity", "oracle")
+MODEL_COLOUR = "#90CAF9"
+BASELINE_COLOUR = "#E0E0E0"
+REFERENCE_COLOUR = "#FFFFFF"
 
 
 def correct_circuits(
@@ -208,25 +230,66 @@ def write_json(content: dict[str, Any] | list[Any], path: Path) -> None:
         json.dump(content, file, indent=2)
 
 
-def plot_l1_relative_change(changes: dict[str, np.ndarray], path: Path) -> None:
-    """Draw one box of the L1 relative change over the circuits for every method.
+def plot_l1_relative_change(
+    changes: dict[str, np.ndarray], path: Path, models: Sequence[str] = ()
+) -> None:
+    """Draw the L1 relative change of every method with its median and quartiles written.
+
+    Methods are sorted from the best median at the top to the worst at the bottom. A box
+    spans the first to the third quartile, the whiskers 1.5 times that range, and the
+    numbers on the right are the median and the quartiles.
 
     Args:
         changes: L1 relative change of every circuit, shape (circuits,), by method name.
         path: Image file to write; missing parent folders are created.
+        models: Names of the learned models among the methods, drawn in another colour.
     """
     names = sorted(changes, key=lambda name: np.median(changes[name]), reverse=True)
+    rows = range(1, len(names) + 1)
 
-    figure = Figure(figsize=(7, 0.45 * len(names) + 1.2))
+    figure = Figure(figsize=(10, 0.55 * len(names) + 1.8))
     axes = figure.add_subplot()
-    axes.boxplot([changes[name] for name in names], orientation="horizontal", showfliers=False)
-    axes.set_yticks(range(1, len(names) + 1), names)
+    boxes = axes.boxplot(
+        [changes[name] for name in names],
+        orientation="horizontal",
+        showfliers=False,
+        patch_artist=True,
+        widths=0.6,
+        medianprops={"color": "black", "linewidth": 2},
+    )
+    for name, box in zip(names, boxes["boxes"]):
+        box.set_facecolor(_method_colour(name, models))
+    axes.set_yticks(rows, [METHOD_LABELS.get(name, name) for name in names])
+
+    # The numbers stand right of the plot, in data rows, so every method has its own line.
+    axes.annotate("median  [Q1, Q3]", (1.02, len(names) + 0.75), xycoords=("axes fraction", "data"))
+    for row, name in zip(rows, names):
+        first_quartile, median, third_quartile = np.percentile(changes[name], [25, 50, 75])
+        axes.annotate(
+            f"{median:+.3f}  [{first_quartile:+.3f}, {third_quartile:+.3f}]",
+            (1.02, row),
+            xycoords=("axes fraction", "data"),
+            va="center",
+            family="monospace",
+            fontweight="bold" if name in models else "normal",
+        )
+
     axes.axvline(0, color="grey", linestyle="--", linewidth=1)
-    axes.set_xlabel("L1 relative change (lower is better)")
-    figure.tight_layout()
+    axes.grid(axis="x", alpha=0.3)
+    axes.set_ylim(0.4, len(names) + 0.6)
+    axes.set_xlabel("L1 relative change: -1 perfect, 0 unchanged, above 0 worse")
+    axes.set_title("Change of the L1 distance to P_target (lower is better)")
+    axes.legend(
+        handles=[
+            Patch(facecolor=MODEL_COLOUR, edgecolor="black", label="learned model"),
+            Patch(facecolor=BASELINE_COLOUR, edgecolor="black", label="baseline"),
+            Patch(facecolor=REFERENCE_COLOUR, edgecolor="black", label="reference"),
+        ],
+        loc="lower left",
+    )
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(path, dpi=150)
+    figure.savefig(path, dpi=150, bbox_inches="tight")
 
 
 def _choose_actions(
@@ -272,3 +335,21 @@ def _physical_mix(
         corrected[circuits] = mix_correction(noisy[circuits], rate, noise_parameters["p_ro"])
 
     return corrected
+
+
+def _method_colour(name: str, models: Sequence[str]) -> str:
+    """Pick the box colour of a method.
+
+    Args:
+        name: Method name.
+        models: Names of the learned models.
+
+    Returns:
+        MODEL_COLOUR, REFERENCE_COLOUR or BASELINE_COLOUR.
+    """
+    if name in models:
+        return MODEL_COLOUR
+    if name in REFERENCE_METHODS:
+        return REFERENCE_COLOUR
+
+    return BASELINE_COLOUR

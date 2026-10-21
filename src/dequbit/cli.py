@@ -155,7 +155,7 @@ def run_evaluate(config: Config, split: str) -> None:
 
     write_json(metrics, Path(config["paths"]["metrics"].format(split=split)))
     figure_path = Path(config["paths"]["figures_dir"]) / f"l1_relative_change_{split}.png"
-    plot_l1_relative_change(changes, figure_path)
+    plot_l1_relative_change(changes, figure_path, config["evaluation"]["models"])
     logger.info("wrote metrics and %s", figure_path)
 
 
@@ -259,7 +259,7 @@ def _evaluate_model(
     Returns:
         Metrics per seed and mode with the mean and standard deviation of the median L1
         relative change over the seeds in the configured mode, and the L1 relative
-        changes of the first seed in that mode, shape (circuits,).
+        changes of all seeds in that mode together, shape (seeds * circuits,).
 
     Raises:
         FileNotFoundError: If a model of some seed has not been trained.
@@ -267,7 +267,7 @@ def _evaluate_model(
     mode = config["evaluation"]["inference"]
     generator = torch.Generator().manual_seed(config["seed"])
     per_seed: dict[str, dict[str, Any]] = {}
-    first_changes = None
+    mode_changes = []
     for seed in config["evaluation"]["seeds"]:
         path = model_path(config, model_name, seed)
         if not path.exists():
@@ -290,8 +290,8 @@ def _evaluate_model(
                 **method_metrics(noisy, corrected, targets),
                 "mean_flipped_bits": float(flips.mean()),
             }
-            if inference == mode and first_changes is None:
-                first_changes = l1_relative_change(noisy, corrected, targets)
+            if inference == mode:
+                mode_changes.append(l1_relative_change(noisy, corrected, targets))
 
     medians = [per_seed[seed][mode]["median"] for seed in per_seed]
     summary = {
@@ -301,4 +301,4 @@ def _evaluate_model(
         "seeds": per_seed,
     }
 
-    return summary, first_changes
+    return summary, np.concatenate(mode_changes)

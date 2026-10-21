@@ -172,10 +172,10 @@ def test_write_json_creates_folders_and_round_trips(tmp_path: Path) -> None:
 
 
 def test_plot_l1_relative_change_writes_image(tmp_path: Path) -> None:
-    """The figure is written as a non-empty PNG file."""
+    """The figure with a highlighted model is written as a non-empty PNG file."""
     path = tmp_path / "figures" / "l1.png"
     changes = {"mlp": np.array([-0.7, -0.6]), "identity": np.zeros(2)}
 
-    plot_l1_relative_change(changes, path)
+    plot_l1_relative_change(changes, path, models=["mlp"])
 
     assert path.read_bytes().startswith(b"\x89PNG")
