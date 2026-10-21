@@ -116,8 +116,7 @@ probable action for every shot: -0.478 and -0.458. All numbers:
 
 - The shared scorer improves every validation circuit (worst circuit -0.215), while MIX
   makes some circuits worse (up to +0.54). Its gain over MIX is largest on circuits with
-  a spread P_target: -0.641 against -0.483 on the quarter with the highest entropy
-  ([`notebooks/04-error-analysis.ipynb`](notebooks/04-error-analysis.ipynb)).
+  a spread P_target: -0.641 against -0.483 on the quarter with the highest entropy.
 - The MLP stops early after about 2000 steps; the shared scorer still improves slowly at
   the limit of 10 000 steps ([`results/figures/training_curves.png`](results/figures/training_curves.png)).
 
@@ -236,17 +235,15 @@ Pre-commit hooks run the same checks before each commit, see
 
 ## AI usage
 
-**TODO**
-
 | Tool | Used for | How the result was checked |
 |---|---|---|
-| | | |
+| Claude Code | Writing code, tests, experiments and documentation; explaining methods | Every change reviewed step by step, unit tests, rerunning the evaluation, comparing results with the paper and with ablations |
 
 ## Contribution statement
 
 | Member | Responsible for |
 |---|---|
-| Kateryna Suchok | Circuit generation, data generation, noise simulation, preprocessing, EDA, documentation |
+| Kateryna Suchok | Circuit generation, data generation, noise simulation, preprocessing, EDA and analysis notebooks, documentation |
 | Roman Prokhorov | Model architecture design, action-space formulation, training pipeline, loss functions and regularisation, hyperparameter tuning, baselines, evaluation and metrics, documentation |
 
 Both members agree with this division of work.

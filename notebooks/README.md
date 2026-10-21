@@ -19,6 +19,6 @@ Naming: `NN-kebab-case-name.ipynb`, numbered in the order you would read them.
 | Notebook | Owner | Content |
 |---|---|---|
 | `01-data-exploration` | Kateryna Suchok | EDA of the generated datasets |
-| `02-baseline-model` | Roman Prokhorov | Baselines on the test circuits |
-| `03-model-comparison` | Roman Prokhorov | MLP, Transformer, Perceiver against the baselines |
-| `04-error-analysis` | Roman Prokhorov | Where the correction helps and where it fails |
+| `02-baseline-model` | Kateryna Sucho | Baselines on the test circuits |
+| `03-model-comparison` | Kateryna Sucho | MLP, Transformer, Perceiver against the baselines |
+| `04-error-analysis` | Kateryna Sucho | Where the correction helps and where it fails |
