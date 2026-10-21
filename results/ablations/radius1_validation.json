@@ -1,0 +1,298 @@
+{
+  "split": "validation",
+  "num_circuits": 400,
+  "environment": {
+    "python": "3.13.7",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cpu",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "cpu"
+  },
+  "baseline_parameters": {
+    "threshold": 0.017241379310344827,
+    "repolarizer_rate": 0.3742424242424242,
+    "mix_rate": 0.28787878787878785
+  },
+  "baselines": {
+    "identity": {
+      "median": 0.0,
+      "first_quartile": 0.0,
+      "third_quartile": 0.0,
+      "improved_fraction": 0.0,
+      "mean_l1": 0.3208613425578767,
+      "mean_kl": 0.11961671995108655,
+      "mean_hellinger": 0.20058868248219824
+    },
+    "oracle": {
+      "median": -0.9115233175369795,
+      "first_quartile": -0.9370138392737101,
+      "third_quartile": -0.871752491664731,
+      "improved_fraction": 1.0,
+      "mean_l1": 0.028993301105903126,
+      "mean_kl": 0.0027731478202987435,
+      "mean_hellinger": 0.018124600443540292
+    },
+    "threshold": {
+      "median": -0.36175659614535877,
+      "first_quartile": -0.48748748046237,
+      "third_quartile": -0.19550271009409623,
+      "improved_fraction": 0.9275,
+      "mean_l1": 0.20478859807821442,
+      "mean_kl": 0.8801678561441209,
+      "mean_hellinger": 0.17286839806530574
+    },
+    "repolarizer": {
+      "median": -0.6378783643214175,
+      "first_quartile": -0.7126151241568596,
+      "third_quartile": -0.5289122438618628,
+      "improved_fraction": 0.985,
+      "mean_l1": 0.12255840835449373,
+      "mean_kl": 0.34490785701783594,
+      "mean_hellinger": 0.11939994338839557
+    },
+    "readout": {
+      "median": -0.2556689271210775,
+      "first_quartile": -0.2834178308479562,
+      "third_quartile": -0.2271631173954301,
+      "improved_fraction": 1.0,
+      "mean_l1": 0.23811888254807495,
+      "mean_kl": 0.07765373119746169,
+      "mean_hellinger": 0.16054729752895572
+    },
+    "mix": {
+      "median": -0.6931763620943268,
+      "first_quartile": -0.772308392579553,
+      "third_quartile": -0.5984694364175049,
+      "improved_fraction": 0.995,
+      "mean_l1": 0.09999710593858549,
+      "mean_kl": 0.24872671066753077,
+      "mean_hellinger": 0.10054995928853491
+    },
+    "mix_physical": {
+      "median": -0.6812362586116446,
+      "first_quartile": -0.7343920341461765,
+      "third_quartile": -0.6247969638332831,
+      "improved_fraction": 1.0,
+      "mean_l1": 0.10210918215519714,
+      "mean_kl": 0.1326572564810624,
+      "mean_hellinger": 0.09401111051116721
+    },
+    "linear_map": {
+      "median": -0.6928078394710513,
+      "first_quartile": -0.7463440354383264,
+      "third_quartile": -0.641293489854428,
+      "improved_fraction": 1.0,
+      "mean_l1": 0.09776858902532076,
+      "mean_kl": 0.10011166453578295,
+      "mean_hellinger": 0.08863143433546679
+    }
+  },
+  "models": {
+    "mlp": {
+      "inference": "sample",
+      "median_mean": -0.6623639405654703,
+      "median_std": 0.0006341597559309464,
+      "seeds": {
+        "0": {
+          "expected": {
+            "median": -0.6701078975822159,
+            "first_quartile": -0.7237150257520077,
+            "third_quartile": -0.6176134050102892,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10414066165685654,
+            "mean_kl": 0.025227131322026253,
+            "mean_hellinger": 0.08527927100658417,
+            "mean_flipped_bits": 0.26042306423187256
+          },
+          "sample": {
+            "median": -0.662334192171496,
+            "first_quartile": -0.7171126207463694,
+            "third_quartile": -0.6100944776697019,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.1061159148812294,
+            "mean_kl": 0.028441542759537697,
+            "mean_hellinger": 0.0869864821434021,
+            "mean_flipped_bits": 0.2606237530708313
+          },
+          "argmax": {
+            "median": -0.42516059586338584,
+            "first_quartile": -0.5469317933237385,
+            "third_quartile": -0.26481584047757317,
+            "improved_fraction": 0.955,
+            "mean_l1": 0.1789454221725464,
+            "mean_kl": 0.6263554096221924,
+            "mean_hellinger": 0.14907242357730865,
+            "mean_flipped_bits": 0.16290149092674255
+          }
+        },
+        "1": {
+          "expected": {
+            "median": -0.6713803425654146,
+            "first_quartile": -0.7276973970563625,
+            "third_quartile": -0.6096519985325153,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10495033115148544,
+            "mean_kl": 0.02519436925649643,
+            "mean_hellinger": 0.08462397754192352,
+            "mean_flipped_bits": 0.2569558024406433
+          },
+          "sample": {
+            "median": -0.6616025582527549,
+            "first_quartile": -0.7210148614316043,
+            "third_quartile": -0.5994913462060862,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10712358355522156,
+            "mean_kl": 0.028617506846785545,
+            "mean_hellinger": 0.08631841838359833,
+            "mean_flipped_bits": 0.25682124495506287
+          },
+          "argmax": {
+            "median": -0.4274691726953834,
+            "first_quartile": -0.547475547969624,
+            "third_quartile": -0.2655308550168898,
+            "improved_fraction": 0.955,
+            "mean_l1": 0.17993880808353424,
+            "mean_kl": 0.6290619373321533,
+            "mean_hellinger": 0.14863066375255585,
+            "mean_flipped_bits": 0.1626105159521103
+          }
+        },
+        "2": {
+          "expected": {
+            "median": -0.6707240985020906,
+            "first_quartile": -0.7236477800112717,
+            "third_quartile": -0.6113032005766396,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10490501672029495,
+            "mean_kl": 0.025373902171850204,
+            "mean_hellinger": 0.08474817872047424,
+            "mean_flipped_bits": 0.2648293972015381
+          },
+          "sample": {
+            "median": -0.66315507127216,
+            "first_quartile": -0.7247685809270323,
+            "third_quartile": -0.5999118832844932,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10684870928525925,
+            "mean_kl": 0.0292853731662035,
+            "mean_hellinger": 0.08629375696182251,
+            "mean_flipped_bits": 0.2649644911289215
+          },
+          "argmax": {
+            "median": -0.4282176858558244,
+            "first_quartile": -0.5493094146543422,
+            "third_quartile": -0.2648606659257311,
+            "improved_fraction": 0.95,
+            "mean_l1": 0.17980697751045227,
+            "mean_kl": 0.6009631752967834,
+            "mean_hellinger": 0.14749933779239655,
+            "mean_flipped_bits": 0.16473375260829926
+          }
+        }
+      }
+    },
+    "shared_scorer": {
+      "inference": "sample",
+      "median_mean": -0.6685004796231012,
+      "median_std": 0.0025904084850460825,
+      "seeds": {
+        "0": {
+          "expected": {
+            "median": -0.6737854297305841,
+            "first_quartile": -0.7322956702098128,
+            "third_quartile": -0.6176347438672006,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10270611941814423,
+            "mean_kl": 0.02420550398528576,
+            "mean_hellinger": 0.08240988105535507,
+            "mean_flipped_bits": 0.2287009060382843
+          },
+          "sample": {
+            "median": -0.6699138428324292,
+            "first_quartile": -0.727891578834446,
+            "third_quartile": -0.6108484881476359,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.1044706329703331,
+            "mean_kl": 0.026852481067180634,
+            "mean_hellinger": 0.08383474498987198,
+            "mean_flipped_bits": 0.2287127524614334
+          },
+          "argmax": {
+            "median": -0.4195323343261761,
+            "first_quartile": -0.5680520279525423,
+            "third_quartile": -0.27473596419528157,
+            "improved_fraction": 0.9425,
+            "mean_l1": 0.17983485758304596,
+            "mean_kl": 0.5362834930419922,
+            "mean_hellinger": 0.14183594286441803,
+            "mean_flipped_bits": 0.15380924940109253
+          }
+        },
+        "1": {
+          "expected": {
+            "median": -0.6767206433600359,
+            "first_quartile": -0.7363787310398725,
+            "third_quartile": -0.6185278351453684,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10212244093418121,
+            "mean_kl": 0.024294719099998474,
+            "mean_hellinger": 0.08236811310052872,
+            "mean_flipped_bits": 0.23220257461071014
+          },
+          "sample": {
+            "median": -0.6707207635986905,
+            "first_quartile": -0.7309930331530965,
+            "third_quartile": -0.6074740954615362,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10424807667732239,
+            "mean_kl": 0.02735491283237934,
+            "mean_hellinger": 0.08408454805612564,
+            "mean_flipped_bits": 0.23212699592113495
+          },
+          "argmax": {
+            "median": -0.4210194311432505,
+            "first_quartile": -0.5680520279525423,
+            "third_quartile": -0.275404349776298,
+            "improved_fraction": 0.9475,
+            "mean_l1": 0.1795981526374817,
+            "mean_kl": 0.5460442900657654,
+            "mean_hellinger": 0.14240504801273346,
+            "mean_flipped_bits": 0.15482525527477264
+          }
+        },
+        "2": {
+          "expected": {
+            "median": -0.6748204020699053,
+            "first_quartile": -0.733469916784206,
+            "third_quartile": -0.618622181078168,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10309825837612152,
+            "mean_kl": 0.024341870099306107,
+            "mean_hellinger": 0.0826144814491272,
+            "mean_flipped_bits": 0.22886627912521362
+          },
+          "sample": {
+            "median": -0.6648668324381841,
+            "first_quartile": -0.7290239418949163,
+            "third_quartile": -0.605123223426175,
+            "improved_fraction": 1.0,
+            "mean_l1": 0.10478381812572479,
+            "mean_kl": 0.0273900143802166,
+            "mean_hellinger": 0.08419416099786758,
+            "mean_flipped_bits": 0.22881574928760529
+          },
+          "argmax": {
+            "median": -0.4156467182002066,
+            "first_quartile": -0.5579916340061677,
+            "third_quartile": -0.262715323584257,
+            "improved_fraction": 0.9425,
+            "mean_l1": 0.18189643323421478,
+            "mean_kl": 0.5518930554389954,
+            "mean_hellinger": 0.14301320910453796,
+            "mean_flipped_bits": 0.1538970023393631
+          }
+        }
+      }
+    }
+  }
+}

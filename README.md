@@ -108,18 +108,43 @@ test circuits are kept for the final results.
 | Shared scorer | **0.088** | **0.024** | **-0.719** [-0.778, -0.651] | 100% | 0.28 |
 | Oracle | 0.029 | 0.003 | -0.912 [-0.937, -0.872] | 100% | |
 
-Standard deviation of the median over seeds: 0.003 (MLP), 0.002 (shared scorer).
+Standard deviation of the median over seeds: 0.003 (MLP), 0.0015 (shared scorer).
 Expected instead of sampled corrections: -0.699 (MLP), -0.723 (shared scorer); the most
 probable action for every shot: -0.478 and -0.458. All numbers:
-[`results/metrics_validation.json`](results/metrics_validation.json), figure:
-[`results/figures/l1_relative_change_validation.png`](results/figures/l1_relative_change_validation.png).
+[`results/metrics_validation.json`](results/metrics_validation.json), figures:
+[`results/figures/`](results/figures/).
+
+- The shared scorer improves every validation circuit (worst circuit -0.215), while MIX
+  makes some circuits worse (up to +0.54). Its gain over MIX is largest on circuits with
+  a spread P_target: -0.641 against -0.483 on the quarter with the highest entropy
+  ([`notebooks/04-error-analysis.ipynb`](notebooks/04-error-analysis.ipynb)).
+- The MLP stops early after about 2000 steps; the shared scorer still improves slowly at
+  the limit of 10 000 steps ([`results/figures/training_curves.png`](results/figures/training_curves.png)).
+
+**Ablations** (3 seeds, median L1 relative change, sampled corrections,
+[`results/ablations/`](results/ablations/)):
+
+| Variant | MLP | Shared scorer |
+|---|---|---|
+| Full model (radius 2, local counts, context) | -0.694 | -0.719 |
+| Without local counts (bits and context only) | 0.000 | |
+| Without context | -0.692 | |
+| Radius 1 (single bit flips only) | -0.662 | -0.669 |
+
+The local counts carry the result: from the bits of a single shot alone nothing is
+learned. The context adds nothing at a single noise level, and pair flips add 0.03 to
+0.05.
 
 ## Plan
 
-1. Fixed-depth Pauli gadget circuits on 5 qubits: baselines and the three models.
-2. Bricks stacked across 6 depth levels: robustness to noise strength.
-3. Different numbers of qubits (5 to 12): whether correction quality holds as
-   bitstrings grow.
+1. **Done.** Fixed-depth Pauli gadget circuits on 5 qubits: baselines, the learned
+   models, ablations and error analysis on the validation circuits.
+2. Bricks stacked across 6 depth levels and several noise strengths: robustness to noise
+   strength, with depth and noise strength as model inputs.
+3. Different numbers of qubits (5 to 14): whether correction quality holds as bitstrings
+   grow, and whether the shared scorer trained on one number of qubits works on another.
+
+The test circuits are evaluated once, for the final results.
 
 ## Quick start
 
@@ -137,15 +162,30 @@ pre-commit install
 ## Usage
 
 ```bash
-python -m dequbit train             # train the model named in config/default.yaml
+python -m dequbit train --all       # every model of evaluation.models, every seed
 python -m dequbit train --model shared_scorer --seed 1
 python -m dequbit evaluate          # models and baselines on the validation circuits
 python -m dequbit evaluate --split test
+python -m dequbit --set actions.radius=1 train --model mlp   # change one config value
 python data/generate_data.py        # regenerate the datasets in data/
 streamlit run app/streamlit_app.py  # interactive demo
 ```
 
 All paths, hyperparameters and the seed are in [`config/default.yaml`](config/default.yaml).
+`make reproduce` trains every model with every seed and evaluates them: about two hours
+on a laptop CPU.
+
+In a notebook or a script the same steps are plain functions:
+
+```python
+from dequbit.config import load_config
+from dequbit.pipeline import evaluate_split, load_split, train_model
+
+config = load_config()
+validation = load_split(config, "validation")  # shots, targets, noisy, gate counts
+model, history = train_model(config, "shared_scorer", seed=0)
+metrics, changes = evaluate_split(config, "validation")
+```
 
 ## Repository structure
 
@@ -160,6 +200,7 @@ src/dequbit/
     metrics.py          L1, KL, L1 relative change, improved share, flipped bits
     evaluate.py         corrected circuits, metrics of every method, figures
     utils.py            seeding, logging, environment
+    pipeline.py         load circuits, train a model, evaluate every method
     cli.py              python -m dequbit train | evaluate
 data/                   generate_data.py, the .h5 datasets, data card
 config/default.yaml     paths, hyperparameters, seed
@@ -173,8 +214,13 @@ docs/                   CONTRIBUTING.md, proposal/, poster/, slides/
 
 ## Reproducibility
 
-**TODO**: the seed, the library versions, the OS and the hardware the final numbers
-were produced on.
+- Seed 42 for the train/validation split, the oracle and the sampled corrections; the
+  learned models use the training seeds 0 to 4 (`evaluation.seeds`).
+- `make reproduce` (or `python -m dequbit train --all` and `python -m dequbit evaluate`)
+  rebuilds [`results/metrics_validation.json`](results/metrics_validation.json); running
+  the evaluation twice gives identical numbers.
+- The validation numbers above were produced with Python 3.13.7, NumPy 2.5.3 and PyTorch
+  2.14.0 (CPU) on Windows 11; the environment is also stored in every metrics file.
 
 ## Development
 
