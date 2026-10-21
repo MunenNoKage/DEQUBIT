@@ -33,17 +33,24 @@ Mentor: Yuriy Pryyma.
 ## Approach
 
 ```text
-noisy shot (n bits) -> model -> probabilities of n + 1 actions
-all shots of a circuit, corrected -> distribution over 2^n bitstrings -> loss against P_target
+shots of a circuit -> shot counts -> model -> P(action | bitstring) for every measured bitstring
+every shot moved by its action -> corrected distribution -> KL loss against P_target
 ```
 
-- **Actions.** Action 0 keeps the bitstring, action i + 1 flips bit i.
-- **Models.** A model maps one shot to logits over the actions. Three architectures,
-  adapted from [1]: an MLP-correction model, a Transformer and a Perceiver.
-- **Training.** The corrected shots of a circuit, weighted by the action
-  probabilities, give a predicted distribution, which the loss compares with the ideal
-  distribution P_target of that circuit. Matching pairs of clean and noisy shots are not
-  needed, because a single noisy shot has no single correct answer.
+- **Actions.** An action XORs a mask into the shot: keep it, flip one bit or flip two
+  bits (radius 2, 16 actions for 5 qubits).
+- **Inputs.** A single shot cannot tell whether it is noise. The model therefore sees,
+  for every bitstring, how often its neighbours x ^ m were measured compared with x
+  itself (local counts), and three numbers on how spread the shots of the circuit are.
+  All inputs grow with the number of qubits n, never with 2^n.
+- **Models.** An MLP on the bits, the local counts and the context; a shared scorer, one
+  small network that scores every action from features that do not depend on n, so the
+  same weights work for any number of qubits; and a per-qubit flip model with the same
+  action probabilities for every shot, which shows what is possible without the inputs.
+- **Training.** The action probabilities move the probability of every bitstring to
+  its neighbours, which gives a predicted distribution. The loss compares it with the
+  ideal distribution P_target of the circuit. Matching pairs of clean and noisy shots are
+  not needed, because a single noisy shot has no single correct answer.
 
 ## Data
 
@@ -63,32 +70,49 @@ File layout: [`data/data_description.md`](data/data_description.md). Data card:
 | Method | Kind |
 |---|---|
 | No correction | The noisy distribution itself |
+| Oracle | Shots drawn from P_target: the best any correction with this many shots can do |
 | Thresholding | Removes very small probabilities [1] |
-| Global depolarising correction | Inverts uniform depolarising noise [1] |
-| Per-qubit flip model | Learned, one flip probability per qubit, ignores the input bitstring |
-| MLP, Transformer, Perceiver | Learned, per-bitstring corrections |
+| Repolarizer | Inverts uniform depolarising noise, rate fitted on the training circuits [1] |
+| Readout inversion | Inverts known per-qubit readout errors [1] |
+| MIX | Readout inversion, then the repolarizer; rate fitted, or from p2 and the CX count [1] |
+| Linear map | Least-squares 2^n x 2^n inverse of the noise, learned from the training circuits |
+| Per-qubit flip model | Learned, the same action probabilities for every shot |
+| MLP, shared scorer | Learned, per-bitstring corrections |
 
-Metrics, computed against P_target on the test circuits:
+Metrics, computed against P_target:
 
 - L1 distance and KL divergence;
 - **L1 relative change** (main metric): change of the L1 distance as a fraction of the
-  noisy L1 distance; negative means the correction helped;
+  noisy L1 distance; negative means the correction helped. Reported as the median and
+  the interquartile range over circuits;
 - share of circuits the correction improved;
 - mean number of flipped bits per shot.
 
 ## Results
 
-**TODO**
+Validation circuits (400 held-out training circuits, 10 000 shots each). The learned
+models are the mean over 5 training seeds, with one action sampled for every shot. The
+test circuits are kept for the final results.
 
-| Method | L1 | KL | L1 relative change | Improved circuits | Flipped bits |
+| Method | L1 | KL | L1 relative change, median [IQR] | Improved circuits | Flipped bits |
 |---|---|---|---|---|---|
-| No correction | | | | | |
-| Thresholding | | | | | |
-| Global depolarising | | | | | |
-| Per-qubit flip | | | | | |
-| MLP | | | | | |
-| Transformer | | | | | |
-| Perceiver | | | | | |
+| No correction | 0.321 | 0.120 | 0.000 | 0% | 0 |
+| Thresholding | 0.205 | 0.880 | -0.362 [-0.487, -0.196] | 93% | |
+| Readout inversion | 0.238 | 0.078 | -0.256 [-0.283, -0.227] | 100% | |
+| Repolarizer | 0.123 | 0.345 | -0.638 [-0.713, -0.529] | 99% | |
+| MIX, physical rate | 0.102 | 0.133 | -0.681 [-0.734, -0.625] | 100% | |
+| MIX, fitted rate | 0.100 | 0.249 | -0.693 [-0.772, -0.598] | 100% | |
+| Linear map | 0.098 | 0.100 | -0.693 [-0.746, -0.641] | 100% | |
+| Per-qubit flip | 0.321 | 0.120 | 0.001 [0.001, 0.002] | 12% | 0.001 |
+| MLP | 0.096 | 0.026 | -0.694 [-0.757, -0.624] | 100% | 0.32 |
+| Shared scorer | **0.088** | **0.024** | **-0.719** [-0.778, -0.651] | 100% | 0.28 |
+| Oracle | 0.029 | 0.003 | -0.912 [-0.937, -0.872] | 100% | |
+
+Standard deviation of the median over seeds: 0.003 (MLP), 0.002 (shared scorer).
+Expected instead of sampled corrections: -0.699 (MLP), -0.723 (shared scorer); the most
+probable action for every shot: -0.478 and -0.458. All numbers:
+[`results/metrics_validation.json`](results/metrics_validation.json), figure:
+[`results/figures/l1_relative_change_validation.png`](results/figures/l1_relative_change_validation.png).
 
 ## Plan
 
@@ -114,7 +138,9 @@ pre-commit install
 
 ```bash
 python -m dequbit train             # train the model named in config/default.yaml
-python -m dequbit evaluate          # models and baselines on the test circuits -> results/
+python -m dequbit train --model shared_scorer --seed 1
+python -m dequbit evaluate          # models and baselines on the validation circuits
+python -m dequbit evaluate --split test
 python data/generate_data.py        # regenerate the datasets in data/
 streamlit run app/streamlit_app.py  # interactive demo
 ```
@@ -129,10 +155,10 @@ src/dequbit/
     dataset.py          reads the .h5 files, train/validation split, CircuitDataset
     actions.py          action space, distributions built from corrected shots
     models/             mlp, shared_scorer, per_qubit; build, save, load
-    baselines.py        thresholding, global depolarising correction
+    baselines.py        oracle, thresholding, repolarizer, readout inversion, MIX, linear map
     training.py         loss, training loop, early stopping
     metrics.py          L1, KL, L1 relative change, improved share, flipped bits
-    evaluate.py         correction of test circuits, metrics.json, figures
+    evaluate.py         corrected circuits, metrics of every method, figures
     utils.py            seeding, logging, environment
     cli.py              python -m dequbit train | evaluate
 data/                   generate_data.py, the .h5 datasets, data card
@@ -141,7 +167,7 @@ tests/                  one test file per module
 notebooks/              01-04, see notebooks/README.md
 app/                    Streamlit demo
 models/                 trained weights, not committed
-results/                metrics.json, figures/, experiments.md
+results/                metrics_validation.json, metrics_test.json, figures/, experiments.md
 docs/                   CONTRIBUTING.md, proposal/, poster/, slides/
 ```
 
