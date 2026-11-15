@@ -13,25 +13,21 @@ from dequbit.pipeline import (
     model_path,
     train_model,
 )
-from tests.conftest import FAKE_NUM_QUBITS, FAKE_SHOTS, FAKE_TEST_CIRCUITS, FAKE_TRAIN_CIRCUITS
+from tests.conftest import FAKE_NUM_QUBITS, FAKE_SHOTS, FAKE_SPLIT_CIRCUITS
 
 
-def test_load_split_divides_training_file_and_reads_test_file(fake_config: Path) -> None:
-    """Training and validation circuits add up to the training file; test is its own file."""
+def test_load_split_reads_the_file_of_every_split(fake_config: Path) -> None:
+    """Training, validation and test circuits come from their own files."""
     config = load_config(fake_config)
 
     train, validation, test = (
         load_split(config, split) for split in ("train", "validation", "test")
     )
 
-    assert len(train.shots) + len(validation.shots) == FAKE_TRAIN_CIRCUITS
-    assert len(validation.shots) == round(
-        FAKE_TRAIN_CIRCUITS * config["data"]["validation_fraction"]
-    )
-    assert test.shots.shape == (FAKE_TEST_CIRCUITS, FAKE_SHOTS)
-    assert test.targets.shape == (FAKE_TEST_CIRCUITS, 2**FAKE_NUM_QUBITS)
-    np.testing.assert_array_equal(test.gate_counts, 1)
-    assert test.noise["p_ro"] == pytest.approx(0.05)
+    assert len(train.counts) == FAKE_SPLIT_CIRCUITS["train"]
+    assert len(validation.counts) == FAKE_SPLIT_CIRCUITS["val"]
+    assert test.counts.shape == (FAKE_SPLIT_CIRCUITS["test"], 2**FAKE_NUM_QUBITS)
+    assert test.num_shots == FAKE_SHOTS
 
 
 def test_circuits_noisy_is_distribution_of_shots(fake_config: Path) -> None:
@@ -72,7 +68,7 @@ def test_evaluate_baselines_corrects_every_circuit(fake_config: Path) -> None:
     )
 
     for corrected in baselines.values():
-        assert corrected.shape == (FAKE_TEST_CIRCUITS, 2**FAKE_NUM_QUBITS)
+        assert corrected.shape == (FAKE_SPLIT_CIRCUITS["test"], 2**FAKE_NUM_QUBITS)
 
 
 def test_evaluate_split_without_models_has_baseline_metrics(fake_config: Path) -> None:

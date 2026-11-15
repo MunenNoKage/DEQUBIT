@@ -8,24 +8,23 @@ import pytest
 import torch
 
 from dequbit.dataset import (
+    CALIBRATION_NAMES,
+    Circuits,
     index_to_bits,
     load_circuits,
-    load_noise_parameters,
-    load_two_qubit_gate_counts,
     make_dataset,
-    shot_counts,
-    split_train_validation,
     unpack_shots,
 )
-
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
-CLEAN_TEST = DATA_DIR / "2_clean_test.h5"
-NOISY_TEST = DATA_DIR / "4_noisy_test.h5"
-NUM_QUBITS = 5
-
-requires_data = pytest.mark.skipif(
-    not (CLEAN_TEST.exists() and NOISY_TEST.exists()), reason="datasets not generated"
+from tests.conftest import (
+    FAKE_CIRCUIT_TYPES,
+    FAKE_NUM_QUBITS,
+    FAKE_READOUT_P01,
+    FAKE_SHOTS,
+    write_fake_file,
 )
+
+NUM_QUBITS = 5
+NUM_CIRCUITS = 12
 
 
 @pytest.mark.parametrize("num_qubits", [5, 10])
@@ -53,103 +52,67 @@ def test_index_to_bits_inverts_integer_encoding() -> None:
     assert torch.equal((bits * weights).sum(dim=-1), shots)
 
 
-@requires_data
-def test_clean_shots_match_target_in_integer_order() -> None:
-    """Histogram of noiseless shots is close to P_target, so both use the same bit order."""
-    with h5py.File(CLEAN_TEST, "r") as file:
-        target = file["probs/circuit_0000"][:]
-        packed = file["clean_bitstrings/circuit_0000"][:]
-
-    shots = unpack_shots(packed, NUM_QUBITS)
-    histogram = np.bincount(shots, minlength=2**NUM_QUBITS) / len(shots)
-
-    assert np.abs(histogram - target).sum() < 0.1
+def test_load_circuits_reads_counts_targets_and_metadata(fake_circuits: Circuits) -> None:
+    """Counts add up to the shots, targets to 1, and metadata has one row per circuit."""
+    assert fake_circuits.counts.shape == (NUM_CIRCUITS, 2**FAKE_NUM_QUBITS)
+    np.testing.assert_array_equal(fake_circuits.counts.sum(axis=1), FAKE_SHOTS)
+    np.testing.assert_allclose(fake_circuits.targets.sum(axis=1), 1.0, atol=1e-5)
+    assert list(fake_circuits.circuit_types[:2]) == list(FAKE_CIRCUIT_TYPES)
+    assert fake_circuits.one_qubit_gates.shape == (NUM_CIRCUITS, FAKE_NUM_QUBITS)
+    assert fake_circuits.two_qubit_gates.shape == (NUM_CIRCUITS, FAKE_NUM_QUBITS, FAKE_NUM_QUBITS)
+    assert fake_circuits.measured_qubits.shape == (NUM_CIRCUITS, FAKE_NUM_QUBITS)
 
 
-def test_split_train_validation_is_disjoint_and_covers_all_circuits() -> None:
-    """20 of 100 circuits go to validation, none is in both sets and none is lost."""
-    train, validation = split_train_validation(100, 0.2, seed=0)
-
-    assert len(validation) == 20
-    assert set(train).isdisjoint(validation)
-    assert sorted([*train, *validation]) == list(range(100))
+def test_load_circuits_reads_calibration(fake_circuits: Circuits) -> None:
+    """Every calibration array is read; the readout errors are those of the file."""
+    assert set(fake_circuits.calibration) == set(CALIBRATION_NAMES)
+    np.testing.assert_allclose(fake_circuits.calibration["readout_p01"], FAKE_READOUT_P01)
 
 
-def test_split_train_validation_depends_only_on_seed() -> None:
-    """Two splits with the same seed are identical."""
-    first = split_train_validation(100, 0.2, seed=0)
-    second = split_train_validation(100, 0.2, seed=0)
+def test_load_circuits_counts_only_first_shots(tmp_path: Path) -> None:
+    """With shots_per_circuit 50 every circuit has the counts of its first 50 shots."""
+    path = tmp_path / "noisy.h5"
+    write_fake_file(path, num_circuits=3, seed=0)
+    with h5py.File(path, "r") as file:
+        packed = file["noisy_bitstrings/circuit_00001"][:50]
 
-    np.testing.assert_array_equal(first[1], second[1])
+    circuits = load_circuits(path, shots_per_circuit=50)
 
-
-@requires_data
-def test_load_circuits_shapes_and_normalised_targets() -> None:
-    """Test file gives 200 circuits of 10000 shots in 0..31 and targets that sum to 1."""
-    shots, targets = load_circuits(CLEAN_TEST, NOISY_TEST, NUM_QUBITS)
-
-    assert shots.shape == (200, 10000)
-    assert targets.shape == (200, 2**NUM_QUBITS)
-    assert shots.min() >= 0 and shots.max() < 2**NUM_QUBITS
-    np.testing.assert_allclose(targets.sum(axis=1), 1.0, atol=1e-5)
+    expected = np.bincount(unpack_shots(packed, FAKE_NUM_QUBITS), minlength=2**FAKE_NUM_QUBITS)
+    np.testing.assert_array_equal(circuits.counts[1], expected)
 
 
-@requires_data
-def test_load_circuits_rejects_wrong_number_of_qubits() -> None:
-    """Reading a 5-qubit file as 6 qubits raises ValueError."""
+def test_load_circuits_rejects_too_few_shots(tmp_path: Path) -> None:
+    """Asking for more shots than the file has raises ValueError."""
+    path = tmp_path / "noisy.h5"
+    write_fake_file(path, num_circuits=3, seed=0)
+
     with pytest.raises(ValueError):
-        load_circuits(CLEAN_TEST, NOISY_TEST, NUM_QUBITS + 1)
+        load_circuits(path, FAKE_SHOTS + 1)
 
 
-def test_shot_counts_counts_every_circuit_separately() -> None:
-    """Shots of one circuit are not counted in another circuit."""
-    shots = np.array([[0, 3, 3], [31, 31, 0]])
+def test_load_circuits_rejects_incomplete_file(tmp_path: Path) -> None:
+    """A file that the generator did not finish raises ValueError."""
+    path = tmp_path / "noisy.h5"
+    write_fake_file(path, num_circuits=3, seed=0)
+    with h5py.File(path, "a") as file:
+        file.attrs["complete"] = False
 
-    counts = shot_counts(shots, NUM_QUBITS)
-
-    expected = np.zeros((2, 2**NUM_QUBITS), dtype=np.int64)
-    expected[0, [0, 3]] = [1, 2]
-    expected[1, [0, 31]] = [1, 2]
-    np.testing.assert_array_equal(counts, expected)
+    with pytest.raises(ValueError):
+        load_circuits(path, FAKE_SHOTS)
 
 
-def test_make_dataset_item_is_counts_of_first_shots() -> None:
-    """An item is the float32 counts of the first 10 shots only, all on bitstring 5."""
-    shots = np.full((3, 50), 7, dtype=np.int64)
-    shots[:, :10] = 5
-    targets = np.full((3, 2**NUM_QUBITS), 1 / 2**NUM_QUBITS, dtype=np.float32)
+def test_circuits_properties_describe_the_shots(fake_circuits: Circuits) -> None:
+    """The number of qubits and shots are those of the file; noisy is counts / shots."""
+    assert fake_circuits.num_qubits == FAKE_NUM_QUBITS
+    assert fake_circuits.num_shots == FAKE_SHOTS
+    np.testing.assert_allclose(fake_circuits.noisy, fake_circuits.counts / FAKE_SHOTS)
 
-    counts, target = make_dataset(shots, targets, shots_per_circuit=10, num_qubits=NUM_QUBITS)[1]
 
-    assert counts.shape == target.shape == (2**NUM_QUBITS,)
+def test_make_dataset_item_is_float_counts_and_target(fake_circuits: Circuits) -> None:
+    """An item is the float32 counts and P_target of one circuit."""
+    counts, target = make_dataset(fake_circuits)[1]
+
+    assert counts.shape == target.shape == (2**FAKE_NUM_QUBITS,)
     assert counts.dtype == target.dtype == torch.float32
-    assert counts[5] == 10 and counts.sum() == 10
-
-
-def test_make_dataset_rejects_too_few_shots() -> None:
-    """Asking for 51 shots of circuits with 50 shots raises ValueError."""
-    shots = np.zeros((3, 50), dtype=np.int64)
-    targets = np.full((3, 2**NUM_QUBITS), 1 / 2**NUM_QUBITS, dtype=np.float32)
-
-    with pytest.raises(ValueError):
-        make_dataset(shots, targets, shots_per_circuit=51, num_qubits=NUM_QUBITS)
-
-
-@requires_data
-def test_load_noise_parameters_reads_readout_flip_probability() -> None:
-    """Noise parameters of the test file have a readout flip probability in (0, 0.5)."""
-    parameters = load_noise_parameters(NOISY_TEST)
-
-    assert 0 < parameters["p_ro"] < 0.5
-
-
-def test_load_two_qubit_gate_counts_counts_cx_and_cz(tmp_path: Path) -> None:
-    """Two-qubit gates are counted per circuit; one-qubit gates and headers are not."""
-    path = tmp_path / "clean.h5"
-    with h5py.File(path, "w") as file:
-        file["qasm/circuit_0000"] = b"OPENQASM 2.0;\nrx(0.1) q[0];\ncx q[0],q[1];\ncz q[1],q[2];\n"
-        file["qasm/circuit_0001"] = b"OPENQASM 2.0;\nh q[0];\n"
-
-    counts = load_two_qubit_gate_counts(path)
-
-    np.testing.assert_array_equal(counts, [2, 0])
+    np.testing.assert_array_equal(counts.numpy(), fake_circuits.counts[1])

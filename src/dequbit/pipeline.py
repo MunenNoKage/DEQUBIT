@@ -6,23 +6,14 @@ what python -m dequbit computes.
 
 import json
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-import torch
 from torch import nn
 
 from dequbit.config import Config
-from dequbit.dataset import (
-    load_circuits,
-    load_noise_parameters,
-    load_two_qubit_gate_counts,
-    make_dataset,
-    shot_counts,
-    split_train_validation,
-)
+from dequbit.dataset import Circuits, load_circuits, make_dataset
 from dequbit.evaluate import (
     INFERENCE_MODES,
     baseline_distributions,
@@ -35,47 +26,21 @@ from dequbit.training import train
 from dequbit.utils import collect_environment, set_seed
 
 SPLITS = ("train", "validation", "test")
+# Names of the splits in the file names of data2/generation.py.
+SPLIT_FILE_NAMES = {"train": "train", "validation": "val", "test": "test"}
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Circuits:
-    """Circuits of one split with everything the corrections and the metrics need.
-
-    Attributes:
-        shots: Noisy shots as integers, shape (circuits, shots_per_circuit).
-        targets: P_target of every circuit, shape (circuits, 2**num_qubits).
-        gate_counts: Two-qubit gates of every circuit, shape (circuits,).
-        noise: Parameters of the noise model of the data file, with "p_ro" and "p2".
-    """
-
-    shots: np.ndarray
-    targets: np.ndarray
-    gate_counts: np.ndarray
-    noise: dict[str, float]
-
-    @property
-    def noisy(self) -> np.ndarray:
-        """Noisy distribution of every circuit, shape (circuits, 2**num_qubits)."""
-        num_qubits = int(np.log2(self.targets.shape[1]))
-
-        return shot_counts(self.shots, num_qubits) / self.shots.shape[1]
-
-
 def load_split(config: Config, split: str) -> Circuits:
-    """Read the circuits of one split.
-
-    Training and validation circuits are a split of the training file by the config
-    seed, so every model seed sees the same circuits. The test circuits are the test
-    file.
+    """Read the circuits of one split with data.num_qubits qubits.
 
     Args:
         config: Full config.
         split: One of SPLITS.
 
     Returns:
-        Circuits of the split with shots_per_circuit shots each.
+        Circuits of the split with the counts of shots_per_circuit shots each.
 
     Raises:
         ValueError: If split is not one of SPLITS.
@@ -83,25 +48,12 @@ def load_split(config: Config, split: str) -> Circuits:
     if split not in SPLITS:
         raise ValueError(f"unknown split {split!r}, expected one of {SPLITS}")
 
-    paths, data = config["paths"], config["data"]
-    prefix = "test" if split == "test" else "train"
-    clean_path, noisy_path = Path(paths[f"clean_{prefix}"]), Path(paths[f"noisy_{prefix}"])
-    shots, targets = load_circuits(clean_path, noisy_path, data["num_qubits"])
-    gate_counts = load_two_qubit_gate_counts(clean_path)
-
-    if split != "test":
-        train_index, validation_index = split_train_validation(
-            len(shots), data["validation_fraction"], config["seed"]
-        )
-        index = train_index if split == "train" else validation_index
-        shots, targets, gate_counts = shots[index], targets[index], gate_counts[index]
-
-    return Circuits(
-        shots=shots[:, : data["shots_per_circuit"]],
-        targets=targets,
-        gate_counts=gate_counts,
-        noise=load_noise_parameters(noisy_path),
+    data = config["data"]
+    path = config["paths"]["data"].format(
+        split=SPLIT_FILE_NAMES[split], num_qubits=data["num_qubits"]
     )
+
+    return load_circuits(Path(path), data["shots_per_circuit"])
 
 
 def model_path(config: Config, model_name: str, seed: int) -> Path:
@@ -130,7 +82,6 @@ def train_model(config: Config, model_name: str, seed: int) -> tuple[nn.Module, 
         The model with the weights of its best validation, and the training history.
     """
     num_qubits, radius = config["data"]["num_qubits"], config["actions"]["radius"]
-    shots_per_circuit = config["data"]["shots_per_circuit"]
     train_circuits = load_split(config, "train")
     validation_circuits = load_split(config, "validation")
 
@@ -138,13 +89,8 @@ def train_model(config: Config, model_name: str, seed: int) -> tuple[nn.Module, 
     model = build_model({**config["model"], "name": model_name}, num_qubits, radius)
     history = train(
         model,
-        make_dataset(train_circuits.shots, train_circuits.targets, shots_per_circuit, num_qubits),
-        make_dataset(
-            validation_circuits.shots,
-            validation_circuits.targets,
-            shots_per_circuit,
-            num_qubits,
-        ),
+        make_dataset(train_circuits),
+        make_dataset(validation_circuits),
         num_qubits,
         radius,
         config["training"],
@@ -185,17 +131,7 @@ def evaluate_baselines(
         Corrected distributions by baseline name, each of shape (circuits, 2**num_qubits),
         and the fitted parameters.
     """
-    return baseline_distributions(
-        train_circuits.noisy,
-        train_circuits.targets,
-        circuits.noisy,
-        circuits.targets,
-        circuits.shots.shape[1],
-        circuits.noise,
-        circuits.gate_counts,
-        config["baselines"],
-        config["seed"],
-    )
+    return baseline_distributions(train_circuits, circuits, config["baselines"], config["seed"])
 
 
 def evaluate_model(
@@ -219,7 +155,7 @@ def evaluate_model(
     num_qubits, radius = config["data"]["num_qubits"], config["actions"]["radius"]
     mode = config["evaluation"]["inference"]
     noisy = circuits.noisy
-    generator = torch.Generator().manual_seed(config["seed"])
+    rng = np.random.default_rng(config["seed"])
 
     per_seed: dict[str, dict[str, Any]] = {}
     mode_changes = []
@@ -234,7 +170,7 @@ def evaluate_model(
         per_seed[str(seed)] = {}
         for inference in INFERENCE_MODES:
             corrected, flips = correct_circuits(
-                model, circuits.shots, num_qubits, radius, inference, generator
+                model, circuits.counts, num_qubits, radius, inference, rng
             )
             per_seed[str(seed)][inference] = {
                 **method_metrics(noisy, corrected, circuits.targets),
@@ -272,7 +208,7 @@ def evaluate_split(config: Config, split: str) -> tuple[dict[str, Any], dict[str
     baselines, parameters = evaluate_baselines(config, train_circuits, circuits)
     metrics: dict[str, Any] = {
         "split": split,
-        "num_circuits": len(circuits.shots),
+        "num_circuits": len(circuits.counts),
         "environment": collect_environment(),
         "baseline_parameters": parameters,
         "baselines": {

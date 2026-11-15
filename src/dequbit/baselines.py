@@ -12,6 +12,9 @@ from dequbit.metrics import l1_relative_change
 
 Correction = Callable[[np.ndarray, float], np.ndarray]
 
+# A rate of 1 means no shot survived the gates, which cannot be inverted.
+MAX_PHYSICAL_RATE = 0.999
+
 
 def oracle_distribution(
     targets: np.ndarray, num_shots: int, rng: np.random.Generator
@@ -85,7 +88,7 @@ def best_parameter(
     return float(grid[int(np.argmin(medians))])
 
 
-def depolarising_correction(distributions: np.ndarray, rate: float) -> np.ndarray:
+def depolarising_correction(distributions: np.ndarray, rate: float | np.ndarray) -> np.ndarray:
     """Invert global depolarising noise, the Repolarizer of Placidi et al.
 
     The noise model replaces a share rate of the shots by uniformly random bitstrings:
@@ -95,70 +98,84 @@ def depolarising_correction(distributions: np.ndarray, rate: float) -> np.ndarra
 
     Args:
         distributions: Noisy distributions, shape (circuits, 2**num_qubits).
-        rate: Share of shots replaced by uniform noise, at least 0 and below 1.
+        rate: Share of shots replaced by uniform noise, at least 0 and below 1: one
+            value for all circuits or one per circuit, shape (circuits,).
 
     Returns:
         Corrected distributions, same shape.
 
     Raises:
-        ValueError: If rate is outside [0, 1).
+        ValueError: If a rate is outside [0, 1).
     """
-    if not 0 <= rate < 1:
+    rates = np.asarray(rate, dtype=np.float64)
+    if (rates < 0).any() or (rates >= 1).any():
         raise ValueError(f"rate must be in [0, 1), got {rate}")
 
     num_bitstrings = distributions.shape[-1]
 
     # At least one probability stays positive: the mean of a distribution is
     # 1 / num_bitstrings, more than rate / num_bitstrings.
-    inverted = (distributions - rate / num_bitstrings) / (1 - rate)
+    rates = rates[..., np.newaxis]
+    inverted = (distributions - rates / num_bitstrings) / (1 - rates)
 
     return _clip_and_normalise(inverted)
 
 
-def readout_correction(distributions: np.ndarray, flip_probability: float) -> np.ndarray:
+def readout_correction(distributions: np.ndarray, p01: np.ndarray, p10: np.ndarray) -> np.ndarray:
     """Invert independent readout errors, the SPAM baseline of Placidi et al.
 
-    Readout of every qubit reports the wrong bit with probability flip_probability,
-    independently of the other qubits. For one qubit j the noise mixes the probability
-    of x with the probability of x with bit j flipped:
-    p_noisy(x) = (1 - f) * p(x) + f * p(x ^ 2**j), where f is flip_probability.
-    Solving for p gives p(x) = ((1 - f) * p_noisy(x) - f * p_noisy(x ^ 2**j)) / (1 - 2f),
-    applied once for every qubit. Probabilities that become negative are clipped to
-    zero, then the result is renormalised.
+    Readout of bit j reports 1 for a qubit in state 0 with probability p01[j] and 0 for
+    a qubit in state 1 with probability p10[j], independently of the other bits. For one
+    bit the noise mixes the probability a of a bitstring with this bit 0 and the
+    probability b of the same bitstring with this bit 1:
+    a_noisy = (1 - p01) * a + p10 * b and b_noisy = p01 * a + (1 - p10) * b.
+    Solving for a and b gives a = ((1 - p10) * a_noisy - p10 * b_noisy) / (1 - p01 - p10)
+    and b = ((1 - p01) * b_noisy - p01 * a_noisy) / (1 - p01 - p10), applied once for
+    every bit. Probabilities that become negative are clipped to zero, then the result
+    is renormalised.
 
     Args:
         distributions: Noisy distributions, shape (circuits, 2**num_qubits).
-        flip_probability: Probability that the readout of one qubit is wrong, at least 0
-            and below 0.5.
+        p01: Probability of reading 1 for state 0 of every bit, shape (num_qubits,) or
+            (circuits, num_qubits).
+        p10: Probability of reading 0 for state 1 of every bit, same shape as p01.
 
     Returns:
         Corrected distributions, same shape.
 
     Raises:
-        ValueError: If flip_probability is outside [0, 0.5) or the number of
-            bitstrings is not a power of two.
+        ValueError: If a probability is negative, p01 + p10 is not below 1 for some
+            bit, or the rates do not have one column per bit.
     """
-    if not 0 <= flip_probability < 0.5:
-        raise ValueError(f"flip_probability must be in [0, 0.5), got {flip_probability}")
-
     num_bitstrings = distributions.shape[-1]
     num_qubits = num_bitstrings.bit_length() - 1
-    if num_bitstrings != 2**num_qubits:
-        raise ValueError(f"{num_bitstrings} bitstrings is not a power of two")
+    p01, p10 = np.asarray(p01, dtype=np.float64), np.asarray(p10, dtype=np.float64)
+    if p01.shape[-1] != num_qubits or p10.shape != p01.shape or num_bitstrings != 2**num_qubits:
+        raise ValueError(
+            f"rates of shape {p01.shape} and {p10.shape} do not describe the bits of "
+            f"{num_bitstrings} bitstrings"
+        )
+    if (p01 < 0).any() or (p10 < 0).any() or (p01 + p10 >= 1).any():
+        raise ValueError("readout rates must be non-negative with p01 + p10 below 1")
 
     bitstrings = np.arange(num_bitstrings)
     inverted = distributions
-    for qubit in range(num_qubits):
-        flipped = inverted[..., bitstrings ^ (1 << qubit)]
-        inverted = ((1 - flip_probability) * inverted - flip_probability * flipped) / (
-            1 - 2 * flip_probability
-        )
+    for bit in range(num_qubits):
+        # Shape (2**num_qubits,) or (circuits, 2**num_qubits): for every bitstring the
+        # rate of leaving its own value of this bit and of arriving from the other one.
+        bit_is_one = (bitstrings >> bit) & 1 == 1
+        leave = np.where(bit_is_one, p10[..., bit, np.newaxis], p01[..., bit, np.newaxis])
+        arrive = np.where(bit_is_one, p01[..., bit, np.newaxis], p10[..., bit, np.newaxis])
+        flipped = inverted[..., bitstrings ^ (1 << bit)]
+        inverted = ((1 - arrive) * inverted - arrive * flipped) / (1 - leave - arrive)
 
     # The inversion keeps the sum at 1, so at least one probability stays positive.
     return _clip_and_normalise(inverted)
 
 
-def mix_correction(distributions: np.ndarray, rate: float, flip_probability: float) -> np.ndarray:
+def mix_correction(
+    distributions: np.ndarray, rate: float | np.ndarray, p01: np.ndarray, p10: np.ndarray
+) -> np.ndarray:
     """Invert readout errors, then global depolarising noise, the MIX of Placidi et al.
 
     Gate noise acts during the circuit and readout errors at the end, so the readout
@@ -166,42 +183,49 @@ def mix_correction(distributions: np.ndarray, rate: float, flip_probability: flo
 
     Args:
         distributions: Noisy distributions, shape (circuits, 2**num_qubits).
-        rate: Share of shots replaced by uniform noise, at least 0 and below 1.
-        flip_probability: Probability that the readout of one qubit is wrong, at least 0
-            and below 0.5.
+        rate: Share of shots replaced by uniform noise, at least 0 and below 1: one
+            value for all circuits or one per circuit, shape (circuits,).
+        p01: Probability of reading 1 for state 0 of every bit, shape (num_qubits,) or
+            (circuits, num_qubits).
+        p10: Probability of reading 0 for state 1 of every bit, same shape as p01.
 
     Returns:
         Corrected distributions, same shape.
     """
-    readout_corrected = readout_correction(distributions, flip_probability)
+    readout_corrected = readout_correction(distributions, p01, p10)
 
     return depolarising_correction(readout_corrected, rate)
 
 
-def physical_depolarising_rate(two_qubit_error: float, num_two_qubit_gates: int) -> float:
-    """Estimate the depolarising rate of a circuit from its two-qubit gates.
+def physical_depolarising_rate(
+    one_qubit_gates: np.ndarray,
+    two_qubit_gates: np.ndarray,
+    error_1q: np.ndarray,
+    error_2q: np.ndarray,
+) -> np.ndarray:
+    """Estimate the depolarising rate of every circuit from its gates and their errors.
 
-    A shot is free of gate noise only if no two-qubit gate depolarised it, which
-    happens with probability (1 - two_qubit_error)**num_two_qubit_gates.
+    A shot is free of gate noise only if no gate failed, which happens with probability
+    prod((1 - error of the gate) for every gate of the circuit).
 
     Args:
-        two_qubit_error: Depolarising probability of one two-qubit gate, at least 0 and
-            below 1.
-        num_two_qubit_gates: Number of two-qubit gates in the circuit.
+        one_qubit_gates: One-qubit gates on every device qubit, shape
+            (circuits, num_qubits).
+        two_qubit_gates: Two-qubit gates between every pair of device qubits, symmetric,
+            shape (circuits, num_qubits, num_qubits).
+        error_1q: Error of a one-qubit gate on every device qubit, shape (num_qubits,).
+        error_2q: Error of the two-qubit gate between every pair of device qubits,
+            symmetric, shape (num_qubits, num_qubits).
 
     Returns:
-        Share of shots replaced by uniform noise.
-
-    Raises:
-        ValueError: If two_qubit_error is outside [0, 1) or num_two_qubit_gates is
-            negative.
+        Share of shots replaced by uniform noise in every circuit, shape (circuits,),
+        at most MAX_PHYSICAL_RATE.
     """
-    if not 0 <= two_qubit_error < 1:
-        raise ValueError(f"two_qubit_error must be in [0, 1), got {two_qubit_error}")
-    if num_two_qubit_gates < 0:
-        raise ValueError(f"num_two_qubit_gates must be non-negative, got {num_two_qubit_gates}")
+    log_survival = one_qubit_gates @ np.log1p(-error_1q)
+    # Both matrices are symmetric, so the sum counts every pair twice.
+    log_survival = log_survival + (two_qubit_gates * np.log1p(-error_2q)).sum(axis=(1, 2)) / 2
 
-    return 1 - (1 - two_qubit_error) ** num_two_qubit_gates
+    return np.minimum(1 - np.exp(log_survival), MAX_PHYSICAL_RATE)
 
 
 def fit_linear_map(noisy: np.ndarray, targets: np.ndarray) -> np.ndarray:

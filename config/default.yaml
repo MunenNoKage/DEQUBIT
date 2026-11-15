@@ -6,22 +6,21 @@
 seed: 42
 
 paths:
-  # Circuit i is the same circuit in a clean file and in the matching noisy file.
-  clean_train: data/1_clean_train.h5
-  clean_test: data/2_clean_test.h5
-  noisy_train: data/3_noisy_train.h5
-  noisy_test: data/4_noisy_test.h5
+  # Files of data2/generation.py with the noisy shots, P_target, the circuit metadata
+  # and the device calibration. {split} is replaced by train, val or test and
+  # {num_qubits} by data.num_qubits.
+  data: data_v4/noisy_{split}_N{num_qubits}.h5
   model: models/
   # {split} is replaced by validation or test.
   metrics: results/metrics_{split}.json
   figures_dir: results/figures
 
 data:
+  # One of the numbers of qubits the data was generated for: 3, 5, 6, 8, 9, 11.
   num_qubits: 5
-  # Share of the training circuits held out for validation.
-  validation_fraction: 0.2
-  # Shots of one circuit corrected together and averaged into one distribution.
-  shots_per_circuit: 10000
+  # Shots of one circuit corrected together and averaged into one distribution; the
+  # files hold 92160.
+  shots_per_circuit: 92160
 
 actions:
   # Largest number of bits one action flips: 1 gives single flips, 2 adds pair flips.

@@ -12,14 +12,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from torch import nn
 
-from dequbit.actions import (
-    apply_actions,
-    build_masks,
-    destinations,
-    empirical_distribution,
-    hamming_weights,
-    sample_actions,
-)
+from dequbit.actions import build_masks, destinations, expected_distribution, hamming_weights
 from dequbit.baselines import (
     best_parameter,
     depolarising_correction,
@@ -32,7 +25,7 @@ from dequbit.baselines import (
     threshold_correction,
 )
 from dequbit.config import Config
-from dequbit.dataset import shot_counts
+from dequbit.dataset import Circuits
 from dequbit.metrics import (
     hellinger_distance,
     kl_divergence,
@@ -74,11 +67,11 @@ HISTORY_HIGHEST_CHANGE = 0.1
 
 def correct_circuits(
     model: nn.Module,
-    shots: np.ndarray,
+    counts: np.ndarray,
     num_qubits: int,
     radius: int,
     mode: str,
-    generator: torch.Generator,
+    rng: np.random.Generator,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Correct the shots of every circuit with the model.
 
@@ -88,11 +81,11 @@ def correct_circuits(
 
     Args:
         model: Trained model that maps counts to action logits.
-        shots: Noisy shots as integers, shape (circuits, shots).
+        counts: Noisy shot counts, shape (circuits, 2**num_qubits).
         num_qubits: Number of measured qubits.
         radius: Largest number of bits one action flips.
         mode: One of INFERENCE_MODES.
-        generator: Random generator of the drawn actions.
+        rng: Random generator of the drawn actions.
 
     Returns:
         Corrected distribution of every circuit, shape (circuits, 2**num_qubits), and the
@@ -111,87 +104,79 @@ def correct_circuits(
     model.eval()
     corrected, flips = [], []
     with torch.no_grad():
-        for start in range(0, len(shots), EVALUATION_BATCH_SIZE):
-            batch = torch.from_numpy(shots[start : start + EVALUATION_BATCH_SIZE])
-            counts = torch.from_numpy(shot_counts(batch.numpy(), num_qubits)).float()
-            action_probs, expected = predict_distributions(model, counts, destination_table)
+        for start in range(0, len(counts), EVALUATION_BATCH_SIZE):
+            batch = torch.from_numpy(counts[start : start + EVALUATION_BATCH_SIZE]).float()
+            action_probs, _ = predict_distributions(model, batch, destination_table)
+            if mode == "sample":
+                action_probs = _sampled_action_shares(batch, action_probs, rng)
+            elif mode == "argmax":
+                action_probs = _most_probable_action(action_probs)
 
-            if mode == "expected":
-                noisy = counts / counts.sum(dim=-1, keepdim=True)
-                corrected.append(expected)
-                flips.append(expected_flipped_bits(noisy, action_probs, flipped_bits))
-                continue
-
-            actions = _choose_actions(batch, action_probs, mode, generator)
-            corrected.append(
-                empirical_distribution(apply_actions(batch, actions, masks), num_qubits)
-            )
-            flips.append(flipped_bits[actions].mean(dim=-1))
+            noisy = batch / batch.sum(dim=-1, keepdim=True)
+            corrected.append(expected_distribution(noisy, action_probs, destination_table))
+            flips.append(expected_flipped_bits(noisy, action_probs, flipped_bits))
 
     return torch.cat(corrected).numpy(), torch.cat(flips).numpy()
 
 
 def baseline_distributions(
-    train_noisy: np.ndarray,
-    train_targets: np.ndarray,
-    noisy: np.ndarray,
-    targets: np.ndarray,
-    num_shots: int,
-    noise_parameters: dict[str, float],
-    gate_counts: np.ndarray,
-    baselines_config: Config,
-    seed: int,
+    train_circuits: Circuits, circuits: Circuits, baselines_config: Config, seed: int
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
     """Correct the evaluated circuits with every baseline.
 
     Parameters of the threshold, the repolarizer and MIX are fitted on the training
-    circuits. The readout correction and MIX use the known readout flip probability
-    p_ro; physical MIX also takes its rate from p2 and the gate count of every circuit.
+    circuits. The readout correction and MIX use the calibrated readout errors of the
+    device; physical MIX also takes its rate from the gates of every circuit and their
+    calibrated errors.
 
     Args:
-        train_noisy: Noisy distributions of the training circuits, shape
-            (training circuits, 2**num_qubits).
-        train_targets: P_target of the training circuits, same shape.
-        noisy: Noisy distributions of the evaluated circuits, shape
-            (circuits, 2**num_qubits).
-        targets: P_target of the evaluated circuits, same shape; used only by the oracle.
-        num_shots: Shots per circuit, also drawn by the oracle.
-        noise_parameters: Noise model of the data, with "p_ro" and "p2".
-        gate_counts: Two-qubit gates of every evaluated circuit, shape (circuits,).
+        train_circuits: Circuits the parameters are fitted on.
+        circuits: Circuits to correct, with the same number of qubits.
         baselines_config: Baselines section of the config.
         seed: Seed of the oracle shots.
 
     Returns:
-        Corrected distributions of every baseline by name, and the fitted parameters.
+        Corrected distributions of every baseline by name, each of shape
+        (circuits, 2**num_qubits), and the fitted parameters.
     """
-    flip_probability = noise_parameters["p_ro"]
+    train_noisy, noisy = train_circuits.noisy, circuits.noisy
     threshold_grid = np.linspace(
         0, baselines_config["threshold_max"], baselines_config["threshold_steps"]
     )
     rate_grid = np.linspace(0, baselines_config["rate_max"], baselines_config["rate_steps"])
-    mix_known_readout = partial(mix_correction, flip_probability=flip_probability)
+    p01, p10 = _readout_rates(circuits)
+    train_p01, train_p10 = _readout_rates(train_circuits)
+    train_mix = partial(mix_correction, p01=train_p01, p10=train_p10)
 
     parameters = {
         "threshold": best_parameter(
-            threshold_correction, threshold_grid, train_noisy, train_targets
+            threshold_correction, threshold_grid, train_noisy, train_circuits.targets
         ),
         "repolarizer_rate": best_parameter(
-            depolarising_correction, rate_grid, train_noisy, train_targets
+            depolarising_correction, rate_grid, train_noisy, train_circuits.targets
         ),
-        "mix_rate": best_parameter(mix_known_readout, rate_grid, train_noisy, train_targets),
+        "mix_rate": best_parameter(train_mix, rate_grid, train_noisy, train_circuits.targets),
     }
+    physical_rate = physical_depolarising_rate(
+        circuits.one_qubit_gates,
+        circuits.two_qubit_gates,
+        circuits.calibration["error_1q"],
+        circuits.calibration["error_2q"],
+    )
 
     distributions = {
         "identity": noisy,
-        "oracle": oracle_distribution(targets, num_shots, np.random.default_rng(seed)),
+        "oracle": oracle_distribution(
+            circuits.targets, circuits.num_shots, np.random.default_rng(seed)
+        ),
         "threshold": threshold_correction(noisy, parameters["threshold"]),
         "repolarizer": depolarising_correction(noisy, parameters["repolarizer_rate"]),
-        "readout": readout_correction(noisy, flip_probability),
-        "mix": mix_known_readout(noisy, parameters["mix_rate"]),
-        "mix_physical": _physical_mix(noisy, gate_counts, noise_parameters),
+        "readout": readout_correction(noisy, p01, p10),
+        "mix": mix_correction(noisy, parameters["mix_rate"], p01, p10),
+        "mix_physical": mix_correction(noisy, physical_rate, p01, p10),
     }
     if len(train_noisy) >= noisy.shape[1]:
-        weights = fit_linear_map(train_noisy, train_targets)
+        weights = fit_linear_map(train_noisy, train_circuits.targets)
         distributions["linear_map"] = linear_map_correction(noisy, weights)
 
     return distributions, parameters
@@ -333,49 +318,61 @@ def plot_training_histories(histories: dict[str, list[list[dict[str, float]]]], 
     figure.savefig(path, dpi=150, bbox_inches="tight")
 
 
-def _choose_actions(
-    shots: torch.Tensor, action_probs: torch.Tensor, mode: str, generator: torch.Generator
+def _sampled_action_shares(
+    counts: torch.Tensor, action_probs: torch.Tensor, rng: np.random.Generator
 ) -> torch.Tensor:
-    """Choose one action for every shot.
+    """Draw one action for every shot and return the share of shots that got each action.
+
+    The shots of one bitstring are interchangeable, so their actions are drawn together
+    from a multinomial distribution with P(a | x).
 
     Args:
-        shots: Shots as integers, shape (circuits, shots).
+        counts: Shot counts of every circuit, shape (circuits, 2**num_qubits).
         action_probs: P(a | x) for every bitstring x, shape
             (circuits, 2**num_qubits, actions).
-        mode: "sample" to draw from P(a | x), "argmax" for the most probable action.
-        generator: Random generator of the draw.
+        rng: Random generator of the draw.
 
     Returns:
-        Action index of every shot, shape (circuits, shots).
+        Share of the shots of every bitstring that got each action, same shape as
+        action_probs; all zero for bitstrings without shots.
     """
-    if mode == "sample":
-        return sample_actions(shots, action_probs, generator)
+    # The multinomial draw needs probabilities that sum to 1 in float64.
+    probabilities = action_probs.double().numpy()
+    probabilities /= probabilities.sum(axis=-1, keepdims=True)
+    action_counts = rng.multinomial(counts.long().numpy(), probabilities)
 
-    circuit_index = torch.arange(len(shots)).unsqueeze(-1)
-
-    return action_probs.argmax(dim=-1)[circuit_index, shots]
+    return torch.from_numpy(action_counts).float() / counts.clamp_min(1).unsqueeze(-1)
 
 
-def _physical_mix(
-    noisy: np.ndarray, gate_counts: np.ndarray, noise_parameters: dict[str, float]
-) -> np.ndarray:
-    """Apply MIX with the depolarising rate given by the gate count of every circuit.
+def _most_probable_action(action_probs: torch.Tensor) -> torch.Tensor:
+    """Put all probability of every bitstring on its most probable action.
 
     Args:
-        noisy: Noisy distributions, shape (circuits, 2**num_qubits).
-        gate_counts: Two-qubit gates of every circuit, shape (circuits,).
-        noise_parameters: Noise model of the data, with "p_ro" and "p2".
+        action_probs: P(a | x) for every bitstring x, shape
+            (circuits, 2**num_qubits, actions).
 
     Returns:
-        Corrected distributions, same shape as noisy.
+        One-hot action probabilities, same shape.
     """
-    corrected = np.empty_like(noisy)
-    for gate_count in np.unique(gate_counts):
-        circuits = gate_counts == gate_count
-        rate = physical_depolarising_rate(noise_parameters["p2"], int(gate_count))
-        corrected[circuits] = mix_correction(noisy[circuits], rate, noise_parameters["p_ro"])
+    best_action = action_probs.argmax(dim=-1, keepdim=True)
 
-    return corrected
+    return torch.zeros_like(action_probs).scatter_(-1, best_action, 1.0)
+
+
+def _readout_rates(circuits: Circuits) -> tuple[np.ndarray, np.ndarray]:
+    """Look up the readout errors of every bit of every circuit.
+
+    Args:
+        circuits: Circuits with the calibration of the device qubits.
+
+    Returns:
+        Probability of reading 1 for state 0 and of reading 0 for state 1 of the device
+        qubit measured into every bit, both of shape (circuits, num_qubits).
+    """
+    p01 = circuits.calibration["readout_p01"][circuits.measured_qubits]
+    p10 = circuits.calibration["readout_p10"][circuits.measured_qubits]
+
+    return p01, p10
 
 
 def _method_colour(name: str, models: Sequence[str]) -> str:
