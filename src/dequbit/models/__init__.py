@@ -11,16 +11,20 @@ from dequbit.models.per_qubit import PerQubitFlipModel
 from dequbit.models.shared_scorer import SharedScorer
 
 MODEL_NAMES = ("mlp", "shared_scorer", "per_qubit")
+# Models whose weights do not depend on the number of qubits: one model is trained on
+# the circuits of every size together.
+SIZE_INDEPENDENT_MODELS = ("shared_scorer",)
 
 
-def build_model(model_config: Config, num_qubits: int, radius: int) -> nn.Module:
+def build_model(model_config: Config, num_qubits: int | None, radius: int) -> nn.Module:
     """Create the model named in model_config["name"] with its hyperparameters.
 
     Args:
         model_config: Model section of the config: the name and one section of
             hyperparameters per model, for example {"name": "mlp", "mlp":
             {"hidden_sizes": [128, 128]}}.
-        num_qubits: Number of measured qubits.
+        num_qubits: Number of measured qubits; None for a model of
+            SIZE_INDEPENDENT_MODELS.
         radius: Largest number of bits one action flips.
 
     Returns:
@@ -28,29 +32,33 @@ def build_model(model_config: Config, num_qubits: int, radius: int) -> nn.Module
         (circuits, 2**num_qubits, actions).
 
     Raises:
-        ValueError: If the name is not one of MODEL_NAMES.
+        ValueError: If the name is not one of MODEL_NAMES, or num_qubits is None for a
+            model that needs it.
     """
     name = model_config["name"]
     if name not in MODEL_NAMES:
         raise ValueError(f"unknown model {name!r}, expected one of {MODEL_NAMES}")
+    if num_qubits is None and name not in SIZE_INDEPENDENT_MODELS:
+        raise ValueError(f"model {name!r} needs the number of qubits")
 
+    if name == "shared_scorer":
+        return SharedScorer(radius, **model_config["shared_scorer"])
     if name == "mlp":
         return MLPCorrector(num_qubits, radius, **model_config["mlp"])
-    if name == "shared_scorer":
-        return SharedScorer(num_qubits, radius, **model_config["shared_scorer"])
 
     return PerQubitFlipModel(num_qubits, radius)
 
 
 def save_model(
-    model: nn.Module, model_config: Config, num_qubits: int, radius: int, path: Path
+    model: nn.Module, model_config: Config, num_qubits: int | None, radius: int, path: Path
 ) -> None:
     """Save the weights with everything needed to rebuild the model.
 
     Args:
         model: Model created by build_model.
         model_config: Model section of the config the model was built from.
-        num_qubits: Number of measured qubits of the model.
+        num_qubits: Number of measured qubits of the model; None for a model of
+            SIZE_INDEPENDENT_MODELS.
         radius: Largest number of bits one action of the model flips.
         path: File to write; missing parent folders are created.
     """

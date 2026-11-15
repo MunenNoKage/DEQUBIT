@@ -15,6 +15,7 @@ from dequbit.evaluate import (
     correct_circuits,
     method_metrics,
     plot_l1_relative_change,
+    plot_medians_by_qubits,
     plot_training_histories,
     write_json,
 )
@@ -198,10 +199,20 @@ def test_plot_training_histories_writes_image(tmp_path: Path) -> None:
     """Curves of two seeds of one model are written as a non-empty PNG file."""
     path = tmp_path / "figures" / "curves.png"
     history = [
-        {"step": 0, "validation_loss": 0.3, "validation_l1rc": 0.7},
-        {"step": 200, "validation_loss": 0.1, "validation_l1rc": -0.6},
+        {"step": 0, "validation_loss": 0.3, "validation_l1rc_by_qubits": {"5": 0.7}},
+        {"step": 200, "validation_loss": 0.1, "validation_l1rc_by_qubits": {"5": -0.6}},
     ]
 
-    plot_training_histories({"mlp": [history, history]}, path)
+    plot_training_histories({"mlp": [history, history]}, path, num_qubits=5)
+
+    assert path.read_bytes().startswith(b"\x89PNG")
+
+
+def test_plot_medians_by_qubits_writes_image(tmp_path: Path) -> None:
+    """Lines of a model and of a baseline without the largest size are written as PNG."""
+    path = tmp_path / "figures" / "scaling.png"
+    medians = {"mlp": {3: -0.7, 5: -0.6, 8: -0.5}, "linear_map": {3: -0.6, 5: -0.5}}
+
+    plot_medians_by_qubits(medians, path, models=["mlp"])
 
     assert path.read_bytes().startswith(b"\x89PNG")

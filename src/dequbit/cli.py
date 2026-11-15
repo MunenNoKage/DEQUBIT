@@ -4,10 +4,23 @@ import argparse
 import logging
 from pathlib import Path
 
+import numpy as np
+
 from dequbit.config import DEFAULT_CONFIG_PATH, Config, apply_overrides, load_config
-from dequbit.evaluate import plot_l1_relative_change, plot_training_histories, write_json
+from dequbit.evaluate import (
+    plot_l1_relative_change,
+    plot_medians_by_qubits,
+    plot_training_histories,
+    write_json,
+)
 from dequbit.models import MODEL_NAMES, save_model
-from dequbit.pipeline import evaluate_split, load_history, model_path, train_model
+from dequbit.pipeline import (
+    evaluate_split,
+    load_history,
+    model_path,
+    model_sizes,
+    train_model,
+)
 from dequbit.utils import setup_logging
 
 EVALUATION_SPLITS = ("validation", "test")
@@ -58,18 +71,23 @@ def build_parser() -> argparse.ArgumentParser:
 def run_train(config: Config, model_name: str, seed: int) -> None:
     """Train one model and save it with its training history.
 
+    The shared scorer is trained once on the circuits of every number of qubits; any
+    other model is trained and saved once per number of data.qubit_counts.
+
     Args:
         config: Full config.
         model_name: One of MODEL_NAMES.
         seed: Seed of the initial weights and of the batch order.
     """
-    model, history = train_model(config, model_name, seed)
-
-    path = model_path(config, model_name, seed)
     model_config = {**config["model"], "name": model_name}
-    save_model(model, model_config, config["data"]["num_qubits"], config["actions"]["radius"], path)
-    write_json(history, path.with_name(f"{path.stem}_history.json"))
-    logger.info("saved %s", path)
+
+    for num_qubits in model_sizes(config, model_name):
+        model, history = train_model(config, model_name, seed, num_qubits)
+
+        path = model_path(config, model_name, seed, num_qubits)
+        save_model(model, model_config, num_qubits, config["actions"]["radius"], path)
+        write_json(history, path.with_name(f"{path.stem}_history.json"))
+        logger.info("saved %s", path)
 
 
 def run_evaluate(config: Config, split: str) -> None:
@@ -77,20 +95,62 @@ def run_evaluate(config: Config, split: str) -> None:
 
     Args:
         config: Full config.
-        split: "validation" for the held-out training circuits, "test" for the test file.
+        split: "validation" for the validation files, "test" for the test files.
     """
     metrics, changes = evaluate_split(config, split)
     write_json(metrics, Path(config["paths"]["metrics"].format(split=split)))
 
     figures = Path(config["paths"]["figures_dir"])
     models = config["evaluation"]["models"]
-    plot_l1_relative_change(changes, figures / f"l1_relative_change_{split}.png", models)
-    histories = {
-        name: [load_history(config, name, seed) for seed in config["evaluation"]["seeds"]]
-        for name in models
-    }
-    plot_training_histories(histories, figures / "training_curves.png")
+    for num_qubits, size_changes in changes.items():
+        plot_l1_relative_change(
+            size_changes, figures / f"l1_relative_change_{split}_N{num_qubits}.png", models
+        )
+        if models:
+            histories = {name: _histories_with_size(config, name, num_qubits) for name in models}
+            plot_training_histories(
+                histories, figures / f"training_curves_N{num_qubits}.png", num_qubits
+            )
+
+    medians = _medians_by_qubits(changes)
+    plot_medians_by_qubits(medians, figures / f"l1_relative_change_by_qubits_{split}.png", models)
     logger.info("wrote metrics and figures to %s", figures)
+
+
+def _histories_with_size(config: Config, model_name: str, num_qubits: int) -> list[list[dict]]:
+    """Read the training histories of the models that validated one number of qubits.
+
+    Args:
+        config: Full config.
+        model_name: One of MODEL_NAMES.
+        num_qubits: One of data.qubit_counts.
+
+    Returns:
+        One history per seed of evaluation.seeds.
+    """
+    trained_size = None if None in model_sizes(config, model_name) else num_qubits
+
+    return [
+        load_history(config, model_name, seed, trained_size)
+        for seed in config["evaluation"]["seeds"]
+    ]
+
+
+def _medians_by_qubits(changes: dict[int, dict[str, np.ndarray]]) -> dict[str, dict[int, float]]:
+    """Take the median L1 relative change of every method for every number of qubits.
+
+    Args:
+        changes: L1 relative changes of the circuits by number of qubits and method name.
+
+    Returns:
+        Medians by method name and number of qubits.
+    """
+    medians: dict[str, dict[int, float]] = {}
+    for num_qubits, size_changes in changes.items():
+        for name, method_changes in size_changes.items():
+            medians.setdefault(name, {})[num_qubits] = float(np.median(method_changes))
+
+    return medians
 
 
 def main(argv: list[str] | None = None) -> int:

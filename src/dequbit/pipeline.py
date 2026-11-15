@@ -2,6 +2,10 @@
 
 The command line and the notebooks call the same functions, so a notebook shows exactly
 what python -m dequbit computes.
+
+The data has circuits of several numbers of qubits, data.qubit_counts. A model of
+dequbit.models.SIZE_INDEPENDENT_MODELS is trained once on all of them; every other model
+is trained once per number of qubits. Every method is evaluated per number of qubits.
 """
 
 import json
@@ -20,8 +24,8 @@ from dequbit.evaluate import (
     correct_circuits,
     method_metrics,
 )
-from dequbit.metrics import l1_relative_change
-from dequbit.models import build_model, load_model
+from dequbit.metrics import l1_relative_change, summarize_relative_changes
+from dequbit.models import SIZE_INDEPENDENT_MODELS, build_model, load_model
 from dequbit.training import train
 from dequbit.utils import collect_environment, set_seed
 
@@ -32,12 +36,13 @@ SPLIT_FILE_NAMES = {"train": "train", "validation": "val", "test": "test"}
 logger = logging.getLogger(__name__)
 
 
-def load_split(config: Config, split: str) -> Circuits:
-    """Read the circuits of one split with data.num_qubits qubits.
+def load_split(config: Config, split: str, num_qubits: int) -> Circuits:
+    """Read the circuits of one split and one number of qubits.
 
     Args:
         config: Full config.
         split: One of SPLITS.
+        num_qubits: One of data.qubit_counts.
 
     Returns:
         Circuits of the split with the counts of shots_per_circuit shots each.
@@ -48,70 +53,92 @@ def load_split(config: Config, split: str) -> Circuits:
     if split not in SPLITS:
         raise ValueError(f"unknown split {split!r}, expected one of {SPLITS}")
 
-    data = config["data"]
-    path = config["paths"]["data"].format(
-        split=SPLIT_FILE_NAMES[split], num_qubits=data["num_qubits"]
-    )
+    path = config["paths"]["data"].format(split=SPLIT_FILE_NAMES[split], num_qubits=num_qubits)
 
-    return load_circuits(Path(path), data["shots_per_circuit"])
+    return load_circuits(Path(path), config["data"]["shots_per_circuit"])
 
 
-def model_path(config: Config, model_name: str, seed: int) -> Path:
+def model_sizes(config: Config, model_name: str) -> list[int | None]:
+    """List the numbers of qubits a model is trained for separately.
+
+    Args:
+        config: Full config.
+        model_name: Model name from dequbit.models.MODEL_NAMES.
+
+    Returns:
+        [None] for a model trained once on every number of qubits together, otherwise
+        data.qubit_counts.
+    """
+    if model_name in SIZE_INDEPENDENT_MODELS:
+        return [None]
+
+    return list(config["data"]["qubit_counts"])
+
+
+def model_path(config: Config, model_name: str, seed: int, num_qubits: int | None) -> Path:
     """Find the file of the model trained with one seed.
 
     Args:
         config: Full config.
         model_name: Model name from dequbit.models.MODEL_NAMES.
         seed: Training seed of the model.
+        num_qubits: Number of qubits the model was trained for; None for a model
+            trained on every number of qubits together.
 
     Returns:
         Path of the saved model; its history is next to it with the suffix _history.json.
     """
-    return Path(config["paths"]["model"]) / f"{model_name}_seed{seed}.pt"
+    size = "" if num_qubits is None else f"_N{num_qubits}"
+
+    return Path(config["paths"]["model"]) / f"{model_name}{size}_seed{seed}.pt"
 
 
-def train_model(config: Config, model_name: str, seed: int) -> tuple[nn.Module, list[dict]]:
+def train_model(
+    config: Config, model_name: str, seed: int, num_qubits: int | None
+) -> tuple[nn.Module, list[dict]]:
     """Train one model on the training circuits with early stopping on validation.
 
     Args:
         config: Full config.
         model_name: Model name from dequbit.models.MODEL_NAMES.
         seed: Seed of the initial weights and of the batch order.
+        num_qubits: Number of qubits of the circuits; None trains on the circuits of
+            every number of data.qubit_counts together.
 
     Returns:
         The model with the weights of its best validation, and the training history.
     """
-    num_qubits, radius = config["data"]["num_qubits"], config["actions"]["radius"]
-    train_circuits = load_split(config, "train")
-    validation_circuits = load_split(config, "validation")
+    radius = config["actions"]["radius"]
+    qubit_counts = config["data"]["qubit_counts"] if num_qubits is None else [num_qubits]
+    train_sets = {size: make_dataset(load_split(config, "train", size)) for size in qubit_counts}
+    validation_sets = {
+        size: make_dataset(load_split(config, "validation", size)) for size in qubit_counts
+    }
 
     set_seed(seed)
     model = build_model({**config["model"], "name": model_name}, num_qubits, radius)
-    history = train(
-        model,
-        make_dataset(train_circuits),
-        make_dataset(validation_circuits),
-        num_qubits,
-        radius,
-        config["training"],
-        seed,
-    )
+    history = train(model, train_sets, validation_sets, radius, config["training"], seed)
 
     return model, history
 
 
-def load_history(config: Config, model_name: str, seed: int) -> list[dict[str, float]]:
+def load_history(
+    config: Config, model_name: str, seed: int, num_qubits: int | None
+) -> list[dict[str, Any]]:
     """Read the training history saved next to a model.
 
     Args:
         config: Full config.
         model_name: Model name from dequbit.models.MODEL_NAMES.
         seed: Training seed of the model.
+        num_qubits: Number of qubits the model was trained for; None for a model
+            trained on every number of qubits together.
 
     Returns:
-        One record per validation: step, train_loss, validation_loss, validation_l1rc.
+        One record per validation: step, train_loss, validation_loss, validation_l1rc
+        and validation_l1rc_by_qubits.
     """
-    path = model_path(config, model_name, seed)
+    path = model_path(config, model_name, seed, num_qubits)
     history_path = path.with_name(f"{path.stem}_history.json")
 
     return json.loads(history_path.read_text(encoding="utf-8"))
@@ -125,7 +152,7 @@ def evaluate_baselines(
     Args:
         config: Full config.
         train_circuits: Circuits the baseline parameters are fitted on.
-        circuits: Circuits to correct.
+        circuits: Circuits to correct, with the same number of qubits.
 
     Returns:
         Corrected distributions by baseline name, each of shape (circuits, 2**num_qubits),
@@ -142,25 +169,26 @@ def evaluate_model(
     Args:
         config: Full config.
         model_name: Model name from dequbit.models.MODEL_NAMES.
-        circuits: Circuits to correct.
+        circuits: Circuits of one number of qubits to correct.
 
     Returns:
         Metrics per seed and mode with the mean and standard deviation of the median L1
         relative change over the seeds in the configured mode, and the L1 relative
-        changes of all seeds in that mode together, shape (seeds * circuits,).
+        changes of all seeds in that mode one after another, shape (seeds * circuits,).
 
     Raises:
         FileNotFoundError: If a model of some seed has not been trained.
     """
-    num_qubits, radius = config["data"]["num_qubits"], config["actions"]["radius"]
+    radius = config["actions"]["radius"]
     mode = config["evaluation"]["inference"]
+    trained_size = None if model_name in SIZE_INDEPENDENT_MODELS else circuits.num_qubits
     noisy = circuits.noisy
     rng = np.random.default_rng(config["seed"])
 
     per_seed: dict[str, dict[str, Any]] = {}
     mode_changes = []
     for seed in config["evaluation"]["seeds"]:
-        path = model_path(config, model_name, seed)
+        path = model_path(config, model_name, seed, trained_size)
         if not path.exists():
             raise FileNotFoundError(
                 f"{path} is missing: python -m dequbit train --model {model_name} --seed {seed}"
@@ -170,7 +198,7 @@ def evaluate_model(
         per_seed[str(seed)] = {}
         for inference in INFERENCE_MODES:
             corrected, flips = correct_circuits(
-                model, circuits.counts, num_qubits, radius, inference, rng
+                model, circuits.counts, circuits.num_qubits, radius, inference, rng
             )
             per_seed[str(seed)][inference] = {
                 **method_metrics(noisy, corrected, circuits.targets),
@@ -190,26 +218,27 @@ def evaluate_model(
     return summary, np.concatenate(mode_changes)
 
 
-def evaluate_split(config: Config, split: str) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
-    """Evaluate the baselines and every model of evaluation.models on one split.
+def evaluate_size(
+    config: Config, split: str, num_qubits: int
+) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
+    """Evaluate the baselines and every model of evaluation.models on one number of qubits.
 
     Args:
         config: Full config.
         split: "validation" or "test".
+        num_qubits: One of data.qubit_counts.
 
     Returns:
-        All metrics, as written to paths.metrics, and the L1 relative changes of every
-        method by name, for figures.
+        Metrics of the circuits with num_qubits qubits, and the L1 relative changes of
+        every method by name, for figures.
     """
-    train_circuits = load_split(config, "train")
-    circuits = load_split(config, split)
+    train_circuits = load_split(config, "train", num_qubits)
+    circuits = load_split(config, split, num_qubits)
     noisy = circuits.noisy
 
     baselines, parameters = evaluate_baselines(config, train_circuits, circuits)
     metrics: dict[str, Any] = {
-        "split": split,
         "num_circuits": len(circuits.counts),
-        "environment": collect_environment(),
         "baseline_parameters": parameters,
         "baselines": {
             name: method_metrics(noisy, corrected, circuits.targets)
@@ -223,9 +252,62 @@ def evaluate_split(config: Config, split: str) -> tuple[dict[str, Any], dict[str
     }
 
     for model_name in config["evaluation"]["models"]:
-        logger.info("evaluating %s", model_name)
+        logger.info("evaluating %s on %d qubits", model_name, num_qubits)
         metrics["models"][model_name], changes[model_name] = evaluate_model(
             config, model_name, circuits
         )
+    metrics["circuit_types"] = _metrics_by_type(changes, circuits.circuit_types)
 
     return metrics, changes
+
+
+def evaluate_split(
+    config: Config, split: str
+) -> tuple[dict[str, Any], dict[int, dict[str, np.ndarray]]]:
+    """Evaluate the baselines and the models on every number of qubits of one split.
+
+    Args:
+        config: Full config.
+        split: "validation" or "test".
+
+    Returns:
+        All metrics, as written to paths.metrics, and the L1 relative changes of every
+        method by number of qubits and method name, for figures.
+    """
+    metrics: dict[str, Any] = {
+        "split": split,
+        "environment": collect_environment(),
+        "qubits": {},
+    }
+    changes = {}
+    for num_qubits in config["data"]["qubit_counts"]:
+        metrics["qubits"][str(num_qubits)], changes[num_qubits] = evaluate_size(
+            config, split, num_qubits
+        )
+
+    return metrics, changes
+
+
+def _metrics_by_type(
+    changes: dict[str, np.ndarray], circuit_types: np.ndarray
+) -> dict[str, dict[str, dict[str, float]]]:
+    """Summarize the L1 relative change of every method for every circuit family.
+
+    Args:
+        changes: L1 relative changes of every method by name. A baseline has shape
+            (circuits,); a model has its seeds one after another, shape
+            (seeds * circuits,).
+        circuit_types: Name of the circuit family of every circuit, shape (circuits,).
+
+    Returns:
+        Median, quartiles and improved share by circuit family and method name.
+    """
+    by_type: dict[str, dict[str, dict[str, float]]] = {}
+    for circuit_type in sorted(set(circuit_types)):
+        by_type[circuit_type] = {}
+        for name, method_changes in changes.items():
+            repeats = len(method_changes) // len(circuit_types)
+            of_type = np.tile(circuit_types == circuit_type, repeats)
+            by_type[circuit_type][name] = summarize_relative_changes(method_changes[of_type])
+
+    return by_type

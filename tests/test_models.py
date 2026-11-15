@@ -109,7 +109,7 @@ def test_mlp_rejects_counts_of_wrong_length() -> None:
 
 def test_shared_scorer_starts_with_initial_logits() -> None:
     """Before training the shared scorer outputs initial_logits for every bitstring."""
-    model = SharedScorer(NUM_QUBITS, RADIUS, hidden_sizes=[16, 16])
+    model = SharedScorer(RADIUS, hidden_sizes=[16, 16])
 
     logits = model(random_counts(4))
 
@@ -124,7 +124,7 @@ def test_shared_scorer_gives_same_logit_to_actions_with_same_features() -> None:
     qubit 0, 1 or 2 of bitstring 000 leads to bitstrings with the same count. All
     single flips then have the same features, and so have all pair flips.
     """
-    model = SharedScorer(NUM_QUBITS, RADIUS, hidden_sizes=[16])
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
     randomise_head(model)
     ones = index_to_bits(torch.arange(2**NUM_QUBITS), NUM_QUBITS).sum(dim=-1)
     counts = (10.0 * 2.0**ones).unsqueeze(0)
@@ -138,21 +138,19 @@ def test_shared_scorer_gives_same_logit_to_actions_with_same_features() -> None:
     assert not torch.isclose(logits[flipped_bits == 1][0], logits[flipped_bits == 2][0])
 
 
-def test_shared_scorer_weights_fit_another_number_of_qubits() -> None:
-    """Weights trained for 3 qubits load into a 4-qubit scorer, which gives 11 logits."""
-    model = SharedScorer(NUM_QUBITS, RADIUS, hidden_sizes=[16])
-    randomise_head(model)
-    larger_model = SharedScorer(NUM_QUBITS + 1, RADIUS, hidden_sizes=[16])
-    larger_model.load_state_dict(model.state_dict())
+def test_shared_scorer_corrects_another_number_of_qubits() -> None:
+    """The same scorer takes 4-qubit counts and gives 11 logits, initial_logits at first."""
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
 
-    logits = larger_model(torch.ones(2, 2 ** (NUM_QUBITS + 1)))
+    logits = model(torch.ones(2, 2 ** (NUM_QUBITS + 1)))
 
     assert logits.shape == (2, 2 ** (NUM_QUBITS + 1), 11)
+    torch.testing.assert_close(logits, initial_logits(11).expand_as(logits))
 
 
 def test_shared_scorer_output_depends_on_counts_once_head_is_trained() -> None:
     """With nonzero head weights, different counts give different logits."""
-    model = SharedScorer(NUM_QUBITS, RADIUS, hidden_sizes=[16])
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
     randomise_head(model)
     counts = random_counts(2)
 
@@ -163,11 +161,11 @@ def test_shared_scorer_output_depends_on_counts_once_head_is_trained() -> None:
 
 
 def test_shared_scorer_rejects_counts_of_wrong_length() -> None:
-    """Counts over 16 bitstrings do not fit a 3-qubit scorer and raise ValueError."""
-    model = SharedScorer(NUM_QUBITS, RADIUS, hidden_sizes=[16])
+    """Counts over 12 bitstrings are not the counts of whole qubits and raise ValueError."""
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
 
     with pytest.raises(ValueError):
-        model(torch.ones(1, 16))
+        model(torch.ones(1, 12))
 
 
 @pytest.mark.parametrize(
@@ -182,6 +180,15 @@ def test_build_model_creates_named_model(name: str, model_class: type) -> None:
 
     assert isinstance(model, model_class)
     assert logits.shape == (2, 2**NUM_QUBITS, NUM_ACTIONS)
+
+
+def test_build_model_builds_shared_scorer_without_number_of_qubits() -> None:
+    """The shared scorer needs no number of qubits; the MLP without one raises ValueError."""
+    model = build_model(model_config("shared_scorer"), None, RADIUS)
+
+    assert model(random_counts(2)).shape == (2, 2**NUM_QUBITS, NUM_ACTIONS)
+    with pytest.raises(ValueError):
+        build_model(model_config("mlp"), None, RADIUS)
 
 
 def test_build_model_rejects_unknown_name() -> None:

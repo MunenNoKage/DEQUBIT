@@ -23,11 +23,16 @@ def trained_weights(seed: int) -> dict[str, torch.Tensor]:
         Weights of the trained model.
     """
     set_seed(seed)
-    model = SharedScorer(NUM_QUBITS, RADIUS, hidden_sizes=[16])
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
     config = training_config(max_steps=100)
 
     train(
-        model, tiny_dataset(64, SEED), tiny_dataset(16, SEED + 1), NUM_QUBITS, RADIUS, config, seed
+        model,
+        {NUM_QUBITS: tiny_dataset(64, SEED)},
+        {NUM_QUBITS: tiny_dataset(16, SEED + 1)},
+        RADIUS,
+        config,
+        seed,
     )
 
     return model.state_dict()

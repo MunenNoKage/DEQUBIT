@@ -35,27 +35,37 @@ def test_parser_rejects_model_together_with_all() -> None:
 def test_train_all_and_evaluate_write_models_metrics_and_figures(fake_config: Path) -> None:
     """train --all and evaluate on the test split write every model, metric and figure."""
     directory = fake_config.parent
+    figures = directory / "results" / "figures"
 
     assert main(["--config", str(fake_config), "train", "--all"]) == 0
     assert main(["--config", str(fake_config), "evaluate", "--split", "test"]) == 0
 
     metrics = json.loads((directory / "results" / "metrics_test.json").read_text(encoding="utf-8"))
     assert (directory / "models" / "shared_scorer_seed1_history.json").exists()
-    assert metrics["num_circuits"] == 10
-    assert {"identity", "oracle", "mix", "linear_map"} <= set(metrics["baselines"])
-    assert set(metrics["models"]["shared_scorer"]["seeds"]) == {"0", "1"}
-    assert (directory / "results" / "figures" / "l1_relative_change_test.png").exists()
-    assert (directory / "results" / "figures" / "training_curves.png").exists()
+    assert set(metrics["qubits"]) == {"2", "3"}
+    for size_metrics in metrics["qubits"].values():
+        assert size_metrics["num_circuits"] == 10
+        assert {"identity", "oracle", "mix", "linear_map"} <= set(size_metrics["baselines"])
+        assert set(size_metrics["models"]["shared_scorer"]["seeds"]) == {"0", "1"}
+        assert "shared_scorer" in size_metrics["circuit_types"]["qft"]
+    assert (figures / "l1_relative_change_test_N2.png").exists()
+    assert (figures / "training_curves_N3.png").exists()
+    assert (figures / "l1_relative_change_by_qubits_test.png").exists()
 
 
-def test_override_changes_training_run(fake_config: Path) -> None:
-    """--set replaces a config value: with radius 1 a 2-qubit model has 3 actions, not 4."""
+def test_train_saves_one_model_per_number_of_qubits(fake_config: Path) -> None:
+    """The MLP is saved once per number of qubits, with the radius 1 given by --set.
+
+    With radius 1 the 2-qubit model has 3 actions and the 3-qubit model 4.
+    """
     directory = fake_config.parent
 
     main(["--config", str(fake_config), "--set", "actions.radius=1", "train", "--model", "mlp"])
 
-    model = load_model(directory / "models" / "mlp_seed42.pt")
+    model = load_model(directory / "models" / "mlp_N2_seed42.pt")
+    larger_model = load_model(directory / "models" / "mlp_N3_seed42.pt")
     assert model(torch.ones(1, 4)).shape == (1, 4, 3)
+    assert larger_model(torch.ones(1, 8)).shape == (1, 8, 4)
 
 
 def test_evaluate_reports_missing_model(fake_config: Path) -> None:

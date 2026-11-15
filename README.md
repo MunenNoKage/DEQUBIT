@@ -181,8 +181,8 @@ from dequbit.config import load_config
 from dequbit.pipeline import evaluate_split, load_split, train_model
 
 config = load_config()
-validation = load_split(config, "validation")  # shots, targets, noisy, gate counts
-model, history = train_model(config, "shared_scorer", seed=0)
+validation = load_split(config, "validation", num_qubits=5)  # counts, targets, metadata
+model, history = train_model(config, "shared_scorer", seed=0, num_qubits=None)  # all sizes
 metrics, changes = evaluate_split(config, "validation")
 ```
 

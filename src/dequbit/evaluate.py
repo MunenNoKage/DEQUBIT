@@ -37,8 +37,9 @@ from dequbit.training import expected_flipped_bits, predict_distributions
 
 INFERENCE_MODES = ("expected", "sample", "argmax")
 
-# Circuits corrected at once; bounds the memory of the model inputs for many qubits.
-EVALUATION_BATCH_SIZE = 64
+# Pairs of a bitstring and an action corrected at once; bounds the memory of the model
+# for many qubits.
+EVALUATION_PAIRS_PER_BATCH = 1_000_000
 
 # Names of the methods in figures.
 METHOD_LABELS = {
@@ -101,11 +102,13 @@ def correct_circuits(
     destination_table = destinations(masks, num_qubits)
     flipped_bits = hamming_weights(masks, num_qubits).float()
 
+    batch_size = max(1, EVALUATION_PAIRS_PER_BATCH // destination_table.numel())
+
     model.eval()
     corrected, flips = [], []
     with torch.no_grad():
-        for start in range(0, len(counts), EVALUATION_BATCH_SIZE):
-            batch = torch.from_numpy(counts[start : start + EVALUATION_BATCH_SIZE]).float()
+        for start in range(0, len(counts), batch_size):
+            batch = torch.from_numpy(counts[start : start + batch_size]).float()
             action_probs, _ = predict_distributions(model, batch, destination_table)
             if mode == "sample":
                 action_probs = _sampled_action_shares(batch, action_probs, rng)
@@ -282,7 +285,9 @@ def plot_l1_relative_change(
     figure.savefig(path, dpi=150, bbox_inches="tight")
 
 
-def plot_training_histories(histories: dict[str, list[list[dict[str, float]]]], path: Path) -> None:
+def plot_training_histories(
+    histories: dict[str, list[list[dict[str, Any]]]], path: Path, num_qubits: int
+) -> None:
     """Draw the validation median L1 relative change of every model during training.
 
     Every model gets one colour and one line per seed. A dot marks the validation with
@@ -290,29 +295,77 @@ def plot_training_histories(histories: dict[str, list[list[dict[str, float]]]], 
 
     Args:
         histories: Training histories of every seed, by model name, as returned by
-            dequbit.training.train.
+            dequbit.training.train; every history has validated num_qubits qubits.
         path: Image file to write; missing parent folders are created.
+        num_qubits: Number of qubits of the validation circuits drawn.
     """
+    size = str(num_qubits)
+
     figure = Figure(figsize=(8, 4.5))
     axes = figure.add_subplot()
     for colour, (name, seeds) in zip(HISTORY_COLOURS, histories.items()):
         for seed_index, history in enumerate(seeds):
             steps = [record["step"] for record in history]
-            changes = [record["validation_l1rc"] for record in history]
+            changes = [record["validation_l1rc_by_qubits"][size] for record in history]
             best = min(history, key=lambda record: record["validation_loss"])
             label = METHOD_LABELS.get(name, name) if seed_index == 0 else None
             axes.plot(steps, changes, color=colour, linewidth=1, alpha=0.8, label=label)
-            axes.plot(best["step"], best["validation_l1rc"], "o", color=colour, markersize=4)
+            axes.plot(
+                best["step"],
+                best["validation_l1rc_by_qubits"][size],
+                "o",
+                color=colour,
+                markersize=4,
+            )
 
     # Every model starts from initial_logits far above zero; the interesting range is below.
-    start = next(iter(histories.values()))[0][0]["validation_l1rc"]
+    start = next(iter(histories.values()))[0][0]["validation_l1rc_by_qubits"][size]
     axes.set_ylim(HISTORY_LOWEST_CHANGE, HISTORY_HIGHEST_CHANGE)
     axes.axhline(0, color="grey", linestyle="--", linewidth=1)
     axes.set_xlabel("training step")
     axes.set_ylabel("median L1 relative change (validation)")
-    axes.set_title(f"Training curves; every model starts at {start:+.2f} (step 0)")
+    axes.set_title(
+        f"Training curves, {num_qubits} qubits; every model starts at {start:+.2f} (step 0)"
+    )
     axes.grid(alpha=0.3)
     axes.legend()
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(path, dpi=150, bbox_inches="tight")
+
+
+def plot_medians_by_qubits(
+    medians: dict[str, dict[int, float]], path: Path, models: Sequence[str] = ()
+) -> None:
+    """Draw the median L1 relative change of every method against the number of qubits.
+
+    Args:
+        medians: Median L1 relative change by method name and number of qubits. A
+            method may lack some numbers of qubits.
+        path: Image file to write; missing parent folders are created.
+        models: Names of the learned models among the methods, drawn with thick lines.
+    """
+    figure = Figure(figsize=(8, 4.5))
+    axes = figure.add_subplot()
+    for name, by_qubits in medians.items():
+        qubit_counts = sorted(by_qubits)
+        axes.plot(
+            qubit_counts,
+            [by_qubits[num_qubits] for num_qubits in qubit_counts],
+            marker="o",
+            markersize=4,
+            linewidth=2.5 if name in models else 1,
+            linestyle="--" if name in REFERENCE_METHODS else "-",
+            label=METHOD_LABELS.get(name, name),
+        )
+
+    all_qubit_counts = sorted({size for by_qubits in medians.values() for size in by_qubits})
+    axes.set_xticks(all_qubit_counts)
+    axes.set_xlabel("number of qubits")
+    axes.set_ylabel("median L1 relative change")
+    axes.set_title("Median change of the L1 distance to P_target (lower is better)")
+    axes.grid(alpha=0.3)
+    axes.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
 
     path.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(path, dpi=150, bbox_inches="tight")

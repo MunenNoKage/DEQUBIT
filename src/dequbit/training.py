@@ -2,6 +2,7 @@
 
 import copy
 import logging
+from typing import Any
 
 import numpy as np
 import torch
@@ -108,40 +109,70 @@ def training_loss(
     return (loss + training_config["flip_penalty"] * flips).mean()
 
 
+def circuits_per_batch(num_qubits: int, num_actions: int, training_config: Config) -> int:
+    """Choose the number of circuits of one batch for one number of qubits.
+
+    A model computes values for every pair of a bitstring and an action, so the memory
+    of a batch grows with circuits * 2**num_qubits * actions. The batch has
+    circuits_per_batch circuits unless that exceeds max_pairs_per_batch pairs.
+
+    Args:
+        num_qubits: Number of measured qubits of the circuits.
+        num_actions: Number of actions, the identity included.
+        training_config: Training section of the config.
+
+    Returns:
+        Number of circuits, at least 1.
+    """
+    pairs_per_circuit = 2**num_qubits * num_actions
+    fitting_circuits = training_config["max_pairs_per_batch"] // pairs_per_circuit
+
+    return max(1, min(training_config["circuits_per_batch"], fitting_circuits))
+
+
 def train(
     model: nn.Module,
-    train_set: TensorDataset,
-    validation_set: TensorDataset,
-    num_qubits: int,
+    train_sets: dict[int, TensorDataset],
+    validation_sets: dict[int, TensorDataset],
     radius: int,
     training_config: Config,
     seed: int,
-) -> list[dict[str, float]]:
+) -> list[dict[str, Any]]:
     """Train the model with AdamW until the validation loss stops improving.
 
-    Every step uses a random batch of training circuits. Every validation_interval steps
-    the loss and the median L1 relative change on the validation circuits are recorded.
-    Training stops after early_stopping_patience validations without a lower loss or
-    after max_steps steps, and the model keeps the weights of the best validation.
+    Every step uses a random batch of training circuits of one number of qubits, drawn
+    at random, so every size gets the same number of steps. Every validation_interval
+    steps the loss and the median L1 relative change on the validation circuits are
+    recorded. Training stops after early_stopping_patience validations without a lower
+    loss or after max_steps steps, and the model keeps the weights of the best
+    validation.
 
     Args:
-        model: Model built for num_qubits and radius; trained in place.
-        train_set: Pairs (shot counts, P_target) of the training circuits.
-        validation_set: Pairs (shot counts, P_target) of the validation circuits.
-        num_qubits: Number of measured qubits.
+        model: Model that accepts the circuits of every size in train_sets; trained in
+            place.
+        train_sets: Pairs (shot counts, P_target) of the training circuits, by number
+            of qubits.
+        validation_sets: Pairs (shot counts, P_target) of the validation circuits, by
+            number of qubits.
         radius: Largest number of bits one action flips.
         training_config: Training section of the config.
         seed: Seed of the batch order.
 
     Returns:
         One record per validation with the step, the mean training loss since the last
-        validation, the validation loss and the validation median L1 relative change.
+        validation, and the validation loss and median L1 relative change: their means
+        over the numbers of qubits and the median L1 relative change of every size.
     """
     device = next(model.parameters()).device
-    masks = build_masks(num_qubits, radius)
-    destination_table = destinations(masks, num_qubits).to(device)
-    flipped_bits = hamming_weights(masks, num_qubits).float().to(device)
-    train_counts, train_targets = (tensor.to(device) for tensor in train_set.tensors)
+    qubit_counts = sorted(train_sets)
+    tables = {
+        num_qubits: _action_tables(num_qubits, radius, device)
+        for num_qubits in {*train_sets, *validation_sets}
+    }
+    train_tensors = {
+        num_qubits: tuple(tensor.to(device) for tensor in train_set.tensors)
+        for num_qubits, train_set in train_sets.items()
+    }
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -149,7 +180,6 @@ def train(
         weight_decay=training_config["weight_decay"],
     )
     generator = torch.Generator().manual_seed(seed)
-    batch_size = min(training_config["circuits_per_batch"], len(train_counts))
 
     history = []
     best_loss = float("inf")
@@ -158,7 +188,7 @@ def train(
     step = 0
     recent_losses = []
     while True:
-        record = _validate(model, validation_set, destination_table, flipped_bits, training_config)
+        record = _validate(model, validation_sets, tables, training_config)
         history.append({"step": step, "train_loss": _mean_or_nan(recent_losses), **record})
         logger.info(
             "step %d: validation loss %.4f, median L1RC %.3f",
@@ -182,11 +212,17 @@ def train(
         recent_losses = []
         num_steps = min(training_config["validation_interval"], training_config["max_steps"] - step)
         for _ in range(num_steps):
-            batch = torch.randperm(len(train_counts), generator=generator)[:batch_size].to(device)
+            size_index = torch.randint(len(qubit_counts), (1,), generator=generator).item()
+            num_qubits = qubit_counts[size_index]
+            counts, targets = train_tensors[num_qubits]
+            destination_table, flipped_bits = tables[num_qubits]
+            batch_size = circuits_per_batch(num_qubits, len(flipped_bits), training_config)
+
+            batch = torch.randperm(len(counts), generator=generator)[:batch_size].to(device)
             loss = training_loss(
                 model,
-                train_counts[batch],
-                train_targets[batch],
+                counts[batch],
+                targets[batch],
                 destination_table,
                 flipped_bits,
                 training_config,
@@ -202,17 +238,74 @@ def train(
     return history
 
 
+def _action_tables(
+    num_qubits: int, radius: int, device: torch.device
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Build the action tables of one number of qubits.
+
+    Args:
+        num_qubits: Number of measured qubits.
+        radius: Largest number of bits one action flips.
+        device: Device of the tables.
+
+    Returns:
+        Destination of every action for every bitstring, shape (2**num_qubits, actions),
+        and the number of bits every action flips as floats, shape (actions,).
+    """
+    masks = build_masks(num_qubits, radius)
+    destination_table = destinations(masks, num_qubits).to(device)
+    flipped_bits = hamming_weights(masks, num_qubits).float().to(device)
+
+    return destination_table, flipped_bits
+
+
 def _validate(
+    model: nn.Module,
+    validation_sets: dict[int, TensorDataset],
+    tables: dict[int, tuple[torch.Tensor, torch.Tensor]],
+    training_config: Config,
+) -> dict[str, Any]:
+    """Compute the loss and the median L1 relative change on the validation circuits.
+
+    Every number of qubits weighs the same in the reported means, however many circuits
+    it has.
+
+    Args:
+        model: Model that maps counts to action logits.
+        validation_sets: Pairs (shot counts, P_target) of the validation circuits, by
+            number of qubits.
+        tables: Output of _action_tables by number of qubits.
+        training_config: Training section of the config.
+
+    Returns:
+        validation_loss and validation_l1rc, the means over the numbers of qubits of
+        the validation loss and of the median L1 relative change, and
+        validation_l1rc_by_qubits, that median of every number of qubits.
+    """
+    losses, medians = [], {}
+    for num_qubits, validation_set in sorted(validation_sets.items()):
+        loss, median = _validate_size(model, validation_set, *tables[num_qubits], training_config)
+        losses.append(loss)
+        medians[str(num_qubits)] = median
+
+    return {
+        "validation_loss": float(np.mean(losses)),
+        "validation_l1rc": float(np.mean(list(medians.values()))),
+        "validation_l1rc_by_qubits": medians,
+    }
+
+
+def _validate_size(
     model: nn.Module,
     validation_set: TensorDataset,
     destination_table: torch.Tensor,
     flipped_bits: torch.Tensor,
     training_config: Config,
-) -> dict[str, float]:
-    """Compute the loss and the median L1 relative change on the validation circuits.
+) -> tuple[float, float]:
+    """Compute the validation loss and median L1 relative change of one number of qubits.
 
-    The circuits are processed in batches of circuits_per_batch, so memory does not grow
-    with the number of validation circuits.
+    The circuits are processed in batches, so memory does not grow with the number of
+    validation circuits.
 
     Args:
         model: Model that maps counts to action logits.
@@ -223,12 +316,13 @@ def _validate(
         training_config: Training section of the config.
 
     Returns:
-        Validation loss (the training loss averaged over all validation circuits) and
-        the median L1 relative change of the expected corrected distributions.
+        Validation loss (the training loss averaged over the circuits) and the median
+        L1 relative change of the expected corrected distributions.
     """
     device = destination_table.device
     all_counts, all_targets = validation_set.tensors
-    batch_size = training_config["circuits_per_batch"]
+    num_qubits = all_counts.shape[1].bit_length() - 1
+    batch_size = circuits_per_batch(num_qubits, len(flipped_bits), training_config)
 
     model.eval()
     loss_sum = 0.0
@@ -250,10 +344,7 @@ def _validate(
                 )
             )
 
-    return {
-        "validation_loss": loss_sum / len(all_counts),
-        "validation_l1rc": float(np.median(np.concatenate(relative_changes))),
-    }
+    return loss_sum / len(all_counts), float(np.median(np.concatenate(relative_changes)))
 
 
 def _mean_or_nan(values: list[float]) -> float:
