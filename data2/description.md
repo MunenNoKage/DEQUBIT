@@ -208,6 +208,10 @@ Total: 36 files (18 pairs).
 | `all_bitstrings` | `(2^N, N)` uint8, reference table; row i has bit j = `(i >> j) & 1` |
 | `noise_model/subset_qubits` | physical qubits used |
 | `noise_model/coupling_map_directed` | directed edges inside the subset (physical indices) |
+| `noise_model/readout_p01`, `readout_p10` | `(N,)` P(read 1 \| prepared 0) and P(read 0 \| prepared 1) of every subset qubit |
+| `noise_model/t1`, `t2` | `(N,)` relaxation and dephasing times in seconds |
+| `noise_model/error_1q` | `(N,)` error of one `sx` gate |
+| `noise_model/error_2q` | `(N, N)` error of the two-qubit gate between two subset qubits, 0 where they are not connected |
 | `qasm/circuit_XXXXX` | QASM2 of the logical circuit (`u`/`cx` basis) |
 | `probs/circuit_XXXXX` | exact ideal distribution, `(2^N,)` float32, gzip |
 | `circuit_meta/…` | per-circuit metadata arrays (below) |
@@ -216,6 +220,16 @@ Total: 36 files (18 pairs).
 
 `num_bricks`, `num_gates_logical`, `num_gates_physical`, `depth_logical`,
 `depth_physical`, `frac_same`, `circuit_type` (string).
+
+Gate counts of the physical (transpiled) circuit, indexed by the position of a
+qubit in `noise_model/subset_qubits`, the same index as the calibration arrays:
+
+- `gates_1q_per_qubit`: `(circuits, N)`, one-qubit gates on every qubit. `rz` is
+  not counted: it is virtual on the device and has no error.
+- `gates_2q_per_pair`: `(circuits, N, N)`, symmetric, two-qubit gates between
+  every pair of qubits.
+- `measured_qubit`: `(circuits, N)`, entry `j` is the qubit measured into bit `j`
+  of a shot. Routing can move a logical qubit, so this is not always `j`.
 
 ### 7.2 Only in `clean_*.h5`
 
@@ -289,6 +303,7 @@ python generate_data_v4.py --N 11 --splits train      # separate process
 # options
 #   --N            list of qubit counts
 #   --splits       train / val / test
+#   --types        circuit types to generate (default: all five)
 #   --shots        shots per circuit (default 92160)
 #   --out          output directory (default data_v4)
 #   --train-scale  multiplier on train circuit counts (for trial runs)
@@ -360,6 +375,29 @@ once per circuit and shots are only sampled.
 
 ---
 
+### Generated version
+
+The files used by the project were generated with 40 validation and 40 test
+circuits per (N, type) and 500 training circuits per (N, type):
+
+```bash
+python data2/generation.py --N 3 --splits val test train --val-count 40 --test-count 40 --train-scale 0.5813953488372093
+python data2/generation.py --N 5 --splits val test train --val-count 40 --test-count 40 --train-scale 0.34965034965034963
+python data2/generation.py --N 6 --splits val test train --val-count 40 --test-count 40 --train-scale 0.2915451895043732
+python data2/generation.py --N 8 --splits val test train --val-count 40 --test-count 40 --train-scale 0.2188183807439825 --types qft hlf bv iqp
+python data2/generation.py --N 9 --splits val test train --val-count 40 --test-count 40 --train-scale 0.19455252918287938 --types qft hlf bv iqp
+python data2/generation.py --N 11 --splits val test train --val-count 40 --test-count 40 --train-scale 0.1592356687898089 --types qft hlf bv iqp
+```
+
+Phase estimation is left out for N >= 8. Its transpiled circuit has 3,000 to
+17,000 gates there, and the noisy distribution is almost unrelated to the ideal
+one (L1 distance 1.4 to 1.8 out of 2), so there is nothing to mitigate.
+
+On Windows set `PYTHONIOENCODING=utf-8` when the output is redirected to a file.
+
+Measured time per circuit: about 1 s (N = 3, 5), 2.5 s (N = 6, 8), 5 s (N = 9) on
+one thread, and 7 s for N = 11 with `OMP_NUM_THREADS=8` (25 s on one thread).
+
 ## 12. Smoke-test observations (sandbox, 4096 shots, 2 circuits per type)
 
 - N = 3: `frac_same` ≈ 0.90–0.97; N = 5: ≈ 0.77–0.87 (fraction of shots that
@@ -386,8 +424,9 @@ the test environment.
 4. **Transpilation affects noise**: results depend on `OPT_LEVEL` (default 1;
    the paper found levels 0–1 matched hardware best). It is stored as a file
    attribute.
-5. **Routing**: transpilation is restricted to the chosen subset; if a circuit
-   cannot be routed inside it within 8 attempts, the run stops with an error.
+5. **Routing**: the transpiler gets only the couplings inside the chosen subset,
+   so routing cannot leave it. The check that all used qubits are in the subset
+   stays as a safeguard.
 6. **Memory**: density-matrix simulation for N = 11 needs a few hundred MB per
    process; check this when running many processes in parallel.
 7. **`circuit_type` and ordering**: types are stored explicitly in

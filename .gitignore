@@ -224,6 +224,9 @@ models/*
 !models/.gitkeep
 !models/README.md
 
+# Datasets written by data2/generation.py: several GB, regenerated from the script.
+data_v4/
+
 # results/metrics.json, results/experiments.md and results/figures/*.png ARE committed.
 # They are small, and they are what makes the numbers in README.md checkable without
 # anyone having to retrain first.
