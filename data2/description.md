@@ -61,7 +61,8 @@ target if you train on distributions.
 
 ### 3.1 Number of qubits N
 
-`N ∈ {3, 5, 6, 8, 9, 11}`
+`N ∈ {3, 5, 6, 8, 9, 11}`, and for evaluation of larger circuits `N ∈ {12, 13}`
+(`LARGER_NUM_QUBITS`), with the brick ranges of N = 11.
 
 ### 3.2 Circuit types (5)
 
@@ -181,6 +182,10 @@ neighbor that minimizes qubit score + average two-qubit error to already
 selected qubits. Each smaller subset is chosen inside the next larger one. The
 selected physical qubits are printed at startup and saved in every file
 (`noise_model/subset_qubits`).
+
+The subsets of `LARGER_NUM_QUBITS` grow upward from the N = 11 subset with the same
+greedy rule (`11 ⊂ 12 ⊂ 13`), so adding them does not change the subsets of the
+smaller N or the files generated for them.
 
 ---
 
@@ -397,6 +402,19 @@ On Windows set `PYTHONIOENCODING=utf-8` when the output is redirected to a file.
 
 Measured time per circuit: about 1 s (N = 3, 5), 2.5 s (N = 6, 8), 5 s (N = 9) on
 one thread, and 7 s for N = 11 with `OMP_NUM_THREADS=8` (25 s on one thread).
+
+The larger circuits have small training sets, used only to fit the baseline
+parameters, and are meant for evaluating models trained on N ≤ 11:
+
+```bash
+python data2/generation.py --N 12 --splits val train test --val-count 20 --test-count 20 --train-scale 0.0127389 --types qft hlf bv iqp
+python data2/generation.py --N 13 --splits val train test --val-count 10 --test-count 10 --train-scale 0.00477707 --types qft hlf bv iqp
+```
+
+That is 40 train, 20 val and 20 test circuits per type for N = 12 and 15, 10 and 10
+for N = 13. With `OMP_NUM_THREADS=10` a circuit takes about 8 s (N = 12) and 30 to
+60 s (N = 13). N = 14 needs a 4.3 GB density matrix per simulation and was not
+generated.
 
 ## 12. Smoke-test observations (sandbox, 4096 shots, 2 circuits per type)
 

@@ -48,10 +48,13 @@ from qiskit_aer import AerSimulator
 # Конфігурація
 # ----------------------------------------------------------------------
 NUM_QUBITS_LIST = [3, 5, 6, 8, 9, 11]
+# Більші N: підмножини нарощуються від найбільшої з NUM_QUBITS_LIST, тож підмножини
+# NUM_QUBITS_LIST (і вже згенеровані дані) не змінюються.
+LARGER_NUM_QUBITS = [12, 13]
 CIRCUIT_TYPES = ["qft", "phase_estimation", "hlf", "bv", "iqp"]
 NUM_SHOTS = (2**11) * 45  # 92160
 
-TRAIN_COUNTS_PER_N = {3: 860, 5: 1430, 6: 1715, 8: 2285, 9: 2570, 11: 3140}
+TRAIN_COUNTS_PER_N = {3: 860, 5: 1430, 6: 1715, 8: 2285, 9: 2570, 11: 3140, 12: 3140, 13: 3140}
 VAL_COUNT_PER_COMBO = 10
 TEST_COUNT_PER_COMBO = 10
 
@@ -70,11 +73,56 @@ VERIFY_TV_MAX = 0.2  # поріг (враховує статистичний ш�
 OUTPUT_DIR = "data_v4"
 
 BRICK_RANGES = {
-    "qft": {3: (1, 2), 5: (1, 2), 6: (1, 2), 8: (1, 1), 9: (1, 1), 11: (1, 1)},
-    "phase_estimation": {3: (1, 2), 5: (1, 2), 6: (1, 2), 8: (1, 1), 9: (1, 1), 11: (1, 1)},
-    "hlf": {3: (3, 4), 5: (3, 4), 6: (3, 3), 8: (2, 3), 9: (2, 3), 11: (2, 2)},
-    "bv": {3: (1, 1), 5: (1, 1), 6: (1, 1), 8: (1, 1), 9: (1, 1), 11: (1, 1)},
-    "iqp": {3: (2, 3), 5: (2, 3), 6: (2, 3), 8: (2, 2), 9: (2, 2), 11: (2, 2)},
+    "qft": {
+        3: (1, 2),
+        5: (1, 2),
+        6: (1, 2),
+        8: (1, 1),
+        9: (1, 1),
+        11: (1, 1),
+        12: (1, 1),
+        13: (1, 1),
+    },
+    "phase_estimation": {
+        3: (1, 2),
+        5: (1, 2),
+        6: (1, 2),
+        8: (1, 1),
+        9: (1, 1),
+        11: (1, 1),
+        12: (1, 1),
+        13: (1, 1),
+    },
+    "hlf": {
+        3: (3, 4),
+        5: (3, 4),
+        6: (3, 3),
+        8: (2, 3),
+        9: (2, 3),
+        11: (2, 2),
+        12: (2, 2),
+        13: (2, 2),
+    },
+    "bv": {
+        3: (1, 1),
+        5: (1, 1),
+        6: (1, 1),
+        8: (1, 1),
+        9: (1, 1),
+        11: (1, 1),
+        12: (1, 1),
+        13: (1, 1),
+    },
+    "iqp": {
+        3: (2, 3),
+        5: (2, 3),
+        6: (2, 3),
+        8: (2, 2),
+        9: (2, 2),
+        11: (2, 2),
+        12: (2, 2),
+        13: (2, 2),
+    },
 }
 
 
@@ -186,7 +234,31 @@ def build_nested_subsets(backend):
     subsets = {ordered[0]: _greedy_subset(info, ordered[0])}
     for prev, nxt in zip(ordered, ordered[1:]):
         subsets[nxt] = _greedy_subset(info, nxt, allowed=subsets[prev])
+    prev = ordered[0]
+    for nxt in LARGER_NUM_QUBITS:
+        subsets[nxt] = _grow_subset(info, subsets[prev], nxt)
+        prev = nxt
     return subsets, info[0], info[4]
+
+
+def _grow_subset(info, base, k):
+    """Додає до зв'язної підмножини base сусідні кубіти тим самим жадібним правилом."""
+    _, nbrs, qscore, escore, _ = info
+    sel = list(base)
+    frontier = set().union(*(nbrs[q] for q in sel)) - set(sel)
+    while len(sel) < k and frontier:
+        best, best_s = None, float("inf")
+        for q in sorted(frontier):
+            ns = [s for s in sel if s in nbrs[q]]
+            s = qscore(q) + float(np.mean([escore(q, x) for x in ns]))
+            if s < best_s:
+                best, best_s = q, s
+        sel.append(best)
+        frontier |= nbrs[best]
+        frontier -= set(sel)
+    if len(sel) != k:
+        raise RuntimeError(f"не вдалося вибрати {k} зв'язних кубітів")
+    return sel
 
 
 def calibration_of_subset(backend, subset, g2):
