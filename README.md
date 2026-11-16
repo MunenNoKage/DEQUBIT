@@ -6,8 +6,8 @@ mitigation.
 ![lint](../../actions/workflows/lint.yml/badge.svg)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
-Status: initial structure. Functions in `src/dequbit/` have their signatures and
-docstrings and raise `NotImplementedError` until they are implemented.
+Status: models, baselines, training and evaluation implemented; results on the
+validation circuits of 3 to 13 qubits. The Streamlit demo is not implemented yet.
 
 ## Problem
 
@@ -17,9 +17,9 @@ into the ideal one [1], but a distribution over n qubits has 2^n entries, so thi
 not scale.
 
 DEQUBIT corrects single bitstrings instead. The model reads one noisy measured
-bitstring and chooses a small correction for it: keep it or flip one bit. The corrected
-shots of a circuit form the mitigated distribution. The number of possible corrections
-grows linearly with the number of qubits instead of exponentially.
+bitstring and chooses a small correction for it: keep it, or flip one or two bits. The
+corrected shots of a circuit form the mitigated distribution. The number of possible
+corrections grows with the square of the number of qubits instead of exponentially.
 
 ## Team
 
@@ -38,15 +38,20 @@ every shot moved by its action -> corrected distribution -> KL loss against P_ta
 ```
 
 - **Actions.** An action XORs a mask into the shot: keep it, flip one bit or flip two
-  bits (radius 2, 16 actions for 5 qubits).
+  bits (radius 2: 16 actions for 5 qubits, 67 for 11).
 - **Inputs.** A single shot cannot tell whether it is noise. The model therefore sees,
   for every bitstring, how often its neighbours x ^ m were measured compared with x
   itself (local counts), and three numbers on how spread the shots of the circuit are.
-  All inputs grow with the number of qubits n, never with 2^n.
-- **Models.** An MLP on the bits, the local counts and the context; a shared scorer, one
-  small network that scores every action from features that do not depend on n, so the
-  same weights work for any number of qubits; and a per-qubit flip model with the same
-  action probabilities for every shot, which shows what is possible without the inputs.
+- **Circuit context.** The transpiled circuit is decoded into the errors that can hit
+  every measured bit: the gate infidelity of its qubit (the sum of -log(1 - error)
+  over every gate on it, so a qubit that few gates touched is unlikely to be wrong) and
+  the calibrated readout errors of that qubit in both directions. All inputs grow with
+  the number of qubits n, never with 2^n.
+- **Models.** An MLP on the bits, the local counts, the context and the circuit
+  context, trained for one number of qubits; and a shared scorer, one small network
+  that scores every action from features that do not name a qubit (for example the
+  gate infidelity of the flipped bits and the readout error the flip would undo), so
+  one model is trained on circuits of every size and also corrects larger ones.
 - **Training.** The action probabilities move the probability of every bitstring to
   its neighbours, which gives a predicted distribution. The loss compares it with the
   ideal distribution P_target of the circuit. Matching pairs of clean and noisy shots are
@@ -54,16 +59,32 @@ every shot moved by its action -> corrected distribution -> KL loss against P_ta
 
 ## Data
 
-Simulated with Qiskit Aer by [`data/generate_data.py`](data/generate_data.py):
+Simulated with Qiskit Aer by [`data2/generation.py`](data2/generation.py); the full
+description, file layout and generation commands are in
+[`data2/description.md`](data2/description.md).
 
-- 5 qubits, circuits of 3 random Pauli gadget bricks;
-- 2000 training and 200 test circuits, 10 000 shots per circuit;
-- P_target from the exact statevector, noisy shots from a noise model with
-  depolarising errors (p1 = 0.005, p2 = 0.02), thermal relaxation (T1 = 80 us,
-  T2 = 60 us) and readout errors (p = 0.02).
+- Noise of a real IBM device: `AerSimulator.from_backend(FakeSherbrooke)` with the
+  density matrix method, from a calibration snapshot with per-qubit T1 and T2, gate
+  errors and asymmetric readout errors.
+- Circuits on nested connected subsets of the device. Five families: QFT, phase
+  estimation (up to 6 qubits), hidden linear function, Bernstein-Vazirani and IQP, each
+  followed by 1 to 4 layers of random rotations and CX chains, and transpiled to the
+  device.
+- 92 160 shots per circuit; P_target from the exact statevector.
+- Stored with every circuit: the gates of the transpiled circuit on every qubit and
+  pair of qubits, the device qubit measured into every bit, and the calibration.
 
-File layout: [`data/data_description.md`](data/data_description.md). Data card:
-[`data/README.md`](data/README.md).
+| Qubits | Training | Validation | Test |
+|---|---|---|---|
+| 3, 5, 6 | 2500 | 200 | 200 |
+| 8, 9, 11 | 2000 | 160 | 160 |
+| 12 | 160 | 80 | 80 |
+| 13 | 60 | 40 | 40 |
+
+The models are trained on 3 to 11 qubits. The 12 and 13 qubit circuits are only
+evaluated; their training circuits are used to fit the baseline parameters. The files
+take 3.8 GB and are not in git. The 5-qubit dataset of the midterm is in
+[`data/`](data/README.md).
 
 ## Evaluation
 
@@ -73,11 +94,11 @@ File layout: [`data/data_description.md`](data/data_description.md). Data card:
 | Oracle | Shots drawn from P_target: the best any correction with this many shots can do |
 | Thresholding | Removes very small probabilities [1] |
 | Repolarizer | Inverts uniform depolarising noise, rate fitted on the training circuits [1] |
-| Readout inversion | Inverts known per-qubit readout errors [1] |
-| MIX | Readout inversion, then the repolarizer; rate fitted, or from p2 and the CX count [1] |
+| Readout inversion | Inverts the calibrated readout errors of every measured qubit, in both directions [1] |
+| MIX | Readout inversion, then the repolarizer [1]. The rate is fitted on the training circuits, computed from the gates of every circuit and their calibrated errors (physical rate), or that physical rate scaled by a factor fitted on the training circuits |
 | Linear map | Least-squares 2^n x 2^n inverse of the noise, learned from the training circuits |
-| Per-qubit flip model | Learned, the same action probabilities for every shot |
 | MLP, shared scorer | Learned, per-bitstring corrections |
+| Per-qubit flip model | Learned, the same action probabilities for every shot; a control of the midterm (0.001), not in the current evaluation |
 
 Metrics, computed against P_target:
 
@@ -90,58 +111,82 @@ Metrics, computed against P_target:
 
 ## Results
 
-Validation circuits (400 held-out training circuits, 10 000 shots each). The learned
-models are the mean over 5 training seeds, with one action sampled for every shot. The
-test circuits are kept for the final results.
+Validation circuits (see Data). The learned models are the mean over 5 training seeds,
+with one action sampled for every shot. Both models are trained on 3 to 11 qubits: the
+MLP once per number of qubits, the shared scorer once for all of them. At 12 and 13
+qubits the shared scorer corrects circuits larger than any it was trained on. The test
+circuits are kept for the final results.
 
-| Method | L1 | KL | L1 relative change, median [IQR] | Improved circuits | Flipped bits |
-|---|---|---|---|---|---|
-| No correction | 0.321 | 0.120 | 0.000 | 0% | 0 |
-| Thresholding | 0.205 | 0.880 | -0.362 [-0.487, -0.196] | 93% | |
-| Readout inversion | 0.238 | 0.078 | -0.256 [-0.283, -0.227] | 100% | |
-| Repolarizer | 0.123 | 0.345 | -0.638 [-0.713, -0.529] | 99% | |
-| MIX, physical rate | 0.102 | 0.133 | -0.681 [-0.734, -0.625] | 100% | |
-| MIX, fitted rate | 0.100 | 0.249 | -0.693 [-0.772, -0.598] | 100% | |
-| Linear map | 0.098 | 0.100 | -0.693 [-0.746, -0.641] | 100% | |
-| Per-qubit flip | 0.321 | 0.120 | 0.001 [0.001, 0.002] | 12% | 0.001 |
-| MLP | 0.096 | 0.026 | -0.694 [-0.757, -0.624] | 100% | 0.32 |
-| Shared scorer | **0.088** | **0.024** | **-0.719** [-0.778, -0.651] | 100% | 0.28 |
-| Oracle | 0.029 | 0.003 | -0.912 [-0.937, -0.872] | 100% | |
+Median L1 relative change (lower is better; 0 is no change, -1 a perfect correction):
 
-Standard deviation of the median over seeds: 0.003 (MLP), 0.0015 (shared scorer).
-Expected instead of sampled corrections: -0.699 (MLP), -0.723 (shared scorer); the most
-probable action for every shot: -0.478 and -0.458. All numbers:
+| Method | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|
+| Thresholding | -0.161 | -0.186 | +0.037 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| Readout inversion | -0.157 | -0.076 | -0.055 | -0.072 | -0.053 | -0.047 | -0.030 | -0.022 |
+| Repolarizer | -0.668 | -0.625 | -0.558 | -0.471 | -0.405 | -0.267 | -0.216 | -0.118 |
+| MIX, fitted rate | -0.682 | -0.627 | -0.564 | -0.507 | -0.433 | -0.318 | -0.251 | -0.124 |
+| MIX, physical rate | -0.636 | -0.623 | -0.599 | -0.484 | -0.430 | -0.284 | -0.231 | -0.089 |
+| MIX, fitted physical rate | **-0.735** | -0.660 | -0.594 | -0.481 | -0.423 | -0.289 | -0.235 | -0.118 |
+| Linear map | -0.608 | -0.483 | -0.388 | -0.326 | -0.224 | | | |
+| MLP | -0.725 | -0.654 | -0.622 | -0.544 | -0.501 | -0.382 | | |
+| Shared scorer | -0.716 | **-0.668** | **-0.644** | **-0.596** | **-0.535** | **-0.411** | **-0.302** | **-0.185** |
+| Oracle | -0.952 | -0.965 | -0.961 | -0.930 | -0.920 | -0.867 | -0.833 | -0.779 |
+
+Standard deviation of the median over seeds: at most 0.006, and 0.011 for the shared
+scorer at 12 qubits. The physical MIX rates come from the gate counts of every circuit
+and the calibrated gate errors; the fitted physical rate scales them by one factor
+fitted on the training circuits. The linear map needs at least 2^n training circuits.
+All numbers, per circuit family too:
 [`results/metrics_validation.json`](results/metrics_validation.json), figures:
 [`results/figures/`](results/figures/).
 
-- The shared scorer improves every validation circuit (worst circuit -0.215), while MIX
-  makes some circuits worse (up to +0.54). Its gain over MIX is largest on circuits with
-  a spread P_target: -0.641 against -0.483 on the quarter with the highest entropy.
-- The MLP stops early after about 2000 steps; the shared scorer still improves slowly at
-  the limit of 10 000 steps ([`results/figures/training_curves.png`](results/figures/training_curves.png)).
+![Median L1 relative change by number of qubits](results/figures/l1_relative_change_by_qubits_validation.png)
 
-**Ablations** (3 seeds, median L1 relative change, sampled corrections,
-[`results/ablations/`](results/ablations/)):
+- With a known noise model, physics is hard to beat on small circuits: at 3 qubits MIX
+  with the fitted physical rate is best, and at 5 qubits the shared scorer is ahead by
+  only 0.008.
+- From 6 qubits on the shared scorer is ahead of every baseline, by 0.09 to 0.10 at 8 to
+  11 qubits. The gain is largest on Bernstein-Vazirani circuits, whose ideal output is
+  one bitstring (-0.716 against -0.422 for the best MIX at 11 qubits), and smallest on
+  hidden linear function circuits (-0.258 against -0.211).
+- Trained only on 3 to 11 qubits, the shared scorer corrects 12 and 13 qubit circuits
+  better than every baseline fitted on those sizes: -0.302 against -0.251 and -0.185
+  against -0.124.
+- One shared scorer for every size beats an MLP trained for each size from 5 qubits on.
+- It improves 97 to 99% of the circuits up to 12 qubits and 86% at 13; MIX with the
+  fitted rate improves 82 to 96%.
+- Expected corrections instead of sampled ones are equal up to 6 qubits and 0.035
+  better at 13 qubits, where most bitstrings have only a few shots. The most probable
+  action for every shot is much worse (-0.03 to -0.27).
 
-| Variant | MLP | Shared scorer |
-|---|---|---|
-| Full model (radius 2, local counts, context) | -0.694 | -0.719 |
-| Without local counts (bits and context only) | 0.000 | |
-| Without context | -0.692 | |
-| Radius 1 (single bit flips only) | -0.662 | -0.669 |
+**Circuit context and training length** (one seed, expected corrections, from the
+hyperparameter search on the validation circuits; the seed spread of the mean is 0.008):
 
-The local counts carry the result: from the bits of a single shot alone nothing is
-learned. The context adds nothing at a single noise level, and pair flips add 0.03 to
-0.05.
+| Variant | 3 | 5 | 6 | 8 | 9 | 11 |
+|---|---|---|---|---|---|---|
+| Shared scorer without circuit context, 10 000 steps | -0.675 | -0.622 | -0.564 | -0.551 | -0.505 | -0.371 |
+| Shared scorer with circuit context, 10 000 steps | -0.702 | -0.677 | -0.635 | -0.591 | -0.533 | -0.417 |
+| Shared scorer with circuit context, 30 000 steps | -0.717 | -0.672 | -0.648 | -0.606 | -0.542 | -0.442 |
+| MLP without circuit context | -0.688 | -0.636 | -0.577 | -0.526 | -0.492 | -0.368 |
+| MLP with circuit context | -0.727 | -0.650 | -0.621 | -0.546 | -0.509 | -0.397 |
+
+The decoded circuit improves both models at every size, by 0.02 to 0.07. A learning
+rate of 3e-3, cosine decay, batches of 256 circuits, radius 3, the relative loss and a
+wider MLP changed the mean by less than the seed spread or made it worse; longer
+training was the only clear gain. Applying the trained scorer twice over-corrects
+(-0.44 becomes -0.01 at 11 qubits).
+
+The 5-qubit results of the midterm, with the ablations of the local counts and the
+radius, are in [`results/experiments.md`](results/experiments.md).
 
 ## Plan
 
 1. **Done.** Fixed-depth Pauli gadget circuits on 5 qubits: baselines, the learned
    models, ablations and error analysis on the validation circuits.
-2. Bricks stacked across 6 depth levels and several noise strengths: robustness to noise
-   strength, with depth and noise strength as model inputs.
-3. Different numbers of qubits (5 to 14): whether correction quality holds as bitstrings
-   grow, and whether the shared scorer trained on one number of qubits works on another.
+2. **Done.** Circuits of five families transpiled to a simulated IBM device, with the
+   decoded circuit and the calibration as model inputs.
+3. **Done.** 3 to 11 qubits for training, 12 and 13 for the transfer of the shared
+   scorer. 14 qubits need a 4.3 GB density matrix per simulation and were left out.
 
 The test circuits are evaluated once, for the final results.
 
@@ -166,13 +211,14 @@ python -m dequbit train --model shared_scorer --seed 1
 python -m dequbit evaluate          # models and baselines on the validation circuits
 python -m dequbit evaluate --split test
 python -m dequbit --set actions.radius=1 train --model mlp   # change one config value
-python data/generate_data.py        # regenerate the datasets in data/
+make data                           # regenerate data_v4/: several hours, see data2/description.md
 streamlit run app/streamlit_app.py  # interactive demo
 ```
 
 All paths, hyperparameters and the seed are in [`config/default.yaml`](config/default.yaml).
-`make reproduce` trains every model with every seed and evaluates them: about two hours
-on a laptop CPU.
+`make reproduce` trains every model with every seed and evaluates them: about three
+hours on a laptop GPU (RTX 4060), much longer on a CPU. `training.device: auto` uses a
+GPU when PyTorch finds one; `requirements.txt` installs the CPU build.
 
 In a notebook or a script the same steps are plain functions:
 
@@ -191,7 +237,8 @@ metrics, changes = evaluate_split(config, "validation")
 ```text
 src/dequbit/
     config.py           loads config/default.yaml
-    dataset.py          reads the .h5 files, train/validation split, CircuitDataset
+    dataset.py          reads the .h5 files into shot counts, circuit metadata, qubit features
+    features.py         model inputs: local counts, context, circuit context
     actions.py          action space, distributions built from corrected shots
     models/             mlp, shared_scorer, per_qubit; build, save, load
     baselines.py        oracle, thresholding, repolarizer, readout inversion, MIX, linear map
@@ -201,7 +248,9 @@ src/dequbit/
     utils.py            seeding, logging, environment
     pipeline.py         load circuits, train a model, evaluate every method
     cli.py              python -m dequbit train | evaluate
-data/                   generate_data.py, the .h5 datasets, data card
+data2/                  generation.py of the current dataset, description.md
+data_v4/                generated .h5 files, not committed
+data/                   the 5-qubit dataset of the midterm, data card
 config/default.yaml     paths, hyperparameters, seed
 tests/                  one test file per module
 notebooks/              01-04, see notebooks/README.md
@@ -213,13 +262,16 @@ docs/                   CONTRIBUTING.md, proposal/, poster/, slides/
 
 ## Reproducibility
 
-- Seed 42 for the train/validation split, the oracle and the sampled corrections; the
-  learned models use the training seeds 0 to 4 (`evaluation.seeds`).
+- Seed 42 for the oracle and the sampled corrections; the learned models use the
+  training seeds 0 to 4 (`evaluation.seeds`). The splits are separate files with their
+  own generation seeds.
 - `make reproduce` (or `python -m dequbit train --all` and `python -m dequbit evaluate`)
   rebuilds [`results/metrics_validation.json`](results/metrics_validation.json); running
   the evaluation twice gives identical numbers.
-- The validation numbers above were produced with Python 3.13.7, NumPy 2.5.3 and PyTorch
-  2.14.0 (CPU) on Windows 11; the environment is also stored in every metrics file.
+- The models above were trained with PyTorch 2.14.0 (CUDA 13.0) on an RTX 4060 laptop
+  GPU and evaluated with Python 3.13.7, NumPy 2.5.3 and PyTorch 2.14.0 (CPU) on Windows
+  11; the environment of the evaluation is also stored in every metrics file. Training
+  on a CPU gives results that differ in the last digits.
 
 ## Development
 

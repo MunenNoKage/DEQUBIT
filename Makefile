@@ -23,10 +23,17 @@ setup: ## Create the venv, install runtime + dev deps and this package, install 
 	$(BIN)/python -m pip install -e .
 	$(BIN)/pre-commit install
 
-data: ## Regenerate the datasets in data/
-	$(BIN)/python data/generate_data.py
+data: ## Regenerate the dataset in data_v4/ (several hours, see data2/description.md)
+	$(BIN)/python data2/generation.py --N 3 --splits val test train --val-count 40 --test-count 40 --train-scale 0.5813953488372093
+	$(BIN)/python data2/generation.py --N 5 --splits val test train --val-count 40 --test-count 40 --train-scale 0.34965034965034963
+	$(BIN)/python data2/generation.py --N 6 --splits val test train --val-count 40 --test-count 40 --train-scale 0.2915451895043732
+	$(BIN)/python data2/generation.py --N 8 --splits val test train --val-count 40 --test-count 40 --train-scale 0.2188183807439825 --types qft hlf bv iqp
+	$(BIN)/python data2/generation.py --N 9 --splits val test train --val-count 40 --test-count 40 --train-scale 0.19455252918287938 --types qft hlf bv iqp
+	$(BIN)/python data2/generation.py --N 11 --splits val test train --val-count 40 --test-count 40 --train-scale 0.1592356687898089 --types qft hlf bv iqp
+	$(BIN)/python data2/generation.py --N 12 --splits val train test --val-count 20 --test-count 20 --train-scale 0.0127389 --types qft hlf bv iqp
+	$(BIN)/python data2/generation.py --N 13 --splits val train test --val-count 10 --test-count 10 --train-scale 0.00477707 --types qft hlf bv iqp
 
-reproduce: ## Train and evaluate on the datasets in data/
+reproduce: ## Train and evaluate on the dataset in data_v4/
 	$(BIN)/python -m dequbit train --all
 	$(BIN)/python -m dequbit evaluate
 
