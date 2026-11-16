@@ -13,6 +13,8 @@ from dequbit.dataset import Circuits, load_circuits
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "default.yaml"
 FAKE_NUM_QUBITS = 2
 FAKE_QUBIT_COUNTS = (2, 3)
+# A number of qubits that only the evaluation sees.
+FAKE_UNTRAINED_QUBITS = 4
 FAKE_SHOTS = 200
 FAKE_READOUT_P01 = np.array([0.03, 0.05])
 FAKE_READOUT_P10 = np.array([0.06, 0.08])
@@ -98,7 +100,7 @@ def fake_config(tmp_path: Path) -> Path:
         Path of the config; models and results go into tmp_path.
     """
     for seed, (split, num_circuits) in enumerate(FAKE_SPLIT_CIRCUITS.items()):
-        for num_qubits in FAKE_QUBIT_COUNTS:
+        for num_qubits in (*FAKE_QUBIT_COUNTS, FAKE_UNTRAINED_QUBITS):
             path = tmp_path / f"noisy_{split}_N{num_qubits}.h5"
             write_fake_file(path, num_circuits, seed, num_qubits)
 
@@ -115,7 +117,13 @@ def fake_config(tmp_path: Path) -> Path:
         {"qubit_counts": list(FAKE_QUBIT_COUNTS), "shots_per_circuit": FAKE_SHOTS}
     )
     config["training"].update({"max_steps": 20, "validation_interval": 10})
-    config["evaluation"].update({"models": ["shared_scorer"], "seeds": [0, 1]})
+    config["evaluation"].update(
+        {
+            "models": ["shared_scorer"],
+            "seeds": [0, 1],
+            "qubit_counts": [*FAKE_QUBIT_COUNTS, FAKE_UNTRAINED_QUBITS],
+        }
+    )
     config["logging"]["level"] = "WARNING"
 
     path = tmp_path / "config.yaml"

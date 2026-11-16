@@ -228,6 +228,45 @@ def physical_depolarising_rate(
     return np.minimum(1 - np.exp(log_survival), MAX_PHYSICAL_RATE)
 
 
+def scaled_physical_rate(physical_rate: np.ndarray, scale: float) -> np.ndarray:
+    """Scale the gate noise behind a physical depolarising rate.
+
+    The rate 1 - prod(1 - error) becomes 1 - prod(1 - error)**scale, as if every gate
+    error were scale times larger in the log. Scale 1 keeps the rate and 0 removes it.
+
+    Args:
+        physical_rate: Output of physical_depolarising_rate, shape (circuits,).
+        scale: Factor of the log survival probability, at least 0.
+
+    Returns:
+        Scaled rate of every circuit, shape (circuits,), at most MAX_PHYSICAL_RATE.
+    """
+    return np.minimum(1 - (1 - physical_rate) ** scale, MAX_PHYSICAL_RATE)
+
+
+def scaled_mix_correction(
+    distributions: np.ndarray,
+    scale: float,
+    physical_rate: np.ndarray,
+    p01: np.ndarray,
+    p10: np.ndarray,
+) -> np.ndarray:
+    """Apply MIX with the physical depolarising rate of every circuit scaled by scale.
+
+    Args:
+        distributions: Noisy distributions, shape (circuits, 2**num_qubits).
+        scale: Factor of the log survival probability, see scaled_physical_rate.
+        physical_rate: Output of physical_depolarising_rate, shape (circuits,).
+        p01: Probability of reading 1 for state 0 of every bit, shape (num_qubits,) or
+            (circuits, num_qubits).
+        p10: Probability of reading 0 for state 1, same shape as p01.
+
+    Returns:
+        Corrected distributions, same shape as distributions.
+    """
+    return mix_correction(distributions, scaled_physical_rate(physical_rate, scale), p01, p10)
+
+
 def fit_linear_map(noisy: np.ndarray, targets: np.ndarray) -> np.ndarray:
     """Fit one matrix that maps noisy distributions to ideal ones, by least squares.
 

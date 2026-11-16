@@ -16,6 +16,7 @@ from dequbit.evaluate import (
 from dequbit.models import MODEL_NAMES, save_model
 from dequbit.pipeline import (
     evaluate_split,
+    evaluated_models,
     load_history,
     model_path,
     model_sizes,
@@ -104,9 +105,12 @@ def run_evaluate(config: Config, split: str) -> None:
     models = config["evaluation"]["models"]
     for num_qubits, size_changes in changes.items():
         plot_l1_relative_change(
-            size_changes, figures / f"l1_relative_change_{split}_N{num_qubits}.png", models
+            size_changes,
+            figures / f"l1_relative_change_{split}_N{num_qubits}.png",
+            evaluated_models(config, num_qubits),
         )
-        if models:
+        # Training curves exist only for the numbers of qubits the models validated on.
+        if models and num_qubits in config["data"]["qubit_counts"]:
             histories = {name: _histories_with_size(config, name, num_qubits) for name in models}
             plot_training_histories(
                 histories, figures / f"training_curves_N{num_qubits}.png", num_qubits

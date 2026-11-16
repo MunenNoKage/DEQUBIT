@@ -22,6 +22,7 @@ from dequbit.baselines import (
     oracle_distribution,
     physical_depolarising_rate,
     readout_correction,
+    scaled_mix_correction,
     threshold_correction,
 )
 from dequbit.config import Config
@@ -50,6 +51,7 @@ METHOD_LABELS = {
     "readout": "Readout inversion",
     "mix": "MIX, fitted rate",
     "mix_physical": "MIX, physical rate",
+    "mix_physical_fitted": "MIX, fitted physical rate",
     "linear_map": "Linear map",
     "mlp": "MLP",
     "shared_scorer": "Shared scorer",
@@ -69,6 +71,7 @@ HISTORY_HIGHEST_CHANGE = 0.1
 def correct_circuits(
     model: nn.Module,
     counts: np.ndarray,
+    qubit_features: np.ndarray,
     num_qubits: int,
     radius: int,
     mode: str,
@@ -81,8 +84,11 @@ def correct_circuits(
     "argmax" the most probable action of its bitstring.
 
     Args:
-        model: Trained model that maps counts to action logits.
+        model: Trained model that maps counts and qubit features to action logits.
         counts: Noisy shot counts, shape (circuits, 2**num_qubits).
+        qubit_features: Description of every measured bit, from
+            dequbit.dataset.Circuits.qubit_features, shape
+            (circuits, num_qubits, qubit features).
         num_qubits: Number of measured qubits.
         radius: Largest number of bits one action flips.
         mode: One of INFERENCE_MODES.
@@ -109,7 +115,8 @@ def correct_circuits(
     with torch.no_grad():
         for start in range(0, len(counts), batch_size):
             batch = torch.from_numpy(counts[start : start + batch_size]).float()
-            action_probs, _ = predict_distributions(model, batch, destination_table)
+            batch_features = torch.from_numpy(qubit_features[start : start + batch_size])
+            action_probs, _ = predict_distributions(model, batch, batch_features, destination_table)
             if mode == "sample":
                 action_probs = _sampled_action_shares(batch, action_probs, rng)
             elif mode == "argmax":
@@ -130,7 +137,8 @@ def baseline_distributions(
     Parameters of the threshold, the repolarizer and MIX are fitted on the training
     circuits. The readout correction and MIX use the calibrated readout errors of the
     device; physical MIX also takes its rate from the gates of every circuit and their
-    calibrated errors.
+    calibrated errors, and fitted physical MIX scales that rate by a factor fitted on
+    the training circuits.
 
     Args:
         train_circuits: Circuits the parameters are fitted on.
@@ -147,9 +155,16 @@ def baseline_distributions(
         0, baselines_config["threshold_max"], baselines_config["threshold_steps"]
     )
     rate_grid = np.linspace(0, baselines_config["rate_max"], baselines_config["rate_steps"])
+    scale_grid = np.linspace(0, baselines_config["scale_max"], baselines_config["scale_steps"])
     p01, p10 = _readout_rates(circuits)
     train_p01, train_p10 = _readout_rates(train_circuits)
     train_mix = partial(mix_correction, p01=train_p01, p10=train_p10)
+    train_scaled_mix = partial(
+        scaled_mix_correction,
+        physical_rate=_physical_rate(train_circuits),
+        p01=train_p01,
+        p10=train_p10,
+    )
 
     parameters = {
         "threshold": best_parameter(
@@ -159,13 +174,11 @@ def baseline_distributions(
             depolarising_correction, rate_grid, train_noisy, train_circuits.targets
         ),
         "mix_rate": best_parameter(train_mix, rate_grid, train_noisy, train_circuits.targets),
+        "mix_physical_scale": best_parameter(
+            train_scaled_mix, scale_grid, train_noisy, train_circuits.targets
+        ),
     }
-    physical_rate = physical_depolarising_rate(
-        circuits.one_qubit_gates,
-        circuits.two_qubit_gates,
-        circuits.calibration["error_1q"],
-        circuits.calibration["error_2q"],
-    )
+    physical_rate = _physical_rate(circuits)
 
     distributions = {
         "identity": noisy,
@@ -177,6 +190,9 @@ def baseline_distributions(
         "readout": readout_correction(noisy, p01, p10),
         "mix": mix_correction(noisy, parameters["mix_rate"], p01, p10),
         "mix_physical": mix_correction(noisy, physical_rate, p01, p10),
+        "mix_physical_fitted": scaled_mix_correction(
+            noisy, parameters["mix_physical_scale"], physical_rate, p01, p10
+        ),
     }
     if len(train_noisy) >= noisy.shape[1]:
         weights = fit_linear_map(train_noisy, train_circuits.targets)
@@ -426,6 +442,23 @@ def _readout_rates(circuits: Circuits) -> tuple[np.ndarray, np.ndarray]:
     p10 = circuits.calibration["readout_p10"][circuits.measured_qubits]
 
     return p01, p10
+
+
+def _physical_rate(circuits: Circuits) -> np.ndarray:
+    """Compute the physical depolarising rate of every circuit from its gates.
+
+    Args:
+        circuits: Circuits with gate counts and the calibration of the device qubits.
+
+    Returns:
+        Output of dequbit.baselines.physical_depolarising_rate, shape (circuits,).
+    """
+    return physical_depolarising_rate(
+        circuits.one_qubit_gates,
+        circuits.two_qubit_gates,
+        circuits.calibration["error_1q"],
+        circuits.calibration["error_2q"],
+    )
 
 
 def _method_colour(name: str, models: Sequence[str]) -> str:

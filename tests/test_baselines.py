@@ -13,6 +13,8 @@ from dequbit.baselines import (
     oracle_distribution,
     physical_depolarising_rate,
     readout_correction,
+    scaled_mix_correction,
+    scaled_physical_rate,
     threshold_correction,
 )
 
@@ -337,3 +339,23 @@ def test_linear_map_correction_clips_negative_probabilities() -> None:
     corrected = linear_map_correction(distributions, weights)
 
     np.testing.assert_allclose(corrected, [[1.0, 0.0]])
+
+
+def test_scaled_physical_rate_scales_the_log_survival() -> None:
+    """Scale 1 keeps the rate, 0 removes it and 2 squares the survival probability."""
+    rates = np.array([0.0, 0.2, 0.5])
+
+    np.testing.assert_allclose(scaled_physical_rate(rates, 1.0), rates)
+    np.testing.assert_allclose(scaled_physical_rate(rates, 0.0), 0.0)
+    np.testing.assert_allclose(scaled_physical_rate(rates, 2.0), [0.0, 0.36, 0.75])
+
+
+def test_scaled_mix_correction_with_scale_one_is_mix_with_the_physical_rate() -> None:
+    """Scale 1 gives MIX with the physical rate of every circuit unchanged."""
+    distributions = np.random.default_rng(0).dirichlet(np.ones(4), size=3)
+    physical_rate = np.array([0.1, 0.3, 0.5])
+    p01, p10 = np.array([0.01, 0.02]), np.array([0.03, 0.04])
+
+    scaled = scaled_mix_correction(distributions, 1.0, physical_rate, p01, p10)
+
+    np.testing.assert_allclose(scaled, mix_correction(distributions, physical_rate, p01, p10))

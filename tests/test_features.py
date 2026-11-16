@@ -6,9 +6,14 @@ import pytest
 import torch
 
 from dequbit.actions import IDENTITY_ACTION, build_masks, destinations
-from dequbit.dataset import index_to_bits
+from dequbit.dataset import GATE_INFIDELITY, LOG_READOUT_P01, LOG_READOUT_P10, index_to_bits
 from dequbit.features import (
+    NUM_ACTION_CIRCUIT_FEATURES,
+    NUM_CIRCUIT_FEATURES,
     NUM_GLOBAL_FEATURES,
+    NUM_QUBIT_FEATURES,
+    action_circuit_features,
+    circuit_features,
     global_context,
     local_counts,
     own_count,
@@ -79,3 +84,31 @@ def test_global_context_rejects_circuit_without_shots() -> None:
 
     with pytest.raises(ValueError):
         global_context(counts, NUM_QUBITS)
+
+
+def test_action_circuit_features_describe_the_flipped_bits() -> None:
+    """Flipping both bits of bitstring 01 flips one 1, adds both infidelities and both
+    readout errors in the direction the flip undoes: p01 of bit 0, p10 of bit 1."""
+    masks = build_masks(NUM_QUBITS, radius=2)
+    qubit_features = torch.zeros(1, NUM_QUBITS, NUM_QUBIT_FEATURES)
+    qubit_features[0, :, GATE_INFIDELITY] = torch.tensor([0.1, 0.3])
+    qubit_features[0, :, LOG_READOUT_P01] = torch.tensor([-1.0, -2.0])
+    qubit_features[0, :, LOG_READOUT_P10] = torch.tensor([-3.0, -4.0])
+
+    features = action_circuit_features(qubit_features, masks)
+
+    assert features.shape == (1, 2**NUM_QUBITS, len(masks), NUM_ACTION_CIRCUIT_FEATURES)
+    assert torch.all(features[:, :, IDENTITY_ACTION] == 0)
+    both = masks.tolist().index(3)
+    torch.testing.assert_close(features[0, 1, both], torch.tensor([1.0, 0.4, -1.0 - 4.0]))
+
+
+def test_circuit_features_are_mean_and_sum_of_gate_infidelity() -> None:
+    """Infidelities 0.1 and 0.3 give mean 0.2 and sum 0.4."""
+    qubit_features = torch.zeros(1, NUM_QUBITS, NUM_QUBIT_FEATURES)
+    qubit_features[0, :, GATE_INFIDELITY] = torch.tensor([0.1, 0.3])
+
+    features = circuit_features(qubit_features)
+
+    assert features.shape == (1, NUM_CIRCUIT_FEATURES)
+    torch.testing.assert_close(features, torch.tensor([[0.2, 0.4]]))

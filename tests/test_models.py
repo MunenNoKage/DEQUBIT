@@ -8,6 +8,7 @@ import torch
 from dequbit.actions import build_masks, hamming_weights, initial_logits
 from dequbit.config import Config
 from dequbit.dataset import index_to_bits
+from dequbit.features import NUM_QUBIT_FEATURES
 from dequbit.models import MODEL_NAMES, build_model, load_model, save_model
 from dequbit.models.mlp import MLPCorrector
 from dequbit.models.per_qubit import PerQubitFlipModel
@@ -31,6 +32,21 @@ def random_counts(num_circuits: int) -> torch.Tensor:
     generator = torch.Generator().manual_seed(SEED)
 
     return torch.randint(0, 100, (num_circuits, 2**NUM_QUBITS), generator=generator).float()
+
+
+def random_qubit_features(num_circuits: int, num_qubits: int = NUM_QUBITS) -> torch.Tensor:
+    """Draw random qubit features of every circuit.
+
+    Args:
+        num_circuits: Number of circuits.
+        num_qubits: Number of measured qubits.
+
+    Returns:
+        Features of every bit, shape (num_circuits, num_qubits, NUM_QUBIT_FEATURES).
+    """
+    generator = torch.Generator().manual_seed(SEED)
+
+    return torch.rand(num_circuits, num_qubits, NUM_QUBIT_FEATURES, generator=generator)
 
 
 def randomise_head(model: torch.nn.Module) -> None:
@@ -71,7 +87,7 @@ def test_per_qubit_model_gives_same_logits_for_every_bitstring() -> None:
     """B4 outputs initial_logits for every bitstring of every circuit, whatever the counts."""
     model = PerQubitFlipModel(NUM_QUBITS, RADIUS)
 
-    logits = model(random_counts(4))
+    logits = model(random_counts(4), random_qubit_features(4))
 
     assert logits.shape == (4, 2**NUM_QUBITS, NUM_ACTIONS)
     torch.testing.assert_close(logits, initial_logits(NUM_ACTIONS).expand_as(logits))
@@ -81,7 +97,7 @@ def test_mlp_starts_with_initial_logits() -> None:
     """Before training the MLP outputs initial_logits for every bitstring of every circuit."""
     model = MLPCorrector(NUM_QUBITS, RADIUS, hidden_sizes=[16, 16])
 
-    logits = model(random_counts(4))
+    logits = model(random_counts(4), random_qubit_features(4))
 
     assert logits.shape == (4, 2**NUM_QUBITS, NUM_ACTIONS)
     torch.testing.assert_close(logits, initial_logits(NUM_ACTIONS).expand_as(logits))
@@ -92,9 +108,10 @@ def test_mlp_output_depends_on_counts_once_head_is_trained() -> None:
     model = MLPCorrector(NUM_QUBITS, RADIUS, hidden_sizes=[16])
     randomise_head(model)
     counts = random_counts(2)
+    qubit_features = random_qubit_features(1)
 
-    first = model(counts[:1])
-    second = model(counts[1:])
+    first = model(counts[:1], qubit_features)
+    second = model(counts[1:], qubit_features)
 
     assert not torch.allclose(first, second)
 
@@ -104,14 +121,14 @@ def test_mlp_rejects_counts_of_wrong_length() -> None:
     model = MLPCorrector(NUM_QUBITS, RADIUS, hidden_sizes=[16])
 
     with pytest.raises(ValueError):
-        model(torch.ones(1, 16))
+        model(torch.ones(1, 16), random_qubit_features(1))
 
 
 def test_shared_scorer_starts_with_initial_logits() -> None:
     """Before training the shared scorer outputs initial_logits for every bitstring."""
     model = SharedScorer(RADIUS, hidden_sizes=[16, 16])
 
-    logits = model(random_counts(4))
+    logits = model(random_counts(4), random_qubit_features(4))
 
     assert logits.shape == (4, 2**NUM_QUBITS, NUM_ACTIONS)
     torch.testing.assert_close(logits, initial_logits(NUM_ACTIONS).expand_as(logits))
@@ -130,7 +147,8 @@ def test_shared_scorer_gives_same_logit_to_actions_with_same_features() -> None:
     counts = (10.0 * 2.0**ones).unsqueeze(0)
     flipped_bits = hamming_weights(build_masks(NUM_QUBITS, RADIUS), NUM_QUBITS)
 
-    logits = model(counts)[0, 0]
+    # Equal features of every qubit keep the qubits interchangeable.
+    logits = model(counts, torch.zeros(1, NUM_QUBITS, NUM_QUBIT_FEATURES))[0, 0]
 
     for num_flipped in (1, 2):
         same_kind = logits[flipped_bits == num_flipped]
@@ -142,7 +160,7 @@ def test_shared_scorer_corrects_another_number_of_qubits() -> None:
     """The same scorer takes 4-qubit counts and gives 11 logits, initial_logits at first."""
     model = SharedScorer(RADIUS, hidden_sizes=[16])
 
-    logits = model(torch.ones(2, 2 ** (NUM_QUBITS + 1)))
+    logits = model(torch.ones(2, 2 ** (NUM_QUBITS + 1)), random_qubit_features(2, NUM_QUBITS + 1))
 
     assert logits.shape == (2, 2 ** (NUM_QUBITS + 1), 11)
     torch.testing.assert_close(logits, initial_logits(11).expand_as(logits))
@@ -153,9 +171,10 @@ def test_shared_scorer_output_depends_on_counts_once_head_is_trained() -> None:
     model = SharedScorer(RADIUS, hidden_sizes=[16])
     randomise_head(model)
     counts = random_counts(2)
+    qubit_features = random_qubit_features(1)
 
-    first = model(counts[:1])
-    second = model(counts[1:])
+    first = model(counts[:1], qubit_features)
+    second = model(counts[1:], qubit_features)
 
     assert not torch.allclose(first, second)
 
@@ -165,7 +184,7 @@ def test_shared_scorer_rejects_counts_of_wrong_length() -> None:
     model = SharedScorer(RADIUS, hidden_sizes=[16])
 
     with pytest.raises(ValueError):
-        model(torch.ones(1, 12))
+        model(torch.ones(1, 12), random_qubit_features(1))
 
 
 @pytest.mark.parametrize(
@@ -176,7 +195,7 @@ def test_build_model_creates_named_model(name: str, model_class: type) -> None:
     """build_model creates the model named in the config, ready for counts of 3 qubits."""
     model = build_model(model_config(name), NUM_QUBITS, RADIUS)
 
-    logits = model(random_counts(2))
+    logits = model(random_counts(2), random_qubit_features(2))
 
     assert isinstance(model, model_class)
     assert logits.shape == (2, 2**NUM_QUBITS, NUM_ACTIONS)
@@ -186,7 +205,11 @@ def test_build_model_builds_shared_scorer_without_number_of_qubits() -> None:
     """The shared scorer needs no number of qubits; the MLP without one raises ValueError."""
     model = build_model(model_config("shared_scorer"), None, RADIUS)
 
-    assert model(random_counts(2)).shape == (2, 2**NUM_QUBITS, NUM_ACTIONS)
+    assert model(random_counts(2), random_qubit_features(2)).shape == (
+        2,
+        2**NUM_QUBITS,
+        NUM_ACTIONS,
+    )
     with pytest.raises(ValueError):
         build_model(model_config("mlp"), None, RADIUS)
 
@@ -212,20 +235,45 @@ def test_saved_model_loads_with_same_logits(name: str, tmp_path: Path) -> None:
     save_model(model, config, NUM_QUBITS, RADIUS, path)
     loaded = load_model(path)
 
-    counts = random_counts(2)
+    counts, qubit_features = random_counts(2), random_qubit_features(2)
     assert type(loaded) is type(model)
     assert not torch.allclose(
-        model(counts), initial_logits(NUM_ACTIONS).expand(2, 2**NUM_QUBITS, -1)
+        model(counts, qubit_features), initial_logits(NUM_ACTIONS).expand(2, 2**NUM_QUBITS, -1)
     )
-    torch.testing.assert_close(loaded(counts), model(counts))
+    torch.testing.assert_close(loaded(counts, qubit_features), model(counts, qubit_features))
 
 
 def test_mlp_without_counts_and_context_ignores_counts() -> None:
     """With only the bits as input, the MLP gives the same logits for any shot counts."""
     model = MLPCorrector(
-        NUM_QUBITS, RADIUS, hidden_sizes=[16], use_local_counts=False, use_context=False
+        NUM_QUBITS,
+        RADIUS,
+        hidden_sizes=[16],
+        use_local_counts=False,
+        use_context=False,
+        use_circuit_context=False,
     )
     randomise_head(model)
     counts = random_counts(2)
+    qubit_features = random_qubit_features(2)
 
-    torch.testing.assert_close(model(counts[:1]), model(counts[1:]))
+    torch.testing.assert_close(
+        model(counts[:1], qubit_features[:1]), model(counts[1:], qubit_features[1:])
+    )
+
+
+@pytest.mark.parametrize("name", ["mlp", "shared_scorer"])
+def test_circuit_context_changes_logits_only_when_used(name: str) -> None:
+    """Other qubit features change the logits with circuit context and not without it."""
+    counts = random_counts(1).expand(2, -1)
+    qubit_features = random_qubit_features(2)
+    logits = {}
+    for use_circuit_context in (True, False):
+        config = model_config(name)
+        config[name]["use_circuit_context"] = use_circuit_context
+        model = build_model(config, NUM_QUBITS, RADIUS)
+        randomise_head(model)
+        logits[use_circuit_context] = model(counts, qubit_features)
+
+    assert not torch.allclose(logits[True][0], logits[True][1])
+    torch.testing.assert_close(logits[False][0], logits[False][1])

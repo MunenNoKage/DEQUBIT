@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from dequbit.actions import build_masks
-from dequbit.dataset import Circuits
+from dequbit.dataset import QUBIT_FEATURE_NAMES, Circuits
 from dequbit.evaluate import (
     INFERENCE_MODES,
     baseline_distributions,
@@ -27,7 +27,14 @@ NUM_SHOTS = 500
 SEED = 0
 # A logit this large makes its action certain after the softmax.
 CERTAIN_LOGIT = 100.0
-BASELINES_CONFIG = {"threshold_max": 0.5, "threshold_steps": 6, "rate_max": 0.9, "rate_steps": 10}
+BASELINES_CONFIG = {
+    "threshold_max": 0.5,
+    "threshold_steps": 6,
+    "rate_max": 0.9,
+    "rate_steps": 10,
+    "scale_max": 2.0,
+    "scale_steps": 5,
+}
 
 
 def random_counts(num_circuits: int) -> np.ndarray:
@@ -43,6 +50,18 @@ def random_counts(num_circuits: int) -> np.ndarray:
     uniform = np.full(2**NUM_QUBITS, 1 / 2**NUM_QUBITS)
 
     return rng.multinomial(NUM_SHOTS, uniform, size=num_circuits)
+
+
+def no_qubit_features(counts: np.ndarray) -> np.ndarray:
+    """Give qubit features of zeros for every circuit of the counts.
+
+    Args:
+        counts: Shot counts, shape (circuits, 2**NUM_QUBITS).
+
+    Returns:
+        Zeros, float32 of shape (circuits, NUM_QUBITS, len(QUBIT_FEATURE_NAMES)).
+    """
+    return np.zeros((len(counts), NUM_QUBITS, len(QUBIT_FEATURE_NAMES)), dtype=np.float32)
 
 
 def certain_model(action_mask: int) -> PerQubitFlipModel:
@@ -69,7 +88,13 @@ def test_correct_circuits_with_identity_changes_nothing(mode: str) -> None:
     counts = random_counts(3)
 
     corrected, flips = correct_circuits(
-        certain_model(0), counts, NUM_QUBITS, RADIUS, mode, np.random.default_rng(SEED)
+        certain_model(0),
+        counts,
+        no_qubit_features(counts),
+        NUM_QUBITS,
+        RADIUS,
+        mode,
+        np.random.default_rng(SEED),
     )
 
     np.testing.assert_allclose(corrected, counts / NUM_SHOTS, atol=1e-6)
@@ -82,7 +107,13 @@ def test_correct_circuits_moves_every_shot_with_certain_flip(mode: str) -> None:
     counts = random_counts(3)
 
     corrected, flips = correct_circuits(
-        certain_model(1), counts, NUM_QUBITS, RADIUS, mode, np.random.default_rng(SEED)
+        certain_model(1),
+        counts,
+        no_qubit_features(counts),
+        NUM_QUBITS,
+        RADIUS,
+        mode,
+        np.random.default_rng(SEED),
     )
 
     flipped_index = np.arange(2**NUM_QUBITS) ^ 1
@@ -96,10 +127,22 @@ def test_correct_circuits_sample_repeats_with_same_generator_seed() -> None:
     counts = random_counts(3)
 
     first, _ = correct_circuits(
-        model, counts, NUM_QUBITS, RADIUS, "sample", np.random.default_rng(SEED)
+        model,
+        counts,
+        no_qubit_features(counts),
+        NUM_QUBITS,
+        RADIUS,
+        "sample",
+        np.random.default_rng(SEED),
     )
     second, _ = correct_circuits(
-        model, counts, NUM_QUBITS, RADIUS, "sample", np.random.default_rng(SEED)
+        model,
+        counts,
+        no_qubit_features(counts),
+        NUM_QUBITS,
+        RADIUS,
+        "sample",
+        np.random.default_rng(SEED),
     )
 
     np.testing.assert_array_equal(first, second)
@@ -112,10 +155,22 @@ def test_correct_circuits_sample_moves_whole_shots() -> None:
     counts = random_counts(3)
 
     sampled, _ = correct_circuits(
-        model, counts, NUM_QUBITS, RADIUS, "sample", np.random.default_rng(SEED)
+        model,
+        counts,
+        no_qubit_features(counts),
+        NUM_QUBITS,
+        RADIUS,
+        "sample",
+        np.random.default_rng(SEED),
     )
     expected, _ = correct_circuits(
-        model, counts, NUM_QUBITS, RADIUS, "expected", np.random.default_rng(SEED)
+        model,
+        counts,
+        no_qubit_features(counts),
+        NUM_QUBITS,
+        RADIUS,
+        "expected",
+        np.random.default_rng(SEED),
     )
 
     np.testing.assert_allclose(sampled * NUM_SHOTS, np.round(sampled * NUM_SHOTS), atol=1e-3)
@@ -130,6 +185,7 @@ def test_correct_circuits_handles_bitstrings_without_shots() -> None:
     corrected, _ = correct_circuits(
         PerQubitFlipModel(NUM_QUBITS, RADIUS),
         counts,
+        no_qubit_features(counts),
         NUM_QUBITS,
         RADIUS,
         "sample",
@@ -142,8 +198,15 @@ def test_correct_circuits_handles_bitstrings_without_shots() -> None:
 def test_correct_circuits_rejects_unknown_mode() -> None:
     """A mode outside INFERENCE_MODES raises ValueError."""
     with pytest.raises(ValueError):
+        counts = random_counts(1)
         correct_circuits(
-            certain_model(0), random_counts(1), NUM_QUBITS, RADIUS, "mean", np.random.default_rng()
+            certain_model(0),
+            counts,
+            no_qubit_features(counts),
+            NUM_QUBITS,
+            RADIUS,
+            "mean",
+            np.random.default_rng(),
         )
 
 
@@ -154,8 +217,10 @@ def test_baseline_distributions_gives_every_baseline(fake_circuits: Circuits) ->
     )
 
     expected_names = {"identity", "oracle", "threshold", "repolarizer", "readout", "mix"}
-    assert expected_names | {"mix_physical", "linear_map"} == set(distributions)
-    assert set(parameters) == {"threshold", "repolarizer_rate", "mix_rate"}
+    assert expected_names | {"mix_physical", "mix_physical_fitted", "linear_map"} == set(
+        distributions
+    )
+    assert set(parameters) == {"threshold", "repolarizer_rate", "mix_rate", "mix_physical_scale"}
     np.testing.assert_array_equal(distributions["identity"], fake_circuits.noisy)
     for corrected in distributions.values():
         assert corrected.shape == fake_circuits.targets.shape

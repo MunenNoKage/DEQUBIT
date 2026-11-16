@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from dequbit.cli import build_parser, main
+from dequbit.dataset import QUBIT_FEATURE_NAMES
 from dequbit.models import load_model
 
 
@@ -42,7 +43,7 @@ def test_train_all_and_evaluate_write_models_metrics_and_figures(fake_config: Pa
 
     metrics = json.loads((directory / "results" / "metrics_test.json").read_text(encoding="utf-8"))
     assert (directory / "models" / "shared_scorer_seed1_history.json").exists()
-    assert set(metrics["qubits"]) == {"2", "3"}
+    assert set(metrics["qubits"]) == {"2", "3", "4"}
     for size_metrics in metrics["qubits"].values():
         assert size_metrics["num_circuits"] == 10
         assert {"identity", "oracle", "mix", "linear_map"} <= set(size_metrics["baselines"])
@@ -51,6 +52,8 @@ def test_train_all_and_evaluate_write_models_metrics_and_figures(fake_config: Pa
     assert (figures / "l1_relative_change_test_N2.png").exists()
     assert (figures / "training_curves_N3.png").exists()
     assert (figures / "l1_relative_change_by_qubits_test.png").exists()
+    assert (figures / "l1_relative_change_test_N4.png").exists()
+    assert not (figures / "training_curves_N4.png").exists()
 
 
 def test_train_saves_one_model_per_number_of_qubits(fake_config: Path) -> None:
@@ -64,8 +67,9 @@ def test_train_saves_one_model_per_number_of_qubits(fake_config: Path) -> None:
 
     model = load_model(directory / "models" / "mlp_N2_seed42.pt")
     larger_model = load_model(directory / "models" / "mlp_N3_seed42.pt")
-    assert model(torch.ones(1, 4)).shape == (1, 4, 3)
-    assert larger_model(torch.ones(1, 8)).shape == (1, 8, 4)
+    features = len(QUBIT_FEATURE_NAMES)
+    assert model(torch.ones(1, 4), torch.zeros(1, 2, features)).shape == (1, 4, 3)
+    assert larger_model(torch.ones(1, 8), torch.zeros(1, 3, features)).shape == (1, 8, 4)
 
 
 def test_evaluate_reports_missing_model(fake_config: Path) -> None:

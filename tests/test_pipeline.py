@@ -9,6 +9,7 @@ from dequbit.config import load_config
 from dequbit.pipeline import (
     evaluate_baselines,
     evaluate_split,
+    evaluated_models,
     load_split,
     model_path,
     model_sizes,
@@ -20,6 +21,7 @@ from tests.conftest import (
     FAKE_QUBIT_COUNTS,
     FAKE_SHOTS,
     FAKE_SPLIT_CIRCUITS,
+    FAKE_UNTRAINED_QUBITS,
 )
 
 
@@ -106,8 +108,8 @@ def test_evaluate_split_without_models_has_baseline_metrics(fake_config: Path) -
 
     metrics, changes = evaluate_split(config, "validation")
 
-    assert set(metrics["qubits"]) == {"2", "3"}
-    assert set(changes) == set(FAKE_QUBIT_COUNTS)
+    assert set(metrics["qubits"]) == {"2", "3", "4"}
+    assert set(changes) == {*FAKE_QUBIT_COUNTS, FAKE_UNTRAINED_QUBITS}
     for num_qubits in FAKE_QUBIT_COUNTS:
         size_metrics = metrics["qubits"][str(num_qubits)]
         assert size_metrics["models"] == {}
@@ -126,3 +128,14 @@ def test_evaluate_split_summarizes_every_circuit_type(fake_config: Path) -> None
     assert set(by_type) == set(FAKE_CIRCUIT_TYPES)
     assert set(by_type["bv"]) == set(metrics["qubits"]["2"]["baselines"])
     assert by_type["bv"]["identity"]["median"] == 0.0
+
+
+def test_evaluated_models_leave_out_per_size_models_on_untrained_sizes(
+    fake_config: Path,
+) -> None:
+    """Where no MLP was trained only the shared scorer is evaluated."""
+    config = load_config(fake_config)
+    config["evaluation"]["models"] = ["mlp", "shared_scorer"]
+
+    assert evaluated_models(config, FAKE_NUM_QUBITS) == ["mlp", "shared_scorer"]
+    assert evaluated_models(config, FAKE_UNTRAINED_QUBITS) == ["shared_scorer"]

@@ -6,9 +6,20 @@ the number of actions or qubits, never with 2**num_qubits per bitstring.
 
 import torch
 
-from dequbit.dataset import index_to_bits
+from dequbit.dataset import (
+    GATE_INFIDELITY,
+    LOG_READOUT_P01,
+    LOG_READOUT_P10,
+    QUBIT_FEATURE_NAMES,
+    index_to_bits,
+)
 
 NUM_GLOBAL_FEATURES = 3
+# Flipped ones, gate infidelity and log readout error of the flipped bits.
+NUM_ACTION_CIRCUIT_FEATURES = 3
+# Mean and sum of the gate infidelity of the bits.
+NUM_CIRCUIT_FEATURES = 2
+NUM_QUBIT_FEATURES = len(QUBIT_FEATURE_NAMES)
 
 
 def signed_bits(num_qubits: int) -> torch.Tensor:
@@ -92,3 +103,56 @@ def global_context(counts: torch.Tensor, num_qubits: int) -> torch.Tensor:
     context = torch.stack([entropy, log_collision, log_distinct_share], dim=-1)
 
     return context / num_qubits
+
+
+def action_circuit_features(qubit_features: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
+    """Describe the bits every action flips in every bitstring, from the decoded circuit.
+
+    The three features of bitstring x and action a are the number of flipped bits that
+    are 1 in x, the sum of the gate infidelity of the flipped bits, and the sum of the
+    log readout error that the flip would undo: reading 1 for a prepared 0 where the
+    bit of x is 1, reading 0 for a prepared 1 where it is 0. All three are 0 for the
+    identity. None of them names a qubit, so they have the same meaning for every
+    number of qubits.
+
+    Args:
+        qubit_features: Output of Circuits.qubit_features, shape
+            (circuits, num_qubits, NUM_QUBIT_FEATURES).
+        masks: Masks of the actions, shape (actions,).
+
+    Returns:
+        Features, shape (circuits, 2**num_qubits, actions, NUM_ACTION_CIRCUIT_FEATURES).
+    """
+    num_circuits, num_qubits, _ = qubit_features.shape
+    mask_bits = index_to_bits(masks, num_qubits).to(qubit_features.dtype)
+    bits = index_to_bits(torch.arange(2**num_qubits, device=masks.device), num_qubits)
+    bits = bits.to(qubit_features.dtype)
+
+    flipped_ones = (bits @ mask_bits.T).expand(num_circuits, -1, -1)
+    infidelity = qubit_features[..., GATE_INFIDELITY] @ mask_bits.T
+    infidelity = infidelity.unsqueeze(1).expand_as(flipped_ones)
+    # The readout error a flip undoes depends on the value of the bit in x.
+    undone = torch.where(
+        bits.bool(),
+        qubit_features[:, None, :, LOG_READOUT_P01],
+        qubit_features[:, None, :, LOG_READOUT_P10],
+    )
+    readout = undone @ mask_bits.T
+
+    return torch.stack([flipped_ones, infidelity, readout], dim=-1)
+
+
+def circuit_features(qubit_features: torch.Tensor) -> torch.Tensor:
+    """Summarize how much gate noise the decoded circuit carries.
+
+    Args:
+        qubit_features: Output of Circuits.qubit_features, shape
+            (circuits, num_qubits, NUM_QUBIT_FEATURES).
+
+    Returns:
+        Mean and sum over the bits of the gate infidelity, shape
+        (circuits, NUM_CIRCUIT_FEATURES).
+    """
+    infidelity = qubit_features[..., GATE_INFIDELITY]
+
+    return torch.stack([infidelity.mean(dim=-1), infidelity.sum(dim=-1)], dim=-1)

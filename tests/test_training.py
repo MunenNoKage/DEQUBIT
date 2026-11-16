@@ -8,6 +8,7 @@ from torch.utils.data import TensorDataset
 
 from dequbit.actions import build_masks, destinations, hamming_weights
 from dequbit.config import Config
+from dequbit.dataset import QUBIT_FEATURE_NAMES
 from dequbit.models import build_model
 from dequbit.models.mlp import MLPCorrector
 from dequbit.models.shared_scorer import SharedScorer
@@ -41,6 +42,7 @@ def training_config(**changes: float) -> Config:
         "circuits_per_batch": 16,
         "max_pairs_per_batch": 100_000,
         "learning_rate": 1e-2,
+        "cosine_decay": False,
         "weight_decay": 0.0,
         "validation_interval": 50,
         "early_stopping_patience": 100,
@@ -60,7 +62,8 @@ def tiny_dataset(num_circuits: int, seed: int, num_qubits: int = NUM_QUBITS) -> 
         num_qubits: Number of measured qubits.
 
     Returns:
-        Pairs (shot counts, P_target), both of shape (num_circuits, 2**num_qubits).
+        Triples (shot counts, qubit features of zeros, P_target); counts and targets
+        have shape (num_circuits, 2**num_qubits).
     """
     generator = torch.Generator().manual_seed(seed)
     peaks = torch.randint(0, 2**num_qubits, (num_circuits,), generator=generator)
@@ -72,7 +75,9 @@ def tiny_dataset(num_circuits: int, seed: int, num_qubits: int = NUM_QUBITS) -> 
         flipped = noisy[:, bitstrings ^ (1 << qubit)]
         noisy = (1 - FLIP_PROBABILITY) * noisy + FLIP_PROBABILITY * flipped
 
-    return TensorDataset((noisy * SHOTS).round(), targets)
+    qubit_features = torch.zeros(num_circuits, num_qubits, len(QUBIT_FEATURE_NAMES))
+
+    return TensorDataset((noisy * SHOTS).round(), qubit_features, targets)
 
 
 def action_tables() -> tuple[torch.Tensor, torch.Tensor]:
@@ -123,9 +128,11 @@ def test_predict_distributions_gives_probabilities() -> None:
     """Action probabilities sum to 1 for every bitstring, corrected distributions too."""
     destination_table, _ = action_tables()
     model = MLPCorrector(NUM_QUBITS, RADIUS, hidden_sizes=[8])
-    counts, _ = tiny_dataset(4, SEED).tensors
+    counts, qubit_features, _ = tiny_dataset(4, SEED).tensors
 
-    action_probs, corrected = predict_distributions(model, counts, destination_table)
+    action_probs, corrected = predict_distributions(
+        model, counts, qubit_features, destination_table
+    )
 
     assert action_probs.shape == (4, 2**NUM_QUBITS, NUM_QUBITS + 1)
     assert corrected.shape == (4, 2**NUM_QUBITS)
@@ -137,16 +144,13 @@ def test_flip_penalty_adds_expected_flipped_bits() -> None:
     """With flip_penalty 1 the loss grows by exactly the mean expected flipped bits."""
     destination_table, flipped_bits = action_tables()
     model = MLPCorrector(NUM_QUBITS, RADIUS, hidden_sizes=[8])
-    counts, targets = tiny_dataset(4, SEED).tensors
+    counts, qubit_features, targets = tiny_dataset(4, SEED).tensors
     noisy = counts / counts.sum(dim=-1, keepdim=True)
-    action_probs, _ = predict_distributions(model, counts, destination_table)
+    action_probs, _ = predict_distributions(model, counts, qubit_features, destination_table)
+    batch = (model, counts, qubit_features, targets, destination_table, flipped_bits)
 
-    plain = training_loss(
-        model, counts, targets, destination_table, flipped_bits, training_config()
-    )
-    penalised = training_loss(
-        model, counts, targets, destination_table, flipped_bits, training_config(flip_penalty=1.0)
-    )
+    plain = training_loss(*batch, training_config())
+    penalised = training_loss(*batch, training_config(flip_penalty=1.0))
 
     flips = expected_flipped_bits(noisy, action_probs, flipped_bits).mean()
     torch.testing.assert_close(penalised - plain, flips)
@@ -156,13 +160,12 @@ def test_relative_loss_divides_by_kl_of_noisy_distribution() -> None:
     """The relative loss is the mean of KL(target || corrected) / KL(target || noisy)."""
     destination_table, flipped_bits = action_tables()
     model = MLPCorrector(NUM_QUBITS, RADIUS, hidden_sizes=[8])
-    counts, targets = tiny_dataset(4, SEED).tensors
+    counts, qubit_features, targets = tiny_dataset(4, SEED).tensors
     noisy = counts / counts.sum(dim=-1, keepdim=True)
-    _, corrected = predict_distributions(model, counts, destination_table)
+    _, corrected = predict_distributions(model, counts, qubit_features, destination_table)
+    batch = (model, counts, qubit_features, targets, destination_table, flipped_bits)
 
-    loss = training_loss(
-        model, counts, targets, destination_table, flipped_bits, training_config(relative_loss=True)
-    )
+    loss = training_loss(*batch, training_config(relative_loss=True))
 
     expected = (circuit_kl(targets, corrected) / circuit_kl(targets, noisy)).mean()
     torch.testing.assert_close(loss, expected)
@@ -261,3 +264,23 @@ def test_circuits_per_batch_shrinks_with_the_number_of_pairs() -> None:
     assert circuits_per_batch(4, 5, config) == 10
     assert circuits_per_batch(3, 4, config) == 16
     assert circuits_per_batch(10, 11, config) == 1
+
+
+def test_cosine_decay_trains_and_reaches_the_last_step() -> None:
+    """With cosine decay training still lowers the loss and runs up to max_steps."""
+    torch.manual_seed(SEED)
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
+
+    history = train(
+        model,
+        {NUM_QUBITS: tiny_dataset(256, SEED)},
+        {NUM_QUBITS: tiny_dataset(64, SEED + 1)},
+        RADIUS,
+        training_config(cosine_decay=True),
+        SEED,
+    )
+
+    assert history[-1]["step"] == 300
+    assert (
+        min(record["validation_loss"] for record in history) < 0.5 * history[0]["validation_loss"]
+    )

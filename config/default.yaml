@@ -35,22 +35,32 @@ model:
     # Inputs besides the bits; false only in ablations.
     use_local_counts: true
     use_context: true
+    # Gate infidelity and readout errors of every bit, from the decoded circuit.
+    use_circuit_context: true
   shared_scorer:
     hidden_sizes: [64, 64]
+    # Gate infidelity, readout error and direction of the flipped bits, and the gate
+    # noise of the circuit, from the decoded circuit.
+    use_circuit_context: true
 
 training:
+  # auto trains on the GPU when one is available, otherwise on the CPU; cpu or cuda
+  # choose one. Results on the two differ in the last digits.
+  device: auto
   # Upper limit of optimizer steps; early stopping usually ends training sooner.
-  max_steps: 10000
+  max_steps: 30000
   circuits_per_batch: 128
   # Upper limit of (bitstring, action) pairs in one batch, which bounds the memory:
   # circuits with many qubits get batches of fewer circuits.
   max_pairs_per_batch: 1000000
   learning_rate: 1.0e-3
+  # Lower the learning rate to 0 along a half cosine over max_steps.
+  cosine_decay: false
   weight_decay: 1.0e-4
   # Validation loss and median L1 relative change every this many steps.
   validation_interval: 200
   # Stop when the validation loss has not improved for this many validations.
-  early_stopping_patience: 8
+  early_stopping_patience: 16
   # Weight of the expected flipped bits per shot in the loss; 0 turns it off.
   flip_penalty: 0.0
   # Divide the KL of every circuit by KL(P_target || noisy) to weigh circuits equally.
@@ -65,12 +75,19 @@ baselines:
   # rate_max.
   rate_max: 0.95
   rate_steps: 100
+  # Factors of the physical depolarising rate tried for fitted physical MIX:
+  # scale_steps values from 0 to scale_max.
+  scale_max: 3.0
+  scale_steps: 61
 
 evaluation:
   # Circuits to evaluate: validation while developing, test only for final results.
   split: validation
+  # Numbers of qubits evaluated. Numbers outside data.qubit_counts were not trained on:
+  # there the shared scorer corrects circuits larger than any it has seen.
+  qubit_counts: [3, 5, 6, 8, 9, 11, 12, 13]
   # Every model and seed needs a model file from python -m dequbit train.
-  models: [mlp, shared_scorer, per_qubit]
+  models: [mlp, shared_scorer]
   seeds: [0, 1, 2, 3, 4]
   # Inference mode of the reported numbers: expected, sample or argmax.
   inference: sample

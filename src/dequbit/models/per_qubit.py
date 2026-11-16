@@ -25,11 +25,12 @@ class PerQubitFlipModel(nn.Module):
         num_actions = len(build_masks(num_qubits, radius))
         self.logits = nn.Parameter(initial_logits(num_actions))
 
-    def forward(self, counts: torch.Tensor) -> torch.Tensor:
+    def forward(self, counts: torch.Tensor, qubit_features: torch.Tensor) -> torch.Tensor:
         """Repeat the logits for every bitstring of every circuit.
 
         Args:
             counts: Shot counts of every circuit, shape (circuits, 2**num_qubits).
+            qubit_features: Description of every measured bit, not used by this model.
 
         Returns:
             Action logits, shape (circuits, 2**num_qubits, actions).

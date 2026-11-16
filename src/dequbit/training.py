@@ -52,13 +52,18 @@ def expected_flipped_bits(
 
 
 def predict_distributions(
-    model: nn.Module, counts: torch.Tensor, destination_table: torch.Tensor
+    model: nn.Module,
+    counts: torch.Tensor,
+    qubit_features: torch.Tensor,
+    destination_table: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Correct every circuit with the expected action of every bitstring.
 
     Args:
-        model: Model that maps counts to action logits.
+        model: Model that maps counts and qubit features to action logits.
         counts: Shot counts of every circuit, shape (circuits, 2**num_qubits).
+        qubit_features: Description of every measured bit, shape
+            (circuits, num_qubits, qubit features).
         destination_table: Output of dequbit.actions.destinations, shape
             (2**num_qubits, actions).
 
@@ -67,7 +72,7 @@ def predict_distributions(
         corrected distribution of every circuit, shape (circuits, 2**num_qubits).
     """
     noisy = counts / counts.sum(dim=-1, keepdim=True)
-    action_probs = model(counts).softmax(dim=-1)
+    action_probs = model(counts, qubit_features).softmax(dim=-1)
 
     return action_probs, expected_distribution(noisy, action_probs, destination_table)
 
@@ -75,6 +80,7 @@ def predict_distributions(
 def training_loss(
     model: nn.Module,
     counts: torch.Tensor,
+    qubit_features: torch.Tensor,
     targets: torch.Tensor,
     destination_table: torch.Tensor,
     flipped_bits: torch.Tensor,
@@ -87,9 +93,11 @@ def training_loss(
     times the expected flipped bits per shot.
 
     Args:
-        model: Model that maps counts to action logits.
+        model: Model that maps counts and qubit features to action logits.
         counts: Shot counts of every circuit, shape (circuits, 2**num_qubits).
-        targets: P_target of every circuit, same shape.
+        qubit_features: Description of every measured bit, shape
+            (circuits, num_qubits, qubit features).
+        targets: P_target of every circuit, same shape as counts.
         destination_table: Output of dequbit.actions.destinations, shape
             (2**num_qubits, actions).
         flipped_bits: Number of bits every action flips, shape (actions,).
@@ -99,7 +107,9 @@ def training_loss(
         Mean loss over the circuits, a scalar tensor.
     """
     noisy = counts / counts.sum(dim=-1, keepdim=True)
-    action_probs, corrected = predict_distributions(model, counts, destination_table)
+    action_probs, corrected = predict_distributions(
+        model, counts, qubit_features, destination_table
+    )
 
     loss = circuit_kl(targets, corrected)
     if training_config["relative_loss"]:
@@ -145,15 +155,16 @@ def train(
     steps the loss and the median L1 relative change on the validation circuits are
     recorded. Training stops after early_stopping_patience validations without a lower
     loss or after max_steps steps, and the model keeps the weights of the best
-    validation.
+    validation. With cosine_decay the learning rate falls from learning_rate to 0 along
+    a half cosine over max_steps.
 
     Args:
         model: Model that accepts the circuits of every size in train_sets; trained in
             place.
-        train_sets: Pairs (shot counts, P_target) of the training circuits, by number
-            of qubits.
-        validation_sets: Pairs (shot counts, P_target) of the validation circuits, by
-            number of qubits.
+        train_sets: Triples (shot counts, qubit features, P_target) of the training
+            circuits, by number of qubits.
+        validation_sets: Triples (shot counts, qubit features, P_target) of the
+            validation circuits, by number of qubits.
         radius: Largest number of bits one action flips.
         training_config: Training section of the config.
         seed: Seed of the batch order.
@@ -179,6 +190,11 @@ def train(
         lr=training_config["learning_rate"],
         weight_decay=training_config["weight_decay"],
     )
+    scheduler = None
+    if training_config["cosine_decay"]:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=training_config["max_steps"]
+        )
     generator = torch.Generator().manual_seed(seed)
 
     history = []
@@ -214,7 +230,7 @@ def train(
         for _ in range(num_steps):
             size_index = torch.randint(len(qubit_counts), (1,), generator=generator).item()
             num_qubits = qubit_counts[size_index]
-            counts, targets = train_tensors[num_qubits]
+            counts, qubit_features, targets = train_tensors[num_qubits]
             destination_table, flipped_bits = tables[num_qubits]
             batch_size = circuits_per_batch(num_qubits, len(flipped_bits), training_config)
 
@@ -222,6 +238,7 @@ def train(
             loss = training_loss(
                 model,
                 counts[batch],
+                qubit_features[batch],
                 targets[batch],
                 destination_table,
                 flipped_bits,
@@ -230,6 +247,8 @@ def train(
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            if scheduler is not None:
+                scheduler.step()
             recent_losses.append(loss.item())
         step += num_steps
 
@@ -271,9 +290,9 @@ def _validate(
     it has.
 
     Args:
-        model: Model that maps counts to action logits.
-        validation_sets: Pairs (shot counts, P_target) of the validation circuits, by
-            number of qubits.
+        model: Model that maps counts and qubit features to action logits.
+        validation_sets: Triples (shot counts, qubit features, P_target) of the
+            validation circuits, by number of qubits.
         tables: Output of _action_tables by number of qubits.
         training_config: Training section of the config.
 
@@ -308,8 +327,9 @@ def _validate_size(
     validation circuits.
 
     Args:
-        model: Model that maps counts to action logits.
-        validation_set: Pairs (shot counts, P_target) of the validation circuits.
+        model: Model that maps counts and qubit features to action logits.
+        validation_set: Triples (shot counts, qubit features, P_target) of the
+            validation circuits.
         destination_table: Output of dequbit.actions.destinations, shape
             (2**num_qubits, actions).
         flipped_bits: Number of bits every action flips, shape (actions,).
@@ -320,7 +340,7 @@ def _validate_size(
         L1 relative change of the expected corrected distributions.
     """
     device = destination_table.device
-    all_counts, all_targets = validation_set.tensors
+    all_counts, all_qubit_features, all_targets = validation_set.tensors
     num_qubits = all_counts.shape[1].bit_length() - 1
     batch_size = circuits_per_batch(num_qubits, len(flipped_bits), training_config)
 
@@ -330,13 +350,20 @@ def _validate_size(
     with torch.no_grad():
         for start in range(0, len(all_counts), batch_size):
             counts = all_counts[start : start + batch_size].to(device)
+            qubit_features = all_qubit_features[start : start + batch_size].to(device)
             targets = all_targets[start : start + batch_size].to(device)
             loss = training_loss(
-                model, counts, targets, destination_table, flipped_bits, training_config
+                model,
+                counts,
+                qubit_features,
+                targets,
+                destination_table,
+                flipped_bits,
+                training_config,
             )
             loss_sum += loss.item() * len(counts)
 
-            _, corrected = predict_distributions(model, counts, destination_table)
+            _, corrected = predict_distributions(model, counts, qubit_features, destination_table)
             noisy = counts / counts.sum(dim=-1, keepdim=True)
             relative_changes.append(
                 l1_relative_change(

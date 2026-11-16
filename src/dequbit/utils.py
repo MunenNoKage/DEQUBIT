@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+DEVICE_NAMES = ("auto", "cpu", "cuda")
 
 
 def set_seed(seed: int) -> None:
@@ -19,6 +20,28 @@ def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+
+def resolve_device(name: str) -> torch.device:
+    """Choose the device to train on.
+
+    Args:
+        name: One of DEVICE_NAMES; "auto" is the GPU when one is available and the CPU
+            otherwise.
+
+    Returns:
+        The device.
+
+    Raises:
+        ValueError: If name is not one of DEVICE_NAMES.
+    """
+    if name not in DEVICE_NAMES:
+        raise ValueError(f"unknown device {name!r}, expected one of {DEVICE_NAMES}")
+
+    if name == "auto":
+        name = "cuda" if torch.cuda.is_available() else "cpu"
+
+    return torch.device(name)
 
 
 def setup_logging(level: str) -> None:

@@ -9,6 +9,10 @@ import torch
 
 from dequbit.dataset import (
     CALIBRATION_NAMES,
+    GATE_INFIDELITY,
+    LOG_READOUT_P01,
+    QUBIT_FEATURE_NAMES,
+    READOUT_REFERENCE_RATE,
     Circuits,
     index_to_bits,
     load_circuits,
@@ -109,10 +113,32 @@ def test_circuits_properties_describe_the_shots(fake_circuits: Circuits) -> None
     np.testing.assert_allclose(fake_circuits.noisy, fake_circuits.counts / FAKE_SHOTS)
 
 
-def test_make_dataset_item_is_float_counts_and_target(fake_circuits: Circuits) -> None:
-    """An item is the float32 counts and P_target of one circuit."""
-    counts, target = make_dataset(fake_circuits)[1]
+def test_make_dataset_item_is_counts_qubit_features_and_target(fake_circuits: Circuits) -> None:
+    """An item is the float32 counts, qubit features and P_target of one circuit."""
+    counts, qubit_features, target = make_dataset(fake_circuits)[1]
 
     assert counts.shape == target.shape == (2**FAKE_NUM_QUBITS,)
-    assert counts.dtype == target.dtype == torch.float32
+    assert qubit_features.shape == (FAKE_NUM_QUBITS, len(QUBIT_FEATURE_NAMES))
+    assert counts.dtype == qubit_features.dtype == target.dtype == torch.float32
     np.testing.assert_array_equal(counts.numpy(), fake_circuits.counts[1])
+
+
+def test_qubit_features_sum_gate_errors_and_read_calibration(tmp_path: Path) -> None:
+    """Gate infidelity adds every gate on the measured qubit; readout is log(rate / 0.02).
+
+    The fake files have two one-qubit gates with error 1e-3 on every qubit and one
+    two-qubit gate with error 0.01 between qubits 0 and 1, so qubit 2 has only the
+    one-qubit gates.
+    """
+    path = tmp_path / "noisy.h5"
+    write_fake_file(path, num_circuits=2, seed=0, num_qubits=3)
+
+    features = load_circuits(path, FAKE_SHOTS).qubit_features
+
+    one_qubit = -2 * np.log1p(-1e-3)
+    two_qubit = -np.log1p(-0.01)
+    np.testing.assert_allclose(
+        features[0, :, GATE_INFIDELITY], [one_qubit + two_qubit] * 2 + [one_qubit], rtol=1e-6
+    )
+    expected_p01 = np.log(np.resize(FAKE_READOUT_P01, 3) / READOUT_REFERENCE_RATE)
+    np.testing.assert_allclose(features[1, :, LOG_READOUT_P01], expected_p01, rtol=1e-6)

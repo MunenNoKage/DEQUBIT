@@ -23,6 +23,14 @@ NOISY_SHOTS_GROUP = "noisy_bitstrings"
 NOISE_MODEL_GROUP = "noise_model"
 METADATA_GROUP = "circuit_meta"
 CALIBRATION_NAMES = ("readout_p01", "readout_p10", "t1", "t2", "error_1q", "error_2q")
+# Description of every measured bit, in this order along the last axis of
+# Circuits.qubit_features.
+QUBIT_FEATURE_NAMES = ("gate_infidelity", "log_readout_p01", "log_readout_p10")
+GATE_INFIDELITY, LOG_READOUT_P01, LOG_READOUT_P10 = range(len(QUBIT_FEATURE_NAMES))
+# Readout errors are given as log(rate / READOUT_REFERENCE_RATE), so a typical rate is
+# near 0; rates below READOUT_RATE_FLOOR are raised to it to keep the log finite.
+READOUT_REFERENCE_RATE = 0.02
+READOUT_RATE_FLOOR = 1e-4
 
 
 @dataclass
@@ -66,6 +74,31 @@ class Circuits:
     def noisy(self) -> np.ndarray:
         """Noisy distribution of every circuit, shape (circuits, 2**num_qubits)."""
         return self.counts / self.counts.sum(axis=-1, keepdims=True)
+
+    @property
+    def qubit_features(self) -> np.ndarray:
+        """Describe the errors that can hit every measured bit, from the decoded circuit.
+
+        The gate infidelity of a bit is -sum(log(1 - error)) over every gate of the
+        transpiled circuit on the device qubit measured into that bit, with two-qubit
+        gates counted on both of their qubits. A qubit that no gate touched has 0. The
+        readout errors are those of the same device qubit.
+
+        Returns:
+            Features in the order of QUBIT_FEATURE_NAMES, float32 of shape
+            (circuits, num_qubits, len(QUBIT_FEATURE_NAMES)).
+        """
+        calibration = self.calibration
+        one_qubit = self.one_qubit_gates * -np.log1p(-calibration["error_1q"])
+        two_qubit = (self.two_qubit_gates * -np.log1p(-calibration["error_2q"])).sum(axis=-1)
+        infidelity = np.take_along_axis(one_qubit + two_qubit, self.measured_qubits, axis=1)
+
+        p01 = calibration["readout_p01"][self.measured_qubits]
+        p10 = calibration["readout_p10"][self.measured_qubits]
+        log_p01 = np.log(np.maximum(p01, READOUT_RATE_FLOOR) / READOUT_REFERENCE_RATE)
+        log_p10 = np.log(np.maximum(p10, READOUT_RATE_FLOOR) / READOUT_REFERENCE_RATE)
+
+        return np.stack([infidelity, log_p01, log_p10], axis=-1).astype(np.float32)
 
 
 def unpack_shots(packed: np.ndarray, num_qubits: int) -> np.ndarray:
@@ -146,17 +179,20 @@ def load_circuits(path: Path, shots_per_circuit: int) -> Circuits:
 
 
 def make_dataset(circuits: Circuits) -> TensorDataset:
-    """Build a dataset whose item is the shot counts of one circuit.
+    """Build a dataset whose item is the shot counts and qubit features of one circuit.
 
     Args:
         circuits: Circuits of one split.
 
     Returns:
-        Dataset of pairs (shot counts of one circuit, its P_target), both float32 of
-        shape (2**num_qubits,).
+        Dataset of triples (shot counts of one circuit, shape (2**num_qubits,); its
+        qubit features, shape (num_qubits, len(QUBIT_FEATURE_NAMES)); its P_target,
+        shape (2**num_qubits,)), all float32.
     """
     return TensorDataset(
-        torch.from_numpy(circuits.counts).float(), torch.from_numpy(circuits.targets).float()
+        torch.from_numpy(circuits.counts).float(),
+        torch.from_numpy(circuits.qubit_features),
+        torch.from_numpy(circuits.targets).float(),
     )
 
 
