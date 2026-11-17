@@ -15,6 +15,7 @@ from dequbit.evaluate import (
 )
 from dequbit.models import MODEL_NAMES, save_model
 from dequbit.pipeline import (
+    ablation_config,
     evaluate_split,
     evaluated_models,
     load_history,
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the parser with the train and evaluate subcommands.
+    """Build the parser with the train, evaluate and ablate subcommands.
 
     Returns:
         Parser of the command-line arguments.
@@ -63,6 +64,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     evaluate_parser = commands.add_parser("evaluate", help="evaluate models and baselines")
     evaluate_parser.add_argument(
+        "--split", choices=EVALUATION_SPLITS, help="circuits (default: evaluation.split)"
+    )
+
+    ablate_parser = commands.add_parser(
+        "ablate", help="train if needed and evaluate one variant of ablation.variants"
+    )
+    ablate_parser.add_argument("variant", help="name of a variant in ablation.variants")
+    ablate_parser.add_argument(
         "--split", choices=EVALUATION_SPLITS, help="circuits (default: evaluation.split)"
     )
 
@@ -121,6 +130,23 @@ def run_evaluate(config: Config, split: str) -> None:
     logger.info("wrote metrics and figures to %s", figures)
 
 
+def run_ablation(config: Config, name: str, split: str | None) -> None:
+    """Train the models of one ablation variant if it has its own, then evaluate it.
+
+    Args:
+        config: Full config.
+        name: Name of a variant in ablation.variants.
+        split: "validation" or "test"; None takes evaluation.split.
+    """
+    variant_config = ablation_config(config, name)
+
+    if config["ablation"]["variants"][name]["train"]:
+        for model_name in variant_config["evaluation"]["models"]:
+            for seed in variant_config["evaluation"]["seeds"]:
+                run_train(variant_config, model_name, seed)
+    run_evaluate(variant_config, split or variant_config["evaluation"]["split"])
+
+
 def _histories_with_size(config: Config, model_name: str, num_qubits: int) -> list[list[dict]]:
     """Read the training histories of the models that validated one number of qubits.
 
@@ -172,6 +198,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "evaluate":
         run_evaluate(config, args.split or config["evaluation"]["split"])
+    elif args.command == "ablate":
+        run_ablation(config, args.variant, args.split)
     elif args.all:
         for model_name in config["evaluation"]["models"]:
             for seed in config["evaluation"]["seeds"]:

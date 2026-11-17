@@ -216,7 +216,7 @@ def test_baseline_distributions_gives_every_baseline(fake_circuits: Circuits) ->
         fake_circuits, fake_circuits, BASELINES_CONFIG, SEED
     )
 
-    expected_names = {"identity", "oracle", "threshold", "repolarizer", "readout", "mix"}
+    expected_names = {"identity", "oracle", "threshold", "repolarizer", "readout", "mix", "hammer"}
     assert expected_names | {"mix_physical", "mix_physical_fitted", "linear_map"} == set(
         distributions
     )

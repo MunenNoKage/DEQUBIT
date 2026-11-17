@@ -4,6 +4,8 @@ Distances take arrays of shape (circuits, 2**num_qubits) and return one value pe
 circuit, shape (circuits,).
 """
 
+import math
+
 import numpy as np
 
 # Probabilities are clipped to this value before a logarithm, so a bitstring that the
@@ -113,6 +115,121 @@ def summarize_relative_changes(relative_changes: np.ndarray) -> dict[str, float]
         "third_quartile": float(third_quartile),
         "improved_fraction": improved_fraction(relative_changes),
     }
+
+
+def median_confidence_interval(
+    relative_changes: np.ndarray, rng: np.random.Generator, resamples: int, level: float
+) -> tuple[float, float]:
+    """Estimate a bootstrap confidence interval of the median L1 relative change.
+
+    Circuits are drawn with replacement. For a learned model every row holds the
+    circuits of one training seed, and the statistic is the mean over the seeds of the
+    median over the circuits, the number reported for the model.
+
+    Args:
+        relative_changes: L1 relative change of every circuit, shape (circuits,), or of
+            every seed and circuit, shape (seeds, circuits).
+        rng: Random generator of the resampled circuits.
+        resamples: Number of bootstrap samples.
+        level: Probability that the interval covers the median, for example 0.95.
+
+    Returns:
+        Lower and upper end of the interval.
+    """
+    changes = np.atleast_2d(relative_changes)
+    num_circuits = changes.shape[1]
+
+    picks = rng.integers(0, num_circuits, size=(resamples, num_circuits))
+    statistics = np.median(changes[:, picks], axis=-1).mean(axis=0)
+    tail = 100 * (1 - level) / 2
+    low, high = np.percentile(statistics, [tail, 100 - tail])
+
+    return float(low), float(high)
+
+
+def paired_comparison(
+    first: np.ndarray,
+    second: np.ndarray,
+    rng: np.random.Generator,
+    resamples: int,
+    level: float,
+) -> dict[str, float]:
+    """Compare two corrections of the same circuits, circuit by circuit.
+
+    Args:
+        first: L1 relative change of every circuit after the first correction, shape
+            (circuits,).
+        second: The same after the second correction, same shape.
+        rng: Random generator of the bootstrap.
+        resamples: Number of bootstrap samples.
+        level: Coverage of the confidence interval, for example 0.95.
+
+    Returns:
+        Median of first - second (negative when the first correction is better) with
+        its bootstrap confidence interval, the share of circuits where the first is
+        better, and the two-sided p-value of the Wilcoxon signed-rank test.
+    """
+    differences = first - second
+
+    low, high = median_confidence_interval(differences, rng, resamples, level)
+
+    return {
+        "median_difference": float(np.median(differences)),
+        "difference_low": low,
+        "difference_high": high,
+        "first_better_fraction": float(np.mean(differences < 0)),
+        "wilcoxon_p": wilcoxon_p_value(differences),
+    }
+
+
+def wilcoxon_p_value(differences: np.ndarray) -> float:
+    """Test whether paired differences are centred at zero (Wilcoxon signed-rank test).
+
+    Zero differences are dropped. The rank sum of the positive differences is compared
+    with its distribution under the null hypothesis through the normal approximation,
+    with the variance corrected for tied ranks; it is accurate from about 20 nonzero
+    differences.
+
+    Args:
+        differences: Paired differences, shape (pairs,).
+
+    Returns:
+        Two-sided p-value; 1 when every difference is zero.
+    """
+    nonzero = differences[differences != 0]
+    count = len(nonzero)
+    if count == 0:
+        return 1.0
+
+    ranks = _average_ranks(np.abs(nonzero))
+    positive_rank_sum = ranks[nonzero > 0].sum()
+    _, tie_sizes = np.unique(np.abs(nonzero), return_counts=True)
+    mean = count * (count + 1) / 4
+    variance = count * (count + 1) * (2 * count + 1) / 24
+    variance -= (tie_sizes**3 - tie_sizes).sum() / 48
+    z_score = (positive_rank_sum - mean) / math.sqrt(variance)
+
+    return math.erfc(abs(z_score) / math.sqrt(2))
+
+
+def _average_ranks(values: np.ndarray) -> np.ndarray:
+    """Rank values from 1 upwards, giving tied values the mean of their ranks.
+
+    Args:
+        values: Values to rank, shape (values,).
+
+    Returns:
+        Rank of every value, shape (values,).
+    """
+    order = np.argsort(values, kind="stable")
+    _, group, sizes = np.unique(values[order], return_inverse=True, return_counts=True)
+    last_rank = np.cumsum(sizes)
+    group_rank = last_rank - (sizes - 1) / 2
+
+    ranks = np.empty(len(values))
+    ranks[order] = group_rank[group]
+
+    return ranks
 
 
 def mean_flipped_bits(noisy_shots: np.ndarray, corrected_shots: np.ndarray) -> float:

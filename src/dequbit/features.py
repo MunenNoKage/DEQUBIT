@@ -20,6 +20,8 @@ NUM_ACTION_CIRCUIT_FEATURES = 3
 # Mean and sum of the gate infidelity of the bits.
 NUM_CIRCUIT_FEATURES = 2
 NUM_QUBIT_FEATURES = len(QUBIT_FEATURE_NAMES)
+# Hamming distances of the neighbourhood counts.
+NEIGHBOURHOOD_DISTANCES = (1, 2)
 
 
 def signed_bits(num_qubits: int) -> torch.Tensor:
@@ -70,6 +72,34 @@ def own_count(counts: torch.Tensor) -> torch.Tensor:
     num_shots = counts.sum(dim=-1, keepdim=True)
 
     return torch.log1p(counts) - num_shots.log()
+
+
+def neighbourhood_counts(counts: torch.Tensor, num_qubits: int) -> torch.Tensor:
+    """Measure how densely the neighbourhood of every bitstring was measured.
+
+    For every distance d of NEIGHBOURHOOD_DISTANCES the feature is log(mean count + 1)
+    of the bitstrings d bit flips away. A correct outcome sits in a region that noise
+    filled with many shots, while an outcome made by noise usually does not; the same
+    observation is behind HAMMER. The mean, not the sum, keeps the scale the same for
+    every number of qubits.
+
+    Args:
+        counts: Shot counts of every circuit, shape (circuits, 2**num_qubits).
+        num_qubits: Number of measured qubits.
+
+    Returns:
+        Neighbourhood counts, shape (circuits, 2**num_qubits, len(NEIGHBOURHOOD_DISTANCES)).
+    """
+    bitstrings = torch.arange(2**num_qubits, device=counts.device)
+    bits = index_to_bits(bitstrings, num_qubits)
+
+    features = []
+    for distance in NEIGHBOURHOOD_DISTANCES:
+        masks = bitstrings[bits.sum(dim=-1) == distance]
+        neighbours = bitstrings.unsqueeze(-1) ^ masks
+        features.append(torch.log1p(counts[:, neighbours].mean(dim=-1)))
+
+    return torch.stack(features, dim=-1)
 
 
 def global_context(counts: torch.Tensor, num_qubits: int) -> torch.Tensor:

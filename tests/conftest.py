@@ -111,6 +111,7 @@ def fake_config(tmp_path: Path) -> Path:
             "model": str(tmp_path / "models"),
             "metrics": str(tmp_path / "results" / "metrics_{split}.json"),
             "figures_dir": str(tmp_path / "results" / "figures"),
+            "ablations": str(tmp_path / "results" / "ablations"),
         }
     )
     config["data"].update(

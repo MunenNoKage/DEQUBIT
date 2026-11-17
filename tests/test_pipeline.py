@@ -7,6 +7,7 @@ import pytest
 
 from dequbit.config import load_config
 from dequbit.pipeline import (
+    ablation_config,
     evaluate_baselines,
     evaluate_split,
     evaluated_models,
@@ -139,3 +140,53 @@ def test_evaluated_models_leave_out_per_size_models_on_untrained_sizes(
 
     assert evaluated_models(config, FAKE_NUM_QUBITS) == ["mlp", "shared_scorer"]
     assert evaluated_models(config, FAKE_UNTRAINED_QUBITS) == ["shared_scorer"]
+
+
+def test_ablation_config_redirects_outputs_and_applies_overrides(fake_config: Path) -> None:
+    """A training variant gets its own models and seeds; an evaluation variant only outputs."""
+    config = load_config(fake_config)
+
+    trained = ablation_config(config, "no_circuit_context")
+    evaluated = ablation_config(config, "calibration_noise_20")
+
+    assert Path(trained["paths"]["model"]).parts[-2:] == ("ablations", "no_circuit_context")
+    assert trained["evaluation"]["seeds"] == config["ablation"]["seeds"]
+    assert trained["model"]["shared_scorer"]["use_circuit_context"] is False
+    assert evaluated["paths"]["model"] == config["paths"]["model"]
+    assert evaluated["evaluation"]["calibration_noise"] == 0.2
+    assert "calibration_noise_20" in evaluated["paths"]["metrics"]
+    assert config["model"]["shared_scorer"]["use_circuit_context"] is True
+
+
+def test_ablation_config_rejects_unknown_variant(fake_config: Path) -> None:
+    """A name outside ablation.variants raises ValueError."""
+    with pytest.raises(ValueError):
+        ablation_config(load_config(fake_config), "no_such_variant")
+
+
+def test_train_model_leaves_out_excluded_types(fake_config: Path) -> None:
+    """Without the bv circuits training still runs and validates on the rest."""
+    config = load_config(fake_config)
+    config["data"]["excluded_types"] = ["bv"]
+
+    _, history = train_model(config, "shared_scorer", seed=0, num_qubits=None)
+
+    assert history[-1]["step"] == 20
+
+
+def test_evaluate_split_with_drifted_calibration_changes_calibrated_baselines(
+    fake_config: Path,
+) -> None:
+    """Drifted calibration changes readout inversion but not the calibration-free threshold."""
+    config = load_config(fake_config)
+    config["evaluation"]["models"] = []
+    drifted = load_config(fake_config)
+    drifted["evaluation"]["models"] = []
+    drifted["evaluation"]["calibration_noise"] = 0.5
+
+    true_metrics, _ = evaluate_split(config, "validation")
+    drifted_metrics, _ = evaluate_split(drifted, "validation")
+
+    true_size, drifted_size = true_metrics["qubits"]["2"], drifted_metrics["qubits"]["2"]
+    assert true_size["baselines"]["readout"] != drifted_size["baselines"]["readout"]
+    assert true_size["baselines"]["threshold"] == drifted_size["baselines"]["threshold"]

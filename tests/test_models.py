@@ -277,3 +277,13 @@ def test_circuit_context_changes_logits_only_when_used(name: str) -> None:
 
     assert not torch.allclose(logits[True][0], logits[True][1])
     torch.testing.assert_close(logits[False][0], logits[False][1])
+
+
+def test_shared_scorer_with_neighbourhood_starts_with_initial_logits() -> None:
+    """The neighbourhood inputs add 2 inputs and keep the first output at initial_logits."""
+    model = SharedScorer(RADIUS, hidden_sizes=[16], use_neighbourhood=True)
+
+    logits = model(random_counts(2), random_qubit_features(2))
+
+    assert model.hidden[0].in_features == 13
+    torch.testing.assert_close(logits, initial_logits(NUM_ACTIONS).expand_as(logits))

@@ -10,6 +10,7 @@ evaluation.qubit_counts, which may hold numbers no model was trained on: there o
 baselines and the models of SIZE_INDEPENDENT_MODELS are evaluated.
 """
 
+import copy
 import json
 import logging
 from functools import lru_cache
@@ -19,15 +20,27 @@ from typing import Any
 import numpy as np
 from torch import nn
 
-from dequbit.config import Config
-from dequbit.dataset import Circuits, load_circuits, make_dataset
+from dequbit.config import Config, apply_overrides
+from dequbit.dataset import (
+    Circuits,
+    load_circuits,
+    make_dataset,
+    perturb_calibration,
+    select_circuits,
+)
 from dequbit.evaluate import (
     INFERENCE_MODES,
+    REFERENCE_METHODS,
     baseline_distributions,
     correct_circuits,
     method_metrics,
 )
-from dequbit.metrics import l1_relative_change, summarize_relative_changes
+from dequbit.metrics import (
+    l1_relative_change,
+    median_confidence_interval,
+    paired_comparison,
+    summarize_relative_changes,
+)
 from dequbit.models import SIZE_INDEPENDENT_MODELS, build_model, load_model
 from dequbit.training import train
 from dequbit.utils import collect_environment, resolve_device, set_seed
@@ -109,6 +122,9 @@ def train_model(
 ) -> tuple[nn.Module, list[dict]]:
     """Train one model on the training circuits with early stopping on validation.
 
+    The circuit families of data.excluded_types are left out of the training and the
+    validation circuits.
+
     Args:
         config: Full config.
         model_name: Model name from dequbit.models.MODEL_NAMES.
@@ -122,9 +138,11 @@ def train_model(
     """
     radius = config["actions"]["radius"]
     qubit_counts = config["data"]["qubit_counts"] if num_qubits is None else [num_qubits]
-    train_sets = {size: make_dataset(load_split(config, "train", size)) for size in qubit_counts}
+    train_sets = {
+        size: make_dataset(_training_circuits(config, "train", size)) for size in qubit_counts
+    }
     validation_sets = {
-        size: make_dataset(load_split(config, "validation", size)) for size in qubit_counts
+        size: make_dataset(_training_circuits(config, "validation", size)) for size in qubit_counts
     }
 
     set_seed(seed)
@@ -264,7 +282,10 @@ def evaluate_size(
     """Evaluate the baselines and every model of evaluation.models on one number of qubits.
 
     A model trained per number of qubits is left out where num_qubits is not one of
-    data.qubit_counts, since no such model exists.
+    data.qubit_counts, since no such model exists. With evaluation.calibration_noise
+    above 0 the evaluated circuits get a drifted calibration (see
+    dequbit.dataset.perturb_calibration), seen by the models and the baselines alike;
+    the baseline parameters are still fitted with the true calibration.
 
     Args:
         config: Full config.
@@ -272,11 +293,16 @@ def evaluate_size(
         num_qubits: One of evaluation.qubit_counts.
 
     Returns:
-        Metrics of the circuits with num_qubits qubits, and the L1 relative changes of
-        every method by name, for figures.
+        Metrics of the circuits with num_qubits qubits, with confidence intervals of the
+        medians and the paired comparison of every model with the best baseline, and
+        the L1 relative changes of every method by name, for figures.
     """
     train_circuits = load_split(config, "train", num_qubits)
     circuits = load_split(config, split, num_qubits)
+    calibration_noise = config["evaluation"]["calibration_noise"]
+    if calibration_noise > 0:
+        rng = np.random.default_rng(config["seed"])
+        circuits = perturb_calibration(circuits, calibration_noise, rng)
     noisy = circuits.noisy
 
     baselines, parameters = evaluate_baselines(config, train_circuits, circuits)
@@ -294,12 +320,14 @@ def evaluate_size(
         for name, corrected in baselines.items()
     }
 
-    for model_name in evaluated_models(config, num_qubits):
+    model_names = evaluated_models(config, num_qubits)
+    for model_name in model_names:
         logger.info("evaluating %s on %d qubits", model_name, num_qubits)
         metrics["models"][model_name], changes[model_name] = evaluate_model(
             config, model_name, circuits
         )
     metrics["circuit_types"] = _metrics_by_type(changes, circuits.circuit_types)
+    metrics.update(_significance(config, changes, model_names))
 
     return metrics, changes
 
@@ -329,6 +357,100 @@ def evaluate_split(
         )
 
     return metrics, changes
+
+
+def ablation_config(config: Config, name: str) -> Config:
+    """Build the config of one variant of ablation.variants.
+
+    Metrics and figures of the variant go to paths.ablations/NAME. A variant that trains
+    its own models keeps them in paths.model/ablations/NAME and uses the seeds of
+    ablation.seeds; any other variant evaluates the main models. The overrides of the
+    variant are applied last.
+
+    Args:
+        config: Full config.
+        name: Name of a variant in ablation.variants.
+
+    Returns:
+        Config of the variant; config itself is not changed.
+
+    Raises:
+        ValueError: If name is not a variant of ablation.variants.
+    """
+    variants = config["ablation"]["variants"]
+    if name not in variants:
+        raise ValueError(f"unknown ablation {name!r}, expected one of {sorted(variants)}")
+
+    variant = variants[name]
+    config = copy.deepcopy(config)
+    directory = Path(config["paths"]["ablations"]) / name
+    config["paths"]["metrics"] = str(directory / "metrics_{split}.json")
+    config["paths"]["figures_dir"] = str(directory / "figures")
+    if variant["train"]:
+        config["paths"]["model"] = str(Path(config["paths"]["model"]) / "ablations" / name)
+        config["evaluation"]["seeds"] = config["ablation"]["seeds"]
+
+    return apply_overrides(config, variant["overrides"])
+
+
+def _training_circuits(config: Config, split: str, num_qubits: int) -> Circuits:
+    """Read the circuits a model is trained or validated on.
+
+    Args:
+        config: Full config.
+        split: "train" or "validation".
+        num_qubits: Number of qubits of the circuits.
+
+    Returns:
+        The circuits of the split without the families of data.excluded_types.
+    """
+    circuits = load_split(config, split, num_qubits)
+    excluded = config["data"]["excluded_types"]
+
+    return select_circuits(circuits, ~np.isin(circuits.circuit_types, excluded))
+
+
+def _significance(
+    config: Config, changes: dict[str, np.ndarray], model_names: list[str]
+) -> dict[str, dict[str, Any]]:
+    """Attach confidence intervals and paired tests to the medians of one number of qubits.
+
+    Every model is compared with the baseline of the lowest median, other than the
+    reference methods, on the same circuits; the model change of a circuit is its mean
+    over the training seeds.
+
+    Args:
+        config: Full config.
+        changes: L1 relative changes by method name: shape (circuits,) for a baseline,
+            the seeds one after another, shape (seeds * circuits,), for a model.
+        model_names: Names of the learned models among the methods.
+
+    Returns:
+        median_intervals, the confidence interval of the median of every method, and
+        comparisons, the output of dequbit.metrics.paired_comparison for every model
+        together with the name of the baseline it was compared with.
+    """
+    evaluation = config["evaluation"]
+    resamples, level = evaluation["bootstrap_resamples"], evaluation["confidence_level"]
+    rng = np.random.default_rng(config["seed"])
+    num_circuits = len(changes[REFERENCE_METHODS[0]])
+    by_seed = {name: values.reshape(-1, num_circuits) for name, values in changes.items()}
+
+    intervals = {
+        name: median_confidence_interval(values, rng, resamples, level)
+        for name, values in by_seed.items()
+    }
+    baselines = [name for name in changes if name not in (*model_names, *REFERENCE_METHODS)]
+    best = min(baselines, key=lambda name: np.median(changes[name]))
+    comparisons = {
+        name: {
+            "baseline": best,
+            **paired_comparison(by_seed[name].mean(axis=0), changes[best], rng, resamples, level),
+        }
+        for name in model_names
+    }
+
+    return {"median_intervals": intervals, "comparisons": comparisons}
 
 
 def _metrics_by_type(

@@ -8,6 +8,7 @@ from dequbit.baselines import (
     best_parameter,
     depolarising_correction,
     fit_linear_map,
+    hammer_correction,
     linear_map_correction,
     mix_correction,
     oracle_distribution,
@@ -359,3 +360,74 @@ def test_scaled_mix_correction_with_scale_one_is_mix_with_the_physical_rate() ->
     scaled = scaled_mix_correction(distributions, 1.0, physical_rate, p01, p10)
 
     np.testing.assert_allclose(scaled, mix_correction(distributions, physical_rate, p01, p10))
+
+
+def hammer_by_definition(distribution: np.ndarray, num_qubits: int) -> np.ndarray:
+    """Apply HAMMER with the loops of Algorithm 1 of Tannu et al., for comparison.
+
+    Args:
+        distribution: Distribution of one circuit, shape (2**num_qubits,).
+        num_qubits: Number of measured qubits.
+
+    Returns:
+        Corrected distribution, same shape.
+    """
+    measured = [x for x in range(2**num_qubits) if distribution[x] > 0]
+    strength = np.zeros(num_qubits + 1)
+    for x in measured:
+        for y in measured:
+            distance = bin(x ^ y).count("1")
+            if distance < num_qubits / 2:
+                strength[distance] += distribution[y]
+
+    corrected = np.zeros(2**num_qubits)
+    for x in measured:
+        score = distribution[x]
+        for y in measured:
+            distance = bin(x ^ y).count("1")
+            if distance < num_qubits / 2 and distribution[x] > distribution[y]:
+                score += distribution[y] / strength[distance]
+        corrected[x] = score * distribution[x]
+
+    return corrected / corrected.sum()
+
+
+@pytest.mark.parametrize("num_qubits", [3, 4, 5])
+def test_hammer_correction_follows_algorithm_of_the_paper(num_qubits: int) -> None:
+    """On random sparse distributions the result equals the loops of Algorithm 1."""
+    rng = np.random.default_rng(SEED)
+    distributions = rng.dirichlet(np.ones(2**num_qubits), size=3)
+    distributions[distributions < 0.02] = 0
+    distributions /= distributions.sum(axis=1, keepdims=True)
+
+    corrected = hammer_correction(distributions)
+
+    for distribution, result in zip(distributions, corrected):
+        np.testing.assert_allclose(result, hammer_by_definition(distribution, num_qubits))
+
+
+def test_hammer_correction_boosts_outcome_with_likely_neighbours() -> None:
+    """Of two outcomes with probability 0.3, the one with likely neighbours ends far ahead.
+
+    1111 has its four neighbours at distance 1 measured, 0000 has none of them. W[1] is
+    1 / 1.6, so the score of 1111 is 0.3 + 0.4 / 1.6 = 0.55 and of 0000 it stays 0.3;
+    after multiplying by P(x) and renormalising, 1111 gets 0.559 and 0000 0.305.
+    """
+    distribution = np.zeros(16)
+    distribution[[0b1111, 0b0000]] = 0.3
+    distribution[[0b0111, 0b1011, 0b1101, 0b1110]] = 0.1
+
+    corrected = hammer_correction(distribution[np.newaxis])[0]
+
+    np.testing.assert_allclose(corrected[[0b1111, 0b0000]], [0.165 / 0.295, 0.09 / 0.295])
+    np.testing.assert_allclose(corrected.sum(), 1.0)
+
+
+def test_hammer_correction_keeps_uniform_and_single_outcome_distributions() -> None:
+    """Without a less likely neighbour no score grows, so both distributions stay."""
+    uniform = np.full(8, 1 / 8)
+    single = np.eye(8)[5]
+
+    corrected = hammer_correction(np.stack([uniform, single]))
+
+    np.testing.assert_allclose(corrected, np.stack([uniform, single]))

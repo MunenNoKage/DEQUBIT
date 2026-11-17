@@ -13,8 +13,11 @@ from dequbit.metrics import (
     l1_distance,
     l1_relative_change,
     mean_flipped_bits,
+    median_confidence_interval,
+    paired_comparison,
     summarize_relative_changes,
     unreachable_mass,
+    wilcoxon_p_value,
 )
 
 NUM_QUBITS = 2
@@ -106,3 +109,45 @@ def test_unreachable_mass_is_target_mass_beyond_radius() -> None:
     mass = unreachable_mass(counts, targets, table)
 
     np.testing.assert_allclose(mass, [1.0, 0.25])
+
+
+def test_median_confidence_interval_covers_the_median_and_shrinks_with_more_circuits() -> None:
+    """The 95% interval contains the median and narrows from 50 to 5000 circuits."""
+    rng = np.random.default_rng(0)
+    few, many = rng.normal(-0.5, 0.1, 50), rng.normal(-0.5, 0.1, 5000)
+
+    few_low, few_high = median_confidence_interval(few, np.random.default_rng(1), 2000, 0.95)
+    many_low, many_high = median_confidence_interval(many, np.random.default_rng(1), 2000, 0.95)
+
+    assert few_low < np.median(few) < few_high
+    assert many_high - many_low < (few_high - few_low) / 3
+
+
+def test_median_confidence_interval_of_seeds_averages_their_medians() -> None:
+    """Two seeds with every change -0.4 and -0.6 give the interval [-0.5, -0.5]."""
+    changes = np.stack([np.full(30, -0.4), np.full(30, -0.6)])
+
+    low, high = median_confidence_interval(changes, np.random.default_rng(0), 200, 0.95)
+
+    assert low == pytest.approx(-0.5) and high == pytest.approx(-0.5)
+
+
+def test_wilcoxon_p_value_matches_tables() -> None:
+    """Ranks 1..20 all positive give z = 3.92, p = 8.9e-5; a symmetric sample gives p = 1."""
+    np.testing.assert_allclose(wilcoxon_p_value(np.arange(1.0, 21.0)), 8.857e-5, rtol=1e-3)
+    assert wilcoxon_p_value(np.array([-2.0, -1.0, 1.0, 2.0, 0.0])) == pytest.approx(1.0)
+    assert wilcoxon_p_value(np.zeros(5)) == 1.0
+
+
+def test_paired_comparison_finds_the_better_correction() -> None:
+    """A correction better by 0.1 on every circuit wins all of them, significantly."""
+    rng = np.random.default_rng(0)
+    second = rng.normal(-0.5, 0.2, 100)
+    first = second - 0.1 + rng.normal(0, 0.01, 100)
+
+    result = paired_comparison(first, second, np.random.default_rng(1), 1000, 0.95)
+
+    assert result["median_difference"] == pytest.approx(-0.1, abs=0.01)
+    assert result["difference_low"] < -0.09 and result["difference_high"] > -0.11
+    assert result["first_better_fraction"] == 1.0
+    assert result["wilcoxon_p"] < 1e-10

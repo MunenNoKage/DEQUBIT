@@ -17,6 +17,7 @@ from dequbit.baselines import (
     best_parameter,
     depolarising_correction,
     fit_linear_map,
+    hammer_correction,
     linear_map_correction,
     mix_correction,
     oracle_distribution,
@@ -53,6 +54,7 @@ METHOD_LABELS = {
     "mix_physical": "MIX, physical rate",
     "mix_physical_fitted": "MIX, fitted physical rate",
     "linear_map": "Linear map",
+    "hammer": "HAMMER",
     "mlp": "MLP",
     "shared_scorer": "Shared scorer",
     "per_qubit": "Per-qubit flip",
@@ -188,6 +190,7 @@ def baseline_distributions(
         "threshold": threshold_correction(noisy, parameters["threshold"]),
         "repolarizer": depolarising_correction(noisy, parameters["repolarizer_rate"]),
         "readout": readout_correction(noisy, p01, p10),
+        "hammer": hammer_correction(noisy),
         "mix": mix_correction(noisy, parameters["mix_rate"], p01, p10),
         "mix_physical": mix_correction(noisy, physical_rate, p01, p10),
         "mix_physical_fitted": scaled_mix_correction(

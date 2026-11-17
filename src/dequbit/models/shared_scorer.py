@@ -7,6 +7,7 @@ from torch import nn
 
 from dequbit.actions import build_masks, destinations, hamming_weights, initial_logits
 from dequbit.features import (
+    NEIGHBOURHOOD_DISTANCES,
     NUM_ACTION_CIRCUIT_FEATURES,
     NUM_CIRCUIT_FEATURES,
     NUM_GLOBAL_FEATURES,
@@ -14,6 +15,7 @@ from dequbit.features import (
     circuit_features,
     global_context,
     local_counts,
+    neighbourhood_counts,
     own_count,
 )
 
@@ -28,12 +30,18 @@ class SharedScorer(nn.Module):
     own count of the bitstring and the global context of the circuit. With circuit
     context they also describe the flipped bits in the decoded circuit (gate
     infidelity, readout error, flipped ones) and the gate noise of the whole circuit.
-    None of them names a qubit, so one model corrects circuits of every number of
-    qubits, and two actions with the same features get the same logit.
+    With neighbourhood counts they also compare how densely the neighbourhoods of the
+    destination and of the bitstring were measured. None of them names a qubit, so one
+    model corrects circuits of every number of qubits, and two actions with the same
+    features get the same logit.
     """
 
     def __init__(
-        self, radius: int, hidden_sizes: list[int], use_circuit_context: bool = True
+        self,
+        radius: int,
+        hidden_sizes: list[int],
+        use_circuit_context: bool = True,
+        use_neighbourhood: bool = False,
     ) -> None:
         """Build the layers.
 
@@ -41,16 +49,21 @@ class SharedScorer(nn.Module):
             radius: Largest number of bits one action flips.
             hidden_sizes: Width of every hidden layer.
             use_circuit_context: Whether features of the decoded circuit are inputs.
+            use_neighbourhood: Whether the neighbourhood counts of the destination,
+                relative to those of the bitstring, are inputs.
         """
         super().__init__()
 
         self.radius = radius
         self.use_circuit_context = use_circuit_context
+        self.use_neighbourhood = use_neighbourhood
 
         layers = []
         input_size = NUM_ACTION_FEATURES + NUM_GLOBAL_FEATURES
         if use_circuit_context:
             input_size += NUM_ACTION_CIRCUIT_FEATURES + NUM_CIRCUIT_FEATURES
+        if use_neighbourhood:
+            input_size += len(NEIGHBOURHOOD_DISTANCES)
         for hidden_size in hidden_sizes:
             layers += [nn.Linear(input_size, hidden_size), nn.GELU()]
             input_size = hidden_size
@@ -95,6 +108,12 @@ class SharedScorer(nn.Module):
             features = torch.cat(
                 [features, self._circuit_pair_features(qubit_features, masks)], dim=-1
             )
+        if self.use_neighbourhood:
+            neighbourhood = neighbourhood_counts(counts, num_qubits)
+            # Destination minus bitstring, like the local counts: shape (circuits,
+            # 2**num_qubits, actions, distances).
+            relative = neighbourhood[:, destination_table] - neighbourhood.unsqueeze(2)
+            features = torch.cat([features, relative], dim=-1)
         scores = self.head(self.hidden(features)).squeeze(-1)
         # The identity logit of initial_logits grows with the number of actions, which
         # depends on the number of qubits, so it is added to the output and not learned.

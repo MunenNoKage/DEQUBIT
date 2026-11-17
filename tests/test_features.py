@@ -16,6 +16,7 @@ from dequbit.features import (
     circuit_features,
     global_context,
     local_counts,
+    neighbourhood_counts,
     own_count,
     signed_bits,
 )
@@ -112,3 +113,13 @@ def test_circuit_features_are_mean_and_sum_of_gate_infidelity() -> None:
 
     assert features.shape == (1, NUM_CIRCUIT_FEATURES)
     torch.testing.assert_close(features, torch.tensor([[0.2, 0.4]]))
+
+
+def test_neighbourhood_counts_average_the_counts_at_each_distance() -> None:
+    """Of 3 qubits with counts 0..7, bitstring 0 has neighbours 1, 2, 4 and 3, 5, 6."""
+    counts = torch.arange(8.0).unsqueeze(0)
+
+    features = neighbourhood_counts(counts, 3)
+
+    assert features.shape == (1, 8, 2)
+    torch.testing.assert_close(features[0, 0], torch.log1p(torch.tensor([7.0 / 3, 14.0 / 3])))

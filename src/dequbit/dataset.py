@@ -10,7 +10,7 @@ Shots and P_target are indexed by bit. Routing can move a logical qubit on the d
 so bit j of circuit c is measured from device qubit measured_qubits[c, j].
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import h5py
@@ -31,6 +31,10 @@ GATE_INFIDELITY, LOG_READOUT_P01, LOG_READOUT_P10 = range(len(QUBIT_FEATURE_NAME
 # near 0; rates below READOUT_RATE_FLOOR are raised to it to keep the log finite.
 READOUT_REFERENCE_RATE = 0.02
 READOUT_RATE_FLOOR = 1e-4
+# Error rates that perturb_calibration changes, and the largest rate it gives: a readout
+# error of 0.5 or more could not be inverted.
+PERTURBED_RATE_NAMES = ("readout_p01", "readout_p10", "error_1q", "error_2q")
+MAX_PERTURBED_RATE = 0.45
 
 
 @dataclass
@@ -176,6 +180,58 @@ def load_circuits(path: Path, shots_per_circuit: int) -> Circuits:
             measured_qubits=metadata["measured_qubit"][:],
             calibration={name: file[NOISE_MODEL_GROUP][name][:] for name in CALIBRATION_NAMES},
         )
+
+
+def select_circuits(circuits: Circuits, keep: np.ndarray) -> Circuits:
+    """Keep some of the circuits, with the same calibration.
+
+    Args:
+        circuits: Circuits of one split.
+        keep: True for every circuit to keep, shape (circuits,).
+
+    Returns:
+        The kept circuits.
+    """
+    return replace(
+        circuits,
+        counts=circuits.counts[keep],
+        targets=circuits.targets[keep],
+        circuit_types=circuits.circuit_types[keep],
+        one_qubit_gates=circuits.one_qubit_gates[keep],
+        two_qubit_gates=circuits.two_qubit_gates[keep],
+        measured_qubits=circuits.measured_qubits[keep],
+    )
+
+
+def perturb_calibration(
+    circuits: Circuits, relative_noise: float, rng: np.random.Generator
+) -> Circuits:
+    """Replace the calibrated error rates by drifted ones, as on a device recalibrated later.
+
+    Every rate of PERTURBED_RATE_NAMES is multiplied by its own factor
+    exp(relative_noise * z) with z drawn from N(0, 1), so relative_noise 0.2 changes a
+    typical rate by about 20 percent. The two-qubit errors stay symmetric, and every
+    rate stays at most MAX_PERTURBED_RATE. The shots are not changed: only what the
+    corrections are told about the device.
+
+    Args:
+        circuits: Circuits of one split.
+        relative_noise: Standard deviation of the log of the factors; 0 changes nothing.
+        rng: Random generator of the factors.
+
+    Returns:
+        The same circuits with the drifted calibration.
+    """
+    calibration = dict(circuits.calibration)
+    for name in PERTURBED_RATE_NAMES:
+        rates = calibration[name]
+        factors = np.exp(relative_noise * rng.standard_normal(rates.shape))
+        if rates.ndim == 2:
+            # One factor per pair of qubits, the same in both directions.
+            factors = np.triu(factors, 1) + np.triu(factors, 1).T
+        calibration[name] = np.minimum(rates * factors, MAX_PERTURBED_RATE)
+
+    return replace(circuits, calibration=calibration)
 
 
 def make_dataset(circuits: Circuits) -> TensorDataset:

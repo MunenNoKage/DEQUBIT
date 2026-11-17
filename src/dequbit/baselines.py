@@ -4,7 +4,7 @@ Distributions have shape (circuits, 2**num_qubits). A correction maps the noisy
 distributions to corrected ones of the same shape.
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 
 import numpy as np
 
@@ -14,6 +14,9 @@ Correction = Callable[[np.ndarray, float], np.ndarray]
 
 # A rate of 1 means no shot survived the gates, which cannot be inverted.
 MAX_PHYSICAL_RATE = 0.999
+# Measured bitstrings whose Hamming distances to all others HAMMER computes at once;
+# bounds its memory to this many times the number of measured bitstrings.
+HAMMER_ROWS_PER_CHUNK = 512
 
 
 def oracle_distribution(
@@ -267,6 +270,32 @@ def scaled_mix_correction(
     return mix_correction(distributions, scaled_physical_rate(physical_rate, scale), p01, p10)
 
 
+def hammer_correction(distributions: np.ndarray) -> np.ndarray:
+    """Reweight every measured bitstring by its Hamming neighbourhood (HAMMER).
+
+    Errors move a shot to bitstrings a few bit flips away, so a correct outcome is
+    surrounded by likely neighbours, while an outcome made by noise is not. Following
+    Algorithm 1 of Tannu et al. (ASPLOS 2022), the score of a measured bitstring x is
+    P(x) plus the sum of W[d] * P(y) over the measured bitstrings y that are less likely
+    than x and at Hamming distance d < num_qubits / 2. W[d] is 1 over the probability
+    found at distance d, summed over all measured bitstrings. The corrected
+    probability is P(x) times its score, renormalised. Nothing is fitted and no
+    calibration is used.
+
+    Args:
+        distributions: Noisy distributions, shape (circuits, 2**num_qubits).
+
+    Returns:
+        Corrected distributions, same shape as distributions.
+    """
+    num_qubits = distributions.shape[-1].bit_length() - 1
+    popcounts = _popcounts(num_qubits)
+
+    return np.stack(
+        [_hammer_distribution(distribution, popcounts) for distribution in distributions]
+    )
+
+
 def fit_linear_map(noisy: np.ndarray, targets: np.ndarray) -> np.ndarray:
     """Fit one matrix that maps noisy distributions to ideal ones, by least squares.
 
@@ -309,6 +338,78 @@ def linear_map_correction(distributions: np.ndarray, weights: np.ndarray) -> np.
     # The least-squares map keeps the sum near 1, so at least one probability stays
     # positive.
     return _clip_and_normalise(distributions @ weights)
+
+
+def _hammer_distribution(distribution: np.ndarray, popcounts: np.ndarray) -> np.ndarray:
+    """Apply HAMMER to the distribution of one circuit.
+
+    Only measured bitstrings take part, so the cost grows with the square of their
+    number and not with 4**num_qubits.
+
+    Args:
+        distribution: Noisy distribution of one circuit, shape (2**num_qubits,).
+        popcounts: Number of set bits of every bitstring, shape (2**num_qubits,).
+
+    Returns:
+        Corrected distribution, same shape.
+    """
+    num_qubits = len(popcounts).bit_length() - 1
+    # Hamming distances below num_qubits / 2 count; larger ones get weight 0.
+    num_counted = (num_qubits + 1) // 2
+    measured = np.flatnonzero(distribution > 0)
+    probabilities = distribution[measured].astype(np.float64)
+
+    strength = np.zeros(num_qubits + 1)
+    for rows, distances in _distance_chunks(measured, popcounts):
+        weights = np.broadcast_to(probabilities, distances.shape).ravel()
+        strength += np.bincount(distances.ravel(), weights=weights, minlength=num_qubits + 1)
+    # A distance at which no probability was found gets weight 0, as in the paper.
+    weights = np.zeros(num_qubits + 1)
+    counted = strength[:num_counted]
+    weights[:num_counted] = np.divide(1, counted, out=np.zeros_like(counted), where=counted > 0)
+
+    scores = probabilities.copy()
+    for rows, distances in _distance_chunks(measured, popcounts):
+        # Only neighbours less likely than x add to its score; x itself is not one.
+        less_likely = probabilities[np.newaxis, :] < probabilities[rows, np.newaxis]
+        scores[rows] += (weights[distances] * probabilities * less_likely).sum(axis=1)
+
+    corrected = np.zeros_like(distribution, dtype=np.float64)
+    corrected[measured] = scores * probabilities
+
+    return corrected / corrected.sum()
+
+
+def _distance_chunks(
+    measured: np.ndarray, popcounts: np.ndarray
+) -> Iterator[tuple[slice, np.ndarray]]:
+    """Yield the Hamming distances between the measured bitstrings, a block of rows at a time.
+
+    Args:
+        measured: Measured bitstrings as integers, shape (measured,).
+        popcounts: Number of set bits of every bitstring, shape (2**num_qubits,).
+
+    Yields:
+        Positions of the rows in measured, and the distances of those bitstrings to
+        every measured bitstring, shape (rows, measured).
+    """
+    for start in range(0, len(measured), HAMMER_ROWS_PER_CHUNK):
+        rows = slice(start, start + HAMMER_ROWS_PER_CHUNK)
+        yield rows, popcounts[measured[rows, np.newaxis] ^ measured[np.newaxis, :]]
+
+
+def _popcounts(num_qubits: int) -> np.ndarray:
+    """Count the set bits of every bitstring.
+
+    Args:
+        num_qubits: Number of measured qubits.
+
+    Returns:
+        Number of ones of every bitstring, shape (2**num_qubits,).
+    """
+    bitstrings = np.arange(2**num_qubits)
+
+    return sum((bitstrings >> bit) & 1 for bit in range(num_qubits))
 
 
 def _clip_and_normalise(distributions: np.ndarray) -> np.ndarray:

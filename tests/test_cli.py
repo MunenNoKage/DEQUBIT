@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from dequbit.cli import build_parser, main
+from dequbit.config import load_config
 from dequbit.dataset import QUBIT_FEATURE_NAMES
 from dequbit.models import load_model
 
@@ -49,6 +50,11 @@ def test_train_all_and_evaluate_write_models_metrics_and_figures(fake_config: Pa
         assert {"identity", "oracle", "mix", "linear_map"} <= set(size_metrics["baselines"])
         assert set(size_metrics["models"]["shared_scorer"]["seeds"]) == {"0", "1"}
         assert "shared_scorer" in size_metrics["circuit_types"]["qft"]
+        low, high = size_metrics["median_intervals"]["shared_scorer"]
+        assert low <= size_metrics["models"]["shared_scorer"]["median_mean"] <= high
+        comparison = size_metrics["comparisons"]["shared_scorer"]
+        assert comparison["baseline"] not in ("identity", "oracle", "shared_scorer")
+        assert 0 <= comparison["wilcoxon_p"] <= 1
     assert (figures / "l1_relative_change_test_N2.png").exists()
     assert (figures / "training_curves_N3.png").exists()
     assert (figures / "l1_relative_change_by_qubits_test.png").exists()
@@ -70,6 +76,19 @@ def test_train_saves_one_model_per_number_of_qubits(fake_config: Path) -> None:
     features = len(QUBIT_FEATURE_NAMES)
     assert model(torch.ones(1, 4), torch.zeros(1, 2, features)).shape == (1, 4, 3)
     assert larger_model(torch.ones(1, 8), torch.zeros(1, 3, features)).shape == (1, 8, 4)
+
+
+def test_ablate_trains_variant_models_and_writes_their_metrics(fake_config: Path) -> None:
+    """A training variant saves its models apart and writes metrics under its name."""
+    directory = fake_config.parent
+
+    assert main(["--config", str(fake_config), "ablate", "no_circuit_context"]) == 0
+
+    models = directory / "models" / "ablations" / "no_circuit_context"
+    metrics_path = Path(load_config(fake_config)["paths"]["ablations"])
+    assert (models / "shared_scorer_seed2.pt").exists()
+    assert not (directory / "models" / "shared_scorer_seed0.pt").exists()
+    assert (metrics_path / "no_circuit_context" / "metrics_validation.json").exists()
 
 
 def test_evaluate_reports_missing_model(fake_config: Path) -> None:

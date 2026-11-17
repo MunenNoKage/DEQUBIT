@@ -119,6 +119,33 @@ def training_loss(
     return (loss + training_config["flip_penalty"] * flips).mean()
 
 
+def thin_counts(counts: torch.Tensor, min_shots: int, generator: torch.Generator) -> torch.Tensor:
+    """Keep a random share of the shots of every circuit.
+
+    Every shot is kept with the same probability, so the kept shots are a smaller sample
+    of the same distribution. The number of kept shots of every circuit is drawn
+    log-uniformly between min_shots and all shots, so every order of magnitude of shots
+    is equally common.
+
+    Args:
+        counts: Shot counts of every circuit, shape (circuits, 2**num_qubits).
+        min_shots: Fewest shots a circuit keeps on average.
+        generator: Random generator on the CPU.
+
+    Returns:
+        Thinned shot counts on the device of counts, same shape.
+    """
+    cpu_counts = counts.cpu()
+    totals = cpu_counts.sum(dim=-1, keepdim=True)
+
+    low = torch.log(torch.full_like(totals, float(min_shots)).clamp_max(totals))
+    share = torch.rand(totals.shape, generator=generator)
+    kept_shots = torch.exp(low + share * (torch.log(totals) - low))
+    thinned = torch.binomial(cpu_counts, (kept_shots / totals).expand_as(cpu_counts), generator)
+
+    return thinned.to(counts.device)
+
+
 def circuits_per_batch(num_qubits: int, num_actions: int, training_config: Config) -> int:
     """Choose the number of circuits of one batch for one number of qubits.
 
@@ -156,7 +183,8 @@ def train(
     recorded. Training stops after early_stopping_patience validations without a lower
     loss or after max_steps steps, and the model keeps the weights of the best
     validation. With cosine_decay the learning rate falls from learning_rate to 0 along
-    a half cosine over max_steps.
+    a half cosine over max_steps. With min_shots the training circuits of every batch
+    keep a random share of their shots (thin_counts); the validation circuits keep all.
 
     Args:
         model: Model that accepts the circuits of every size in train_sets; trained in
@@ -235,9 +263,12 @@ def train(
             batch_size = circuits_per_batch(num_qubits, len(flipped_bits), training_config)
 
             batch = torch.randperm(len(counts), generator=generator)[:batch_size].to(device)
+            batch_counts = counts[batch]
+            if training_config["min_shots"] is not None:
+                batch_counts = thin_counts(batch_counts, training_config["min_shots"], generator)
             loss = training_loss(
                 model,
-                counts[batch],
+                batch_counts,
                 qubit_features[batch],
                 targets[batch],
                 destination_table,

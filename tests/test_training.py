@@ -17,6 +17,7 @@ from dequbit.training import (
     circuits_per_batch,
     expected_flipped_bits,
     predict_distributions,
+    thin_counts,
     train,
     training_loss,
 )
@@ -28,7 +29,7 @@ SHOTS = 1000
 SEED = 0
 
 
-def training_config(**changes: float) -> Config:
+def training_config(**changes: float | None) -> Config:
     """Build a training config for fast runs on tiny datasets.
 
     Args:
@@ -48,6 +49,7 @@ def training_config(**changes: float) -> Config:
         "early_stopping_patience": 100,
         "flip_penalty": 0.0,
         "relative_loss": False,
+        "min_shots": None,
     }
 
     return {**config, **changes}
@@ -281,6 +283,53 @@ def test_cosine_decay_trains_and_reaches_the_last_step() -> None:
     )
 
     assert history[-1]["step"] == 300
+    assert (
+        min(record["validation_loss"] for record in history) < 0.5 * history[0]["validation_loss"]
+    )
+
+
+def test_thin_counts_keeps_between_min_shots_and_all_shots() -> None:
+    """Thinned circuits keep from about min_shots to all shots, never more than they had."""
+    counts = torch.full((200, 8), 1250.0)
+    generator = torch.Generator().manual_seed(SEED)
+
+    thinned = thin_counts(counts, 100, generator)
+    totals = thinned.sum(dim=-1)
+
+    assert thinned.shape == counts.shape
+    assert torch.all(thinned <= counts)
+    assert torch.all(thinned == thinned.round())
+    assert totals.min() > 50
+    assert totals.max() <= 10_000
+    assert totals.median() < 3000
+
+
+def test_thin_counts_keeps_the_distribution() -> None:
+    """Thinning keeps the shape of the distribution up to shot noise."""
+    counts = torch.tensor([[60_000.0, 30_000.0, 10_000.0, 0.0]])
+    generator = torch.Generator().manual_seed(SEED)
+
+    thinned = thin_counts(counts.expand(50, -1), 5000, generator)
+    shares = thinned / thinned.sum(dim=-1, keepdim=True)
+
+    torch.testing.assert_close(shares.mean(dim=0), counts[0] / counts.sum(), atol=0.01, rtol=0)
+    assert torch.all(thinned[:, 3] == 0)
+
+
+def test_training_with_min_shots_still_learns() -> None:
+    """Training on thinned circuits still lowers the validation loss."""
+    torch.manual_seed(SEED)
+    model = SharedScorer(RADIUS, hidden_sizes=[16])
+
+    history = train(
+        model,
+        {NUM_QUBITS: tiny_dataset(256, SEED)},
+        {NUM_QUBITS: tiny_dataset(64, SEED + 1)},
+        RADIUS,
+        training_config(min_shots=100),
+        SEED,
+    )
+
     assert (
         min(record["validation_loss"] for record in history) < 0.5 * history[0]["validation_loss"]
     )

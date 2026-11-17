@@ -14,6 +14,8 @@ paths:
   # {split} is replaced by validation or test.
   metrics: results/metrics_{split}.json
   figures_dir: results/figures
+  # Metrics and figures of every ablation variant go to a folder of its name here.
+  ablations: results/ablations
 
 data:
   # Numbers of qubits of the circuits used, each with its own files. The shared scorer
@@ -22,6 +24,9 @@ data:
   # Shots of one circuit corrected together and averaged into one distribution; the
   # files hold 92160.
   shots_per_circuit: 92160
+  # Circuit families left out of training and validation, to test the models on
+  # families they never saw: any of qft, phase_estimation, hlf, bv, iqp.
+  excluded_types: []
 
 actions:
   # Largest number of bits one action flips: 1 gives single flips, 2 adds pair flips.
@@ -42,6 +47,9 @@ model:
     # Gate infidelity, readout error and direction of the flipped bits, and the gate
     # noise of the circuit, from the decoded circuit.
     use_circuit_context: true
+    # Mean counts of the neighbours at distance 1 and 2 of the destination, relative to
+    # those of the bitstring.
+    use_neighbourhood: false
 
 training:
   # auto trains on the GPU when one is available, otherwise on the CPU; cpu or cuda
@@ -65,6 +73,10 @@ training:
   flip_penalty: 0.0
   # Divide the KL of every circuit by KL(P_target || noisy) to weigh circuits equally.
   relative_loss: false
+  # Every training batch keeps a random share of the shots of its circuits, from this
+  # many shots to all of them, so one model learns every number of shots in between;
+  # null keeps all shots.
+  min_shots: null
 
 baselines:
   # Thresholds tried on the training circuits: threshold_steps values from 0 to
@@ -91,6 +103,96 @@ evaluation:
   seeds: [0, 1, 2, 3, 4]
   # Inference mode of the reported numbers: expected, sample or argmax.
   inference: sample
+  # Bootstrap samples and coverage of the confidence intervals of the medians and of
+  # the paired comparisons of every model with the best baseline.
+  bootstrap_resamples: 2000
+  confidence_level: 0.95
+  # Drift of the calibration the corrections are given for the evaluated circuits:
+  # standard deviation of the log of a random factor on every error rate. 0 is the true
+  # calibration, 0.2 changes a rate by about 20 percent.
+  calibration_noise: 0.0
+
+ablation:
+  # Training seeds of the variants that train their own models.
+  seeds: [0, 1, 2]
+  # python -m dequbit ablate NAME applies the overrides of variant NAME, in the
+  # KEY=VALUE form of --set. With train true the variant trains its own models,
+  # otherwise it evaluates the main models.
+  variants:
+    no_circuit_context:
+      train: true
+      overrides:
+        - model.mlp.use_circuit_context=false
+        - model.shared_scorer.use_circuit_context=false
+    with_neighbourhood:
+      train: true
+      overrides:
+        - model.shared_scorer.use_neighbourhood=true
+        - evaluation.seeds=[0, 1, 2, 3, 4]
+        - evaluation.models=[shared_scorer]
+    with_neighbourhood_and_thinned_shots:
+      train: true
+      overrides:
+        - model.shared_scorer.use_neighbourhood=true
+        - training.min_shots=1024
+        - evaluation.seeds=[0, 1, 2, 3, 4]
+        - evaluation.models=[shared_scorer]
+    trained_on_3_to_8_qubits:
+      train: true
+      overrides:
+        - data.qubit_counts=[3, 5, 6, 8]
+        - evaluation.models=[shared_scorer]
+    without_qft:
+      train: true
+      overrides:
+        - data.excluded_types=[qft]
+        - evaluation.models=[shared_scorer]
+        - evaluation.seeds=[0, 1]
+    without_hlf:
+      train: true
+      overrides:
+        - data.excluded_types=[hlf]
+        - evaluation.models=[shared_scorer]
+        - evaluation.seeds=[0, 1]
+    without_bv:
+      train: true
+      overrides:
+        - data.excluded_types=[bv]
+        - evaluation.models=[shared_scorer]
+        - evaluation.seeds=[0, 1]
+    without_iqp:
+      train: true
+      overrides:
+        - data.excluded_types=[iqp]
+        - evaluation.models=[shared_scorer]
+        - evaluation.seeds=[0, 1]
+    shots_1024:
+      train: false
+      overrides: [data.shots_per_circuit=1024]
+    shots_8192:
+      train: false
+      overrides: [data.shots_per_circuit=8192]
+    trained_on_thinned_shots:
+      train: true
+      overrides:
+        - training.min_shots=1024
+        - evaluation.models=[shared_scorer]
+        - evaluation.seeds=[0, 1]
+    trained_on_1024_shots:
+      train: true
+      overrides:
+        - data.shots_per_circuit=1024
+        - evaluation.models=[shared_scorer]
+        - evaluation.seeds=[0, 1]
+    expected_inference:
+      train: false
+      overrides: [evaluation.inference=expected]
+    calibration_noise_20:
+      train: false
+      overrides: [evaluation.calibration_noise=0.2]
+    calibration_noise_50:
+      train: false
+      overrides: [evaluation.calibration_noise=0.5]
 
 logging:
   level: INFO

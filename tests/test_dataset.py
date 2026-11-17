@@ -11,12 +11,15 @@ from dequbit.dataset import (
     CALIBRATION_NAMES,
     GATE_INFIDELITY,
     LOG_READOUT_P01,
+    MAX_PERTURBED_RATE,
     QUBIT_FEATURE_NAMES,
     READOUT_REFERENCE_RATE,
     Circuits,
     index_to_bits,
     load_circuits,
     make_dataset,
+    perturb_calibration,
+    select_circuits,
     unpack_shots,
 )
 from tests.conftest import (
@@ -142,3 +145,34 @@ def test_qubit_features_sum_gate_errors_and_read_calibration(tmp_path: Path) -> 
     )
     expected_p01 = np.log(np.resize(FAKE_READOUT_P01, 3) / READOUT_REFERENCE_RATE)
     np.testing.assert_allclose(features[1, :, LOG_READOUT_P01], expected_p01, rtol=1e-6)
+
+
+def test_select_circuits_keeps_rows_of_every_array(fake_circuits: Circuits) -> None:
+    """Keeping the bv circuits keeps their counts, types and gates, and the calibration."""
+    keep = fake_circuits.circuit_types == "bv"
+
+    selected = select_circuits(fake_circuits, keep)
+
+    assert list(selected.circuit_types) == ["bv"] * int(keep.sum())
+    np.testing.assert_array_equal(selected.counts, fake_circuits.counts[keep])
+    assert selected.two_qubit_gates.shape[0] == selected.measured_qubits.shape[0] == keep.sum()
+    assert selected.calibration is fake_circuits.calibration
+
+
+def test_perturb_calibration_without_noise_changes_nothing(fake_circuits: Circuits) -> None:
+    """Relative noise 0 keeps every rate and the qubit features."""
+    perturbed = perturb_calibration(fake_circuits, 0.0, np.random.default_rng(0))
+
+    np.testing.assert_allclose(perturbed.qubit_features, fake_circuits.qubit_features)
+
+
+def test_perturb_calibration_drifts_rates_but_not_shots(fake_circuits: Circuits) -> None:
+    """Rates change, two-qubit errors stay symmetric and bounded, counts stay the same."""
+    perturbed = perturb_calibration(fake_circuits, 0.5, np.random.default_rng(0))
+
+    error_2q = perturbed.calibration["error_2q"]
+    assert not np.allclose(perturbed.calibration["readout_p01"], FAKE_READOUT_P01)
+    np.testing.assert_allclose(error_2q, error_2q.T)
+    assert (error_2q > 0).sum() == (fake_circuits.calibration["error_2q"] > 0).sum()
+    assert perturbed.calibration["readout_p10"].max() <= MAX_PERTURBED_RATE
+    np.testing.assert_array_equal(perturbed.counts, fake_circuits.counts)
