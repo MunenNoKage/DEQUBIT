@@ -97,6 +97,7 @@ take 3.8 GB and are not in git. The 5-qubit dataset of the midterm is in
 | Readout inversion | Inverts the calibrated readout errors of every measured qubit, in both directions [1] |
 | MIX | Readout inversion, then the repolarizer [1]. The rate is fitted on the training circuits, computed from the gates of every circuit and their calibrated errors (physical rate), or that physical rate scaled by a factor fitted on the training circuits |
 | Linear map | Least-squares 2^n x 2^n inverse of the noise, learned from the training circuits |
+| HAMMER | Raises the probability of measured bitstrings whose Hamming neighbours were also measured often; no fitting, no calibration [4] |
 | MLP, shared scorer | Learned, per-bitstring corrections |
 | Per-qubit flip model | Learned, the same action probabilities for every shot; a control of the midterm (0.001), not in the current evaluation |
 
@@ -108,6 +109,12 @@ Metrics, computed against P_target:
   the interquartile range over circuits;
 - share of circuits the correction improved;
 - mean number of flipped bits per shot.
+
+Uncertainty: a 95% bootstrap interval of every median (circuits resampled; for the
+learned models the median is averaged over the seeds), and a paired comparison of
+every learned model with the best baseline of each size on the same circuits: the
+median of the per-circuit differences with its bootstrap interval, the share of circuits
+where the model is better, and the p-value of the Wilcoxon signed-rank test.
 
 ## Results
 
@@ -128,8 +135,9 @@ Median L1 relative change (lower is better; 0 is no change, -1 a perfect correct
 | MIX, physical rate | -0.636 | -0.623 | -0.599 | -0.484 | -0.430 | -0.284 | -0.231 | -0.089 |
 | MIX, fitted physical rate | **-0.735** | -0.660 | -0.594 | -0.481 | -0.423 | -0.289 | -0.235 | -0.118 |
 | Linear map | -0.608 | -0.483 | -0.388 | -0.326 | -0.224 | | | |
+| HAMMER | +1.966 | -0.281 | -0.487 | -0.389 | -0.446 | -0.345 | -0.295 | **-0.192** |
 | MLP | -0.725 | -0.654 | -0.622 | -0.544 | -0.501 | -0.382 | | |
-| Shared scorer | -0.716 | **-0.668** | **-0.644** | **-0.596** | **-0.535** | **-0.411** | **-0.302** | **-0.185** |
+| Shared scorer | -0.716 | **-0.668** | **-0.644** | **-0.596** | **-0.535** | **-0.411** | **-0.302** | -0.185 |
 | Oracle | -0.952 | -0.965 | -0.961 | -0.930 | -0.920 | -0.867 | -0.833 | -0.779 |
 
 Standard deviation of the median over seeds: at most 0.006, and 0.011 for the shared
@@ -142,39 +150,170 @@ All numbers, per circuit family too:
 
 ![Median L1 relative change by number of qubits](results/figures/l1_relative_change_by_qubits_validation.png)
 
-- With a known noise model, physics is hard to beat on small circuits: at 3 qubits MIX
-  with the fitted physical rate is best, and at 5 qubits the shared scorer is ahead by
-  only 0.008.
-- From 6 qubits on the shared scorer is ahead of every baseline, by 0.09 to 0.10 at 8 to
-  11 qubits. The gain is largest on Bernstein-Vazirani circuits, whose ideal output is
-  one bitstring (-0.716 against -0.422 for the best MIX at 11 qubits), and smallest on
-  hidden linear function circuits (-0.258 against -0.211).
-- Trained only on 3 to 11 qubits, the shared scorer corrects 12 and 13 qubit circuits
-  better than every baseline fitted on those sizes: -0.302 against -0.251 and -0.185
-  against -0.124.
+- With a known noise model, physics is hard to beat on small circuits. At 3 qubits the
+  shared scorer is level with MIX with the fitted physical rate (median paired
+  difference +0.007, 95% interval [-0.004, 0.024], p = 0.13); at 5 qubits it is ahead by
+  a small margin (-0.007, p = 0.002, better on 55% of the circuits).
+- From 6 qubits on the shared scorer is ahead of every baseline: the median paired
+  difference with the best baseline is -0.05 to -0.12 at 6 to 11 qubits (p < 1e-13), and
+  the scorer is better on 74 to 88% of the circuits. The gain is largest on
+  Bernstein-Vazirani circuits, whose ideal output is one bitstring (-0.716 against
+  -0.422 for the best baseline at 11 qubits), and disappears on hidden linear function
+  circuits, where HAMMER is level with it (-0.258 against -0.259 at 11 qubits).
+- HAMMER, which needs neither calibration nor training, is the strongest baseline from
+  9 qubits on. On small circuits it does harm (+1.97 at 3 qubits): multiplying every
+  probability by its score sharpens the distribution, which suits a single correct
+  answer but not a spread ideal distribution.
+- Trained only on 3 to 11 qubits, the shared scorer corrects 12 qubit circuits better
+  than every baseline (median paired difference with HAMMER -0.026, p < 1e-7; MIX
+  reaches -0.251). At 13 qubits it is level with HAMMER (-0.185 against -0.192,
+  p = 0.05); with expected instead of sampled corrections the scorer reaches -0.220.
 - One shared scorer for every size beats an MLP trained for each size from 5 qubits on.
 - It improves 97 to 99% of the circuits up to 12 qubits and 86% at 13; MIX with the
   fitted rate improves 82 to 96%.
 - Expected corrections instead of sampled ones are equal up to 6 qubits and 0.035
-  better at 13 qubits, where most bitstrings have only a few shots. The most probable
+  better at 13 qubits, where most bitstrings have only a few shots; with them the
+  scorer is ahead of HAMMER at 13 qubits too (median paired difference -0.033,
+  p < 1e-4; `expected_inference`). The most probable
   action for every shot is much worse (-0.03 to -0.27).
 
-**Circuit context and training length** (one seed, expected corrections, from the
-hyperparameter search on the validation circuits; the seed spread of the mean is 0.008):
+### Ablations
 
-| Variant | 3 | 5 | 6 | 8 | 9 | 11 |
-|---|---|---|---|---|---|---|
-| Shared scorer without circuit context, 10 000 steps | -0.675 | -0.622 | -0.564 | -0.551 | -0.505 | -0.371 |
-| Shared scorer with circuit context, 10 000 steps | -0.702 | -0.677 | -0.635 | -0.591 | -0.533 | -0.417 |
-| Shared scorer with circuit context, 30 000 steps | -0.717 | -0.672 | -0.648 | -0.606 | -0.542 | -0.442 |
-| MLP without circuit context | -0.688 | -0.636 | -0.577 | -0.526 | -0.492 | -0.368 |
-| MLP with circuit context | -0.727 | -0.650 | -0.621 | -0.546 | -0.509 | -0.397 |
+Every ablation is a variant of `ablation.variants` in the config, run with
+`python -m dequbit ablate NAME`; metrics and figures are in
+[`results/ablations/`](results/ablations/). Validation circuits; variants that train
+their own models use seeds 0 to 2 and the numbers are sampled corrections, unless a
+paragraph says otherwise.
 
-The decoded circuit improves both models at every size, by 0.02 to 0.07. A learning
-rate of 3e-3, cosine decay, batches of 256 circuits, radius 3, the relative loss and a
-wider MLP changed the mean by less than the seed spread or made it worse; longer
-training was the only clear gain. Applying the trained scorer twice over-corrects
-(-0.44 becomes -0.01 at 11 qubits).
+**Circuit context** (`no_circuit_context`):
+
+| Variant | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|
+| Shared scorer without circuit context | -0.667 | -0.629 | -0.559 | -0.567 | -0.502 | -0.355 | -0.291 | -0.184 |
+| Shared scorer | -0.716 | -0.668 | -0.644 | -0.596 | -0.535 | -0.411 | -0.302 | -0.185 |
+| MLP without circuit context | -0.688 | -0.625 | -0.561 | -0.522 | -0.482 | -0.368 | | |
+| MLP | -0.725 | -0.654 | -0.622 | -0.544 | -0.501 | -0.382 | | |
+
+The decoded circuit improves both models at every trained size, the shared scorer by
+0.03 to 0.09 and the MLP by 0.01 to 0.06. Without it both models lose to MIX at 3 and 5
+qubits: the calibration is what lets a learned model match the physics there.
+
+**Sizes seen in training** (`trained_on_3_to_8_qubits`):
+
+| Shared scorer trained on | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|
+| 3 to 8 qubits | -0.724 | -0.684 | -0.650 | -0.616 | -0.505 | -0.314 | -0.146 | +0.006 |
+| 3 to 11 qubits | -0.716 | -0.668 | -0.644 | -0.596 | -0.535 | -0.411 | -0.302 | -0.185 |
+
+Trained on fewer sizes, the scorer is better on those sizes, still beats every baseline
+one step beyond them (9 qubits: -0.505 against -0.446 for HAMMER), and falls behind
+further out (11 qubits: -0.314 against -0.345). Training on the largest affordable
+circuits is what carries it to 12 and 13 qubits.
+
+**Neighbourhood counts** (`with_neighbourhood`, 5 seeds): `use_neighbourhood` adds two
+inputs to every pair of a bitstring and an action: how densely the bitstrings 1 and 2
+flips away from the destination were measured, relative to those of the bitstring
+itself. This is the observation behind HAMMER, as an input the model can weigh.
+
+| Shared scorer | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|
+| Without neighbourhood counts | -0.716 | -0.668 | -0.644 | -0.596 | -0.535 | -0.411 | -0.302 | -0.185 |
+| With neighbourhood counts | -0.720 | -0.683 | -0.649 | -0.611 | -0.544 | -0.435 | -0.324 | -0.229 |
+| Best baseline | -0.735 | -0.660 | -0.599 | -0.507 | -0.446 | -0.345 | -0.295 | -0.192 |
+
+The neighbourhood counts add 0.004 to 0.044, most at 11 to 13 qubits, and the scorer
+then beats every baseline from 5 to 13 qubits (paired p < 0.01 at every size; at 13
+qubits -0.021 against HAMMER). At 3 qubits MIX with the fitted physical rate stays ahead
+(+0.011, p = 0.014).
+
+**Unseen circuit families** (`without_qft`, `without_hlf`, `without_bv`, `without_iqp`,
+seeds 0 and 1): the shared scorer trained without one family, evaluated on the circuits of that family
+only, against the scorer trained on all families and the best baseline on that family.
+
+| Family | Shared scorer | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|
+| QFT | without QFT | -0.692 | -0.664 | -0.628 | -0.395 | -0.538 | -0.432 | -0.351 | -0.269 |
+| | all families | -0.685 | -0.672 | -0.708 | -0.688 | -0.692 | -0.579 | -0.480 | -0.377 |
+| | best baseline | -0.643 | -0.680 | -0.626 | -0.450 | -0.533 | -0.455 | -0.412 | -0.340 |
+| HLF | without HLF | -0.729 | -0.670 | -0.630 | -0.543 | -0.393 | -0.241 | -0.093 | -0.031 |
+| | all families | -0.709 | -0.685 | -0.659 | -0.590 | -0.492 | -0.258 | -0.096 | -0.013 |
+| | best baseline | -0.729 | -0.737 | -0.706 | -0.601 | -0.475 | -0.259 | -0.097 | -0.032 |
+| BV | without BV | -0.589 | -0.790 | -0.705 | -0.662 | -0.635 | -0.549 | -0.516 | -0.493 |
+| | all families | -0.765 | -0.806 | -0.755 | -0.751 | -0.754 | -0.716 | -0.680 | -0.628 |
+| | best baseline | -0.778 | -0.809 | -0.759 | -0.674 | -0.529 | -0.422 | -0.419 | -0.523 |
+| IQP | without IQP | -0.680 | -0.630 | -0.536 | -0.439 | -0.417 | -0.271 | -0.160 | -0.094 |
+| | all families | -0.687 | -0.639 | -0.586 | -0.488 | -0.468 | -0.344 | -0.218 | -0.135 |
+| | best baseline | -0.694 | -0.632 | -0.601 | -0.379 | -0.419 | -0.317 | -0.218 | -0.153 |
+
+A family missing from training costs the scorer up to 0.29 on that family, and it falls
+to about the level of the best baseline there; on Bernstein-Vazirani circuits it stays
+ahead at 9 to 12 qubits. Part of what the scorer learns is specific to the circuit
+families it was trained on, so the training set should cover the families it will
+correct.
+
+**Calibration drift** (`calibration_noise_20`, `calibration_noise_50`): every error rate
+of the evaluated circuits is multiplied by a random factor exp(sigma * N(0, 1)) before
+the models and the physical baselines read it, as if the calibration were taken hours
+before the circuits ran. The models are not retrained.
+
+| Method | sigma | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|
+| Shared scorer | 0 | -0.716 | -0.668 | -0.644 | -0.596 | -0.535 | -0.411 | -0.302 | -0.185 |
+| | 0.2 | -0.702 | -0.672 | -0.643 | -0.593 | -0.540 | -0.412 | -0.301 | -0.186 |
+| | 0.5 | -0.545 | -0.676 | -0.643 | -0.565 | -0.531 | -0.404 | -0.299 | -0.141 |
+| MIX, fitted physical rate | 0 | -0.735 | -0.660 | -0.594 | -0.481 | -0.423 | -0.289 | -0.235 | -0.118 |
+| | 0.2 | -0.698 | -0.665 | -0.600 | -0.488 | -0.431 | -0.286 | -0.234 | -0.117 |
+| | 0.5 | -0.533 | -0.658 | -0.595 | -0.485 | -0.417 | -0.291 | -0.235 | -0.113 |
+
+A drift of about 20% changes nothing beyond the seed spread from 5 qubits on. At 3
+qubits, where readout errors are a large part of the noise, a drift of 50% costs both
+the scorer and MIX about 0.2; from 5 qubits on the scorer loses at most 0.04.
+
+**Number of shots** (`shots_1024`, `shots_8192`, `trained_on_1024_shots`,
+`trained_on_thinned_shots`): circuits with fewer shots, from the first shots of every
+circuit. The baselines are refitted on training circuits with the same number of shots.
+`training.min_shots` thins every training batch to a random number of shots between
+1024 and all of them, so one model learns every shot count in between. Expected
+corrections, mean over seeds:
+
+| Shots | Method | 3 | 5 | 6 | 8 | 9 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|
+| 1024 | Best baseline | -0.409 | -0.384 | -0.260 | -0.033 | -0.010 | 0.000 | 0.000 | -0.002 |
+| | Shared scorer, trained on 92 160 shots | -0.245 | -0.243 | -0.210 | -0.041 | -0.021 | -0.126 | -0.254 | -0.364 |
+| | Shared scorer, trained on 1024 shots | -0.404 | -0.397 | -0.278 | -0.172 | -0.135 | -0.319 | -0.380 | -0.378 |
+| | Shared scorer, thinned shots | -0.401 | -0.380 | -0.284 | -0.155 | -0.115 | -0.312 | -0.371 | -0.397 |
+| | Shared scorer, thinned shots and neighbourhood counts | -0.407 | -0.395 | -0.294 | -0.224 | -0.216 | -0.365 | -0.396 | -0.420 |
+| | Oracle | -0.542 | -0.696 | -0.651 | -0.461 | -0.434 | -0.314 | -0.243 | -0.200 |
+| 8192 | Best baseline | -0.658 | -0.599 | -0.533 | -0.330 | -0.238 | -0.075 | -0.012 | -0.005 |
+| | Shared scorer, trained on 92 160 shots | -0.587 | -0.509 | -0.498 | -0.360 | -0.294 | -0.103 | -0.060 | -0.112 |
+| | Shared scorer, thinned shots | -0.641 | -0.616 | -0.563 | -0.387 | -0.324 | -0.144 | -0.117 | -0.151 |
+| | Shared scorer, thinned shots and neighbourhood counts | -0.643 | -0.623 | -0.570 | -0.415 | -0.337 | -0.235 | -0.235 | -0.292 |
+| 92 160 | Best baseline | -0.735 | -0.660 | -0.599 | -0.507 | -0.446 | -0.345 | -0.295 | -0.192 |
+| | Shared scorer | -0.719 | -0.668 | -0.646 | -0.601 | -0.542 | -0.428 | -0.317 | -0.220 |
+| | Shared scorer, thinned shots | -0.710 | -0.673 | -0.638 | -0.587 | -0.532 | -0.413 | -0.303 | -0.210 |
+| | Shared scorer, thinned shots and neighbourhood counts | -0.707 | -0.687 | -0.641 | -0.603 | -0.545 | -0.446 | -0.351 | -0.255 |
+
+- A model trained on one number of shots does not transfer to far fewer: the local
+  counts it reads change their scale.
+- Trained on thinned shots, one model matches a model trained on 1024 shots and gives
+  up 0.00 to 0.015 at 92 160 shots. It beats every baseline from 5 qubits on at 8192
+  shots and from 6 qubits on at 1024 shots. With the neighbourhood counts as well
+  (`with_neighbourhood_and_thinned_shots`, 5 seeds) one model is ahead of the best
+  baseline from 5 qubits on at every number of shots; at 3 qubits it is behind by
+  0.002 to 0.03.
+- With few shots and many bitstrings no baseline helps at all, while the expected
+  correction still reaches -0.3 to -0.4 at 11 to 13 qubits. It is better than the oracle
+  there because the oracle is itself only 1024 shots of P_target, while the expected
+  correction is a distribution, like the output of every baseline.
+- Sampled corrections add the noise of drawing one action per shot, which dominates
+  with few shots: at 1024 shots they are -0.37 to -0.22 at 3 to 6 qubits and +0.03 to
+  +0.08 from 8 qubits on. With 92 160 shots the two modes differ by at most 0.04.
+
+A learning rate of 3e-3, cosine decay, batches of 256 circuits, radius 3, the relative
+loss, a wider network and a wider MLP changed the mean over sizes by less than the seed
+spread (0.008) or made it worse in the hyperparameter search; training for 30 000
+instead of 10 000 steps was the only clear gain. Applying the trained scorer twice
+over-corrects (-0.44 becomes -0.01 at 11 qubits).
 
 The 5-qubit results of the midterm, with the ablations of the local counts and the
 radius, are in [`results/experiments.md`](results/experiments.md).
@@ -187,6 +326,9 @@ radius, are in [`results/experiments.md`](results/experiments.md).
    decoded circuit and the calibration as model inputs.
 3. **Done.** 3 to 11 qubits for training, 12 and 13 for the transfer of the shared
    scorer. 14 qubits need a 4.3 GB density matrix per simulation and were left out.
+4. **Done.** HAMMER as a baseline, confidence intervals and paired tests, ablations of
+   the inputs, the training sizes and the circuit families, robustness to calibration
+   drift and to the number of shots.
 
 The test circuits are evaluated once, for the final results.
 
@@ -209,6 +351,7 @@ pre-commit install
 python -m dequbit train --all       # every model of evaluation.models, every seed
 python -m dequbit train --model shared_scorer --seed 1
 python -m dequbit evaluate          # models and baselines on the validation circuits
+python -m dequbit ablate no_circuit_context   # one variant of ablation.variants
 python -m dequbit evaluate --split test
 python -m dequbit --set actions.radius=1 train --model mlp   # change one config value
 make data                           # regenerate data_v4/: several hours, see data2/description.md
@@ -241,13 +384,14 @@ src/dequbit/
     features.py         model inputs: local counts, context, circuit context
     actions.py          action space, distributions built from corrected shots
     models/             mlp, shared_scorer, per_qubit; build, save, load
-    baselines.py        oracle, thresholding, repolarizer, readout inversion, MIX, linear map
+    baselines.py        oracle, thresholding, repolarizer, readout inversion, MIX, linear map, HAMMER
     training.py         loss, training loop, early stopping
-    metrics.py          L1, KL, L1 relative change, improved share, flipped bits
+    metrics.py          L1, KL, L1 relative change, improved share, flipped bits,
+                        bootstrap intervals, paired comparison, Wilcoxon test
     evaluate.py         corrected circuits, metrics of every method, figures
     utils.py            seeding, logging, environment
     pipeline.py         load circuits, train a model, evaluate every method
-    cli.py              python -m dequbit train | evaluate
+    cli.py              python -m dequbit train | evaluate | ablate
 data2/                  generation.py of the current dataset, description.md
 data_v4/                generated .h5 files, not committed
 data/                   the 5-qubit dataset of the midterm, data card
@@ -309,6 +453,9 @@ Both members agree with this division of work.
    <https://arxiv.org/abs/2504.10801>
 3. H. Liao et al. Machine learning for practical quantum error mitigation. Nature
    Machine Intelligence, 2024. <https://arxiv.org/abs/2309.17368>
+4. S. Tannu, P. Das, R. Ayanzadeh, M. Qureshi. HAMMER: boosting fidelity of noisy
+   quantum circuits by exploiting Hamming behavior of erroneous outcomes. ASPLOS 2022.
+   <https://arxiv.org/abs/2208.09371>
 
 ## License and citation
 
