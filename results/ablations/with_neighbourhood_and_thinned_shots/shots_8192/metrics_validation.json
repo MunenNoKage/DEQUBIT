@@ -1,0 +1,4905 @@
+{
+  "split": "validation",
+  "environment": {
+    "python": "3.13.7",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "qubits": {
+    "3": {
+      "num_circuits": 200,
+      "baseline_parameters": {
+        "threshold": 0.034482758620689655,
+        "repolarizer_rate": 0.16313131313131313,
+        "mix_rate": 0.13434343434343432,
+        "mix_physical_scale": 1.55
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.11311549528045362,
+          "mean_kl": 0.02355718527745009,
+          "mean_hellinger": 0.07933263561966912
+        },
+        "oracle": {
+          "median": -0.8239841106630178,
+          "first_quartile": -0.885122804813062,
+          "third_quartile": -0.7560045744017585,
+          "improved_fraction": 0.995,
+          "mean_l1": 0.018410519795979782,
+          "mean_kl": 0.00043442826771868283,
+          "mean_hellinger": 0.009463935198034581
+        },
+        "threshold": {
+          "median": -0.12511645784283573,
+          "first_quartile": -0.3398140647224911,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.63,
+          "mean_l1": 0.08844813903611763,
+          "mean_kl": 0.2503850005847667,
+          "mean_hellinger": 0.07763877542194413
+        },
+        "repolarizer": {
+          "median": -0.6156072712293944,
+          "first_quartile": -0.7203207336597139,
+          "third_quartile": -0.39670064754839407,
+          "improved_fraction": 0.875,
+          "mean_l1": 0.04686363769280028,
+          "mean_kl": 0.0547696259218028,
+          "mean_hellinger": 0.03985554940940322
+        },
+        "readout": {
+          "median": -0.15254293005054315,
+          "first_quartile": -0.21921750125686051,
+          "third_quartile": -0.10758694419970849,
+          "improved_fraction": 0.97,
+          "mean_l1": 0.09458683128442645,
+          "mean_kl": 0.017702250159141123,
+          "mean_hellinger": 0.06703080804821174
+        },
+        "hammer": {
+          "median": 1.9854723482848078,
+          "first_quartile": 1.0455837208337824,
+          "third_quartile": 3.491805425727846,
+          "improved_fraction": 0.075,
+          "mean_l1": 0.3110124153463327,
+          "mean_kl": 0.09678807710721163,
+          "mean_hellinger": 0.14063784924424966
+        },
+        "mix": {
+          "median": -0.6198909649498551,
+          "first_quartile": -0.7354347794078234,
+          "third_quartile": -0.4101936394400459,
+          "improved_fraction": 0.895,
+          "mean_l1": 0.0454227150894182,
+          "mean_kl": 0.045377858626897964,
+          "mean_hellinger": 0.03760969328925471
+        },
+        "mix_physical": {
+          "median": -0.5778675121199397,
+          "first_quartile": -0.6673678068018778,
+          "third_quartile": -0.48834949665180905,
+          "improved_fraction": 0.955,
+          "mean_l1": 0.04769615533926583,
+          "mean_kl": 0.00934900846613141,
+          "mean_hellinger": 0.03595264142950165
+        },
+        "mix_physical_fitted": {
+          "median": -0.6580592352838512,
+          "first_quartile": -0.7518373236312262,
+          "third_quartile": -0.5368117228491645,
+          "improved_fraction": 0.94,
+          "mean_l1": 0.03893843489050704,
+          "mean_kl": 0.023069178677867074,
+          "mean_hellinger": 0.032591900045593175
+        },
+        "linear_map": {
+          "median": -0.5592266896364515,
+          "first_quartile": -0.6671436445826233,
+          "third_quartile": -0.4197771457211489,
+          "improved_fraction": 0.93,
+          "mean_l1": 0.05044391751671228,
+          "mean_kl": 0.021389938319568688,
+          "mean_hellinger": 0.03791412360365073
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.636756953956448,
+          "median_std": 0.009288990967975827,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.6196262776723342,
+                "first_quartile": -0.7190550675700129,
+                "third_quartile": -0.4843019538078567,
+                "improved_fraction": 0.945,
+                "mean_l1": 0.0426681712269783,
+                "mean_kl": 0.0045078350231051445,
+                "mean_hellinger": 0.031737931072711945,
+                "mean_flipped_bits": 0.10596335679292679
+              },
+              "sample": {
+                "median": -0.6187800841493651,
+                "first_quartile": -0.7099026299189805,
+                "third_quartile": -0.48481521754618395,
+                "improved_fraction": 0.95,
+                "mean_l1": 0.04357617348432541,
+                "mean_kl": 0.004933633841574192,
+                "mean_hellinger": 0.03219341114163399,
+                "mean_flipped_bits": 0.10637878626585007
+              },
+              "argmax": {
+                "median": -1.9110716183080527e-08,
+                "first_quartile": -0.32522150422728596,
+                "third_quartile": 0.0,
+                "improved_fraction": 0.57,
+                "mean_l1": 0.0903531089425087,
+                "mean_kl": 0.10937100648880005,
+                "mean_hellinger": 0.06499011069536209,
+                "mean_flipped_bits": 0.021331787109375
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.6519261455857032,
+                "first_quartile": -0.7503481285761745,
+                "third_quartile": -0.5156383806306843,
+                "improved_fraction": 0.95,
+                "mean_l1": 0.039045996963977814,
+                "mean_kl": 0.004123433958739042,
+                "mean_hellinger": 0.030376184731721878,
+                "mean_flipped_bits": 0.09642472863197327
+              },
+              "sample": {
+                "median": -0.6450989938377278,
+                "first_quartile": -0.7385454976131045,
+                "third_quartile": -0.5088385592092579,
+                "improved_fraction": 0.95,
+                "mean_l1": 0.0396721325814724,
+                "mean_kl": 0.004299516789615154,
+                "mean_hellinger": 0.031052464619278908,
+                "mean_flipped_bits": 0.09673827886581421
+              },
+              "argmax": {
+                "median": -2.899546181385388e-08,
+                "first_quartile": -0.32712687980967425,
+                "third_quartile": 0.0,
+                "improved_fraction": 0.58,
+                "mean_l1": 0.08954981714487076,
+                "mean_kl": 0.13682861626148224,
+                "mean_hellinger": 0.06758841872215271,
+                "mean_flipped_bits": 0.024338988587260246
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.650650352145356,
+                "first_quartile": -0.7438964000180546,
+                "third_quartile": -0.5276420541138428,
+                "improved_fraction": 0.945,
+                "mean_l1": 0.039050713181495667,
+                "mean_kl": 0.004061815328896046,
+                "mean_hellinger": 0.02998153679072857,
+                "mean_flipped_bits": 0.1144256517291069
+              },
+              "sample": {
+                "median": -0.6419862716549776,
+                "first_quartile": -0.7296327655003154,
+                "third_quartile": -0.5309996054313211,
+                "improved_fraction": 0.945,
+                "mean_l1": 0.040025778114795685,
+                "mean_kl": 0.004300457891076803,
+                "mean_hellinger": 0.030439328402280807,
+                "mean_flipped_bits": 0.11431213468313217
+              },
+              "argmax": {
+                "median": -2.9280816547014496e-08,
+                "first_quartile": -0.3413784035940928,
+                "third_quartile": 0.0,
+                "improved_fraction": 0.585,
+                "mean_l1": 0.08968959748744965,
+                "mean_kl": 0.14541791379451752,
+                "mean_hellinger": 0.06731773167848587,
+                "mean_flipped_bits": 0.025583496317267418
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.6475580781521255,
+                "first_quartile": -0.7677422110682186,
+                "third_quartile": -0.49530805575788794,
+                "improved_fraction": 0.935,
+                "mean_l1": 0.03842521831393242,
+                "mean_kl": 0.004062064923346043,
+                "mean_hellinger": 0.029314463958144188,
+                "mean_flipped_bits": 0.09812480956315994
+              },
+              "sample": {
+                "median": -0.6380599167633947,
+                "first_quartile": -0.7593544962552783,
+                "third_quartile": -0.476787628987673,
+                "improved_fraction": 0.935,
+                "mean_l1": 0.039799708873033524,
+                "mean_kl": 0.004420791752636433,
+                "mean_hellinger": 0.030313091352581978,
+                "mean_flipped_bits": 0.09803161770105362
+              },
+              "argmax": {
+                "median": -3.872039531957351e-08,
+                "first_quartile": -0.37035619948557985,
+                "third_quartile": 0.0,
+                "improved_fraction": 0.605,
+                "mean_l1": 0.08799558877944946,
+                "mean_kl": 0.15239225327968597,
+                "mean_hellinger": 0.06794490665197372,
+                "mean_flipped_bits": 0.027584228664636612
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.6473162228834387,
+                "first_quartile": -0.7600608849141792,
+                "third_quartile": -0.4909046592791112,
+                "improved_fraction": 0.935,
+                "mean_l1": 0.03935897350311279,
+                "mean_kl": 0.00406774552538991,
+                "mean_hellinger": 0.029777025803923607,
+                "mean_flipped_bits": 0.08966711163520813
+              },
+              "sample": {
+                "median": -0.6398595033767749,
+                "first_quartile": -0.7478953585153256,
+                "third_quartile": -0.47973411615885103,
+                "improved_fraction": 0.935,
+                "mean_l1": 0.04017961397767067,
+                "mean_kl": 0.004537820350378752,
+                "mean_hellinger": 0.03044460341334343,
+                "mean_flipped_bits": 0.08954773098230362
+              },
+              "argmax": {
+                "median": -2.899546181385388e-08,
+                "first_quartile": -0.36261202907604395,
+                "third_quartile": 0.0,
+                "improved_fraction": 0.585,
+                "mean_l1": 0.08851152658462524,
+                "mean_kl": 0.1238517165184021,
+                "mean_hellinger": 0.0653509646654129,
+                "mean_flipped_bits": 0.025260619819164276
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8040633648841533,
+            "first_quartile": -0.9162978756251023,
+            "third_quartile": -0.6928370845338654,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.5168191819522154,
+            "first_quartile": -0.6947715459655779,
+            "third_quartile": -0.1007878560216508,
+            "improved_fraction": 0.775
+          },
+          "repolarizer": {
+            "median": -0.3722834026221608,
+            "first_quartile": -0.8025431592405082,
+            "third_quartile": 0.043192570393927265,
+            "improved_fraction": 0.725
+          },
+          "readout": {
+            "median": -0.351292024575679,
+            "first_quartile": -0.5010403460828292,
+            "third_quartile": -0.2945302785498739,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 3.288122492861328,
+            "first_quartile": 1.2421755249672388,
+            "third_quartile": 5.113902820756258,
+            "improved_fraction": 0.125
+          },
+          "mix": {
+            "median": -0.4099341658659894,
+            "first_quartile": -0.7625577510252166,
+            "third_quartile": 0.051335405963086396,
+            "improved_fraction": 0.725
+          },
+          "mix_physical": {
+            "median": -0.66570752943623,
+            "first_quartile": -0.7322111605583121,
+            "third_quartile": -0.571096344973314,
+            "improved_fraction": 0.975
+          },
+          "mix_physical_fitted": {
+            "median": -0.6780868021491837,
+            "first_quartile": -0.7976091608837841,
+            "third_quartile": -0.5450838078341356,
+            "improved_fraction": 0.975
+          },
+          "linear_map": {
+            "median": -0.5658890883366252,
+            "first_quartile": -0.7578968623711378,
+            "third_quartile": -0.21397032999436452,
+            "improved_fraction": 0.85
+          },
+          "shared_scorer": {
+            "median": -0.6881900773860767,
+            "first_quartile": -0.7923088758294926,
+            "third_quartile": -0.4878989770232729,
+            "improved_fraction": 0.975
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8014548805781865,
+            "first_quartile": -0.8705688751186648,
+            "third_quartile": -0.7614609258775915,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": -0.1802236633251492,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.475
+          },
+          "repolarizer": {
+            "median": -0.5994276121019235,
+            "first_quartile": -0.6832533793294581,
+            "third_quartile": -0.4839390788851312,
+            "improved_fraction": 0.975
+          },
+          "readout": {
+            "median": -0.11815587816158889,
+            "first_quartile": -0.14414195214645706,
+            "third_quartile": -0.07664456633782533,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 2.1314134574778683,
+            "first_quartile": 1.1536207244392815,
+            "third_quartile": 2.8843853127998416,
+            "improved_fraction": 0.075
+          },
+          "mix": {
+            "median": -0.5935062736783135,
+            "first_quartile": -0.6927340103051944,
+            "third_quartile": -0.4962504925818678,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.5225677768836084,
+            "first_quartile": -0.5777199594567919,
+            "third_quartile": -0.42940460630511623,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.6329804336129301,
+            "first_quartile": -0.7212322250464903,
+            "third_quartile": -0.5652937594964342,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.5291357910161395,
+            "first_quartile": -0.6013499026935671,
+            "third_quartile": -0.43137448054183875,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.6145613205312099,
+            "first_quartile": -0.6959231690251324,
+            "third_quartile": -0.5243496436219898,
+            "improved_fraction": 1.0
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8140123810940005,
+            "first_quartile": -0.8400186947086848,
+            "third_quartile": -0.7518357446888875,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.0986346391806151,
+            "first_quartile": -0.238966366732114,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.6
+          },
+          "repolarizer": {
+            "median": -0.5842248334036513,
+            "first_quartile": -0.678142485180492,
+            "third_quartile": -0.4078025146622292,
+            "improved_fraction": 0.925
+          },
+          "readout": {
+            "median": -0.16237110408190075,
+            "first_quartile": -0.21039953075847578,
+            "third_quartile": -0.12496568179304211,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 2.839340157080911,
+            "first_quartile": 2.0139295543208178,
+            "third_quartile": 4.1353223584622985,
+            "improved_fraction": 0.0
+          },
+          "mix": {
+            "median": -0.6019495708325187,
+            "first_quartile": -0.6821855432274301,
+            "third_quartile": -0.41562535155476327,
+            "improved_fraction": 0.95
+          },
+          "mix_physical": {
+            "median": -0.5803023389601853,
+            "first_quartile": -0.6445436567574778,
+            "third_quartile": -0.5143367786294705,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.6209489444897693,
+            "first_quartile": -0.7141474881768035,
+            "third_quartile": -0.3830460304972383,
+            "improved_fraction": 0.975
+          },
+          "linear_map": {
+            "median": -0.5755297237505054,
+            "first_quartile": -0.6736652287308609,
+            "third_quartile": -0.5012496545196767,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5956958322896251,
+            "first_quartile": -0.6950560406566215,
+            "third_quartile": -0.4693561929169917,
+            "improved_fraction": 0.96
+          }
+        },
+        "phase_estimation": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8605692462732855,
+            "first_quartile": -0.9131237734337729,
+            "third_quartile": -0.80769817703276,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.17619798836750222,
+            "first_quartile": -0.26198638091747445,
+            "third_quartile": -0.08293541882289956,
+            "improved_fraction": 0.8
+          },
+          "repolarizer": {
+            "median": -0.6763413728460753,
+            "first_quartile": -0.7670526721784447,
+            "third_quartile": -0.6094377129906867,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.14500057543746303,
+            "first_quartile": -0.17105989238777422,
+            "third_quartile": -0.10823757324077861,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 1.47751808048779,
+            "first_quartile": 0.941094583872714,
+            "third_quartile": 2.053564755118744,
+            "improved_fraction": 0.075
+          },
+          "mix": {
+            "median": -0.6972297365175504,
+            "first_quartile": -0.7600878471726038,
+            "third_quartile": -0.6007518125592268,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.5757337953176072,
+            "first_quartile": -0.6396231124413455,
+            "third_quartile": -0.5162310476508042,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.7336602614503751,
+            "first_quartile": -0.770353341551827,
+            "third_quartile": -0.6385738322504109,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.5753964941545662,
+            "first_quartile": -0.6549738169509975,
+            "third_quartile": -0.49393310132263296,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.682296401082756,
+            "first_quartile": -0.7630279401326261,
+            "third_quartile": -0.5885087132649438,
+            "improved_fraction": 1.0
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8344066765116995,
+            "first_quartile": -0.8842999529171052,
+            "third_quartile": -0.6257021705348487,
+            "improved_fraction": 0.975
+          },
+          "threshold": {
+            "median": -0.0554876576186039,
+            "first_quartile": -0.36398422383928053,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.5
+          },
+          "repolarizer": {
+            "median": -0.5944165209102265,
+            "first_quartile": -0.7027398370265701,
+            "third_quartile": -0.06080157503294824,
+            "improved_fraction": 0.75
+          },
+          "readout": {
+            "median": -0.12329991880993016,
+            "first_quartile": -0.15494002269947066,
+            "third_quartile": -0.05506574626226446,
+            "improved_fraction": 0.85
+          },
+          "hammer": {
+            "median": 1.0741271624998157,
+            "first_quartile": 0.43525149678643804,
+            "third_quartile": 4.243536780474944,
+            "improved_fraction": 0.1
+          },
+          "mix": {
+            "median": -0.6173983902391222,
+            "first_quartile": -0.7197298580536462,
+            "third_quartile": -0.13320058845972044,
+            "improved_fraction": 0.8
+          },
+          "mix_physical": {
+            "median": -0.6129628719177109,
+            "first_quartile": -0.7019787322968849,
+            "third_quartile": -0.2541275870975657,
+            "improved_fraction": 0.8
+          },
+          "mix_physical_fitted": {
+            "median": -0.5887841689771396,
+            "first_quartile": -0.7027634812611476,
+            "third_quartile": -0.011820079957282365,
+            "improved_fraction": 0.75
+          },
+          "linear_map": {
+            "median": -0.548910655985327,
+            "first_quartile": -0.6553722167660518,
+            "third_quartile": -0.27962743886045527,
+            "improved_fraction": 0.8
+          },
+          "shared_scorer": {
+            "median": -0.607123868528908,
+            "first_quartile": -0.7304998489979817,
+            "third_quartile": -0.13493212574961397,
+            "improved_fraction": 0.78
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.8359409929759625,
+          -0.8024070277009725
+        ],
+        "threshold": [
+          -0.18130130858051613,
+          -0.10227093958895117
+        ],
+        "repolarizer": [
+          -0.6402233408993181,
+          -0.5719901386731443
+        ],
+        "readout": [
+          -0.1637097695159146,
+          -0.13795328602918883
+        ],
+        "hammer": [
+          1.6990650894156158,
+          2.2681971973087465
+        ],
+        "mix": [
+          -0.6498271280610395,
+          -0.5832815034508475
+        ],
+        "mix_physical": [
+          -0.6075003565977145,
+          -0.5576315536827378
+        ],
+        "mix_physical_fitted": [
+          -0.6861952209969875,
+          -0.6268524260124697
+        ],
+        "linear_map": [
+          -0.5860777436395126,
+          -0.5287663900982607
+        ],
+        "shared_scorer": [
+          -0.6612423953903307,
+          -0.6103373410113441
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "mix_physical_fitted",
+          "median_difference": 0.018602279917748075,
+          "difference_low": 0.0031630225689908142,
+          "difference_high": 0.03119894503087528,
+          "first_better_fraction": 0.405,
+          "wilcoxon_p": 0.007814738013010346
+        }
+      }
+    },
+    "5": {
+      "num_circuits": 200,
+      "baseline_parameters": {
+        "threshold": 0.017241379310344827,
+        "repolarizer_rate": 0.43181818181818177,
+        "mix_rate": 0.3838383838383838,
+        "mix_physical_scale": 1.25
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.3312063549395406,
+          "mean_kl": 0.11670332171634616,
+          "mean_hellinger": 0.18673278965656018
+        },
+        "oracle": {
+          "median": -0.8881794764071667,
+          "first_quartile": -0.9303530567880447,
+          "third_quartile": -0.8453708878879241,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.035346753127536296,
+          "mean_kl": 0.0024160235798401804,
+          "mean_hellinger": 0.019591922416525638
+        },
+        "threshold": {
+          "median": -0.1751131658939522,
+          "first_quartile": -0.3439322020070883,
+          "third_quartile": -0.08704853110584745,
+          "improved_fraction": 0.885,
+          "mean_l1": 0.2524884097913307,
+          "mean_kl": 0.7120212511422366,
+          "mean_hellinger": 0.17130327407968132
+        },
+        "repolarizer": {
+          "median": -0.5664125372353492,
+          "first_quartile": -0.6821466417861317,
+          "third_quartile": -0.4458743016027507,
+          "improved_fraction": 0.92,
+          "mean_l1": 0.14838292006759646,
+          "mean_kl": 0.2718065374782123,
+          "mean_hellinger": 0.11137362572529602
+        },
+        "readout": {
+          "median": -0.07208283202197618,
+          "first_quartile": -0.13391056157397324,
+          "third_quartile": -0.04998282654972213,
+          "improved_fraction": 0.995,
+          "mean_l1": 0.302117398031624,
+          "mean_kl": 0.10175006171962846,
+          "mean_hellinger": 0.17314089950119851
+        },
+        "hammer": {
+          "median": -0.2169502187149978,
+          "first_quartile": -0.4963911136136177,
+          "third_quartile": 0.2071013824469897,
+          "improved_fraction": 0.655,
+          "mean_l1": 0.2614756772752441,
+          "mean_kl": 0.07111867061499978,
+          "mean_hellinger": 0.12561311747976675
+        },
+        "mix": {
+          "median": -0.5730196806778536,
+          "first_quartile": -0.6790432264191155,
+          "third_quartile": -0.4584567116765606,
+          "improved_fraction": 0.94,
+          "mean_l1": 0.145307653154966,
+          "mean_kl": 0.22930886828462707,
+          "mean_hellinger": 0.1063034017076199
+        },
+        "mix_physical": {
+          "median": -0.5794454310733521,
+          "first_quartile": -0.6537641334449369,
+          "third_quartile": -0.5123219697376324,
+          "improved_fraction": 0.975,
+          "mean_l1": 0.13990367374816487,
+          "mean_kl": 0.15397726364286732,
+          "mean_hellinger": 0.10543352707341316
+        },
+        "mix_physical_fitted": {
+          "median": -0.5988301509312217,
+          "first_quartile": -0.6997462091368847,
+          "third_quartile": -0.5081817014898756,
+          "improved_fraction": 0.93,
+          "mean_l1": 0.13583283151390732,
+          "mean_kl": 0.2813388278732877,
+          "mean_hellinger": 0.11188578402774738
+        },
+        "linear_map": {
+          "median": -0.45493431639112725,
+          "first_quartile": -0.569063108742392,
+          "third_quartile": -0.347362882838034,
+          "improved_fraction": 0.98,
+          "mean_l1": 0.18312619338329406,
+          "mean_kl": 0.07871141451650529,
+          "mean_hellinger": 0.11414848129681364
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.615365808145298,
+          "median_std": 0.0068087625678354795,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.615399568409233,
+                "first_quartile": -0.7077301075536337,
+                "third_quartile": -0.5415095181852188,
+                "improved_fraction": 0.97,
+                "mean_l1": 0.12420684844255447,
+                "mean_kl": 0.027390580624341965,
+                "mean_hellinger": 0.0854613333940506,
+                "mean_flipped_bits": 0.34166592359542847
+              },
+              "sample": {
+                "median": -0.6079866597364217,
+                "first_quartile": -0.7103599632212907,
+                "third_quartile": -0.5351759827742003,
+                "improved_fraction": 0.965,
+                "mean_l1": 0.1257375031709671,
+                "mean_kl": 0.030074017122387886,
+                "mean_hellinger": 0.0869385227560997,
+                "mean_flipped_bits": 0.3419128358364105
+              },
+              "argmax": {
+                "median": -0.1498595839874187,
+                "first_quartile": -0.5344554726830764,
+                "third_quartile": -6.5206148645547224e-09,
+                "improved_fraction": 0.77,
+                "mean_l1": 0.23462127149105072,
+                "mean_kl": 0.3705892264842987,
+                "mean_hellinger": 0.14810150861740112,
+                "mean_flipped_bits": 0.09928406029939651
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.6231042926797183,
+                "first_quartile": -0.7025306492093527,
+                "third_quartile": -0.5430067906722116,
+                "improved_fraction": 0.96,
+                "mean_l1": 0.12323436886072159,
+                "mean_kl": 0.027164774015545845,
+                "mean_hellinger": 0.08532987534999847,
+                "mean_flipped_bits": 0.4032893478870392
+              },
+              "sample": {
+                "median": -0.6148189456247063,
+                "first_quartile": -0.6998991662010914,
+                "third_quartile": -0.5437126061749409,
+                "improved_fraction": 0.96,
+                "mean_l1": 0.12488307803869247,
+                "mean_kl": 0.029094703495502472,
+                "mean_hellinger": 0.08658470213413239,
+                "mean_flipped_bits": 0.40363526344299316
+              },
+              "argmax": {
+                "median": -0.18680977488882072,
+                "first_quartile": -0.5753952529055262,
+                "third_quartile": -1.7666670603657078e-08,
+                "improved_fraction": 0.805,
+                "mean_l1": 0.2269720584154129,
+                "mean_kl": 0.427062064409256,
+                "mean_hellinger": 0.14642006158828735,
+                "mean_flipped_bits": 0.11262024194002151
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.6199325961365212,
+                "first_quartile": -0.7097412632768323,
+                "third_quartile": -0.5452905014946148,
+                "improved_fraction": 0.965,
+                "mean_l1": 0.12295038253068924,
+                "mean_kl": 0.02711556851863861,
+                "mean_hellinger": 0.08454681187868118,
+                "mean_flipped_bits": 0.3809603452682495
+              },
+              "sample": {
+                "median": -0.6092276452466119,
+                "first_quartile": -0.7000733870840631,
+                "third_quartile": -0.5239273001529521,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.1251128762960434,
+                "mean_kl": 0.030063066631555557,
+                "mean_hellinger": 0.08593680709600449,
+                "mean_flipped_bits": 0.3814440965652466
+              },
+              "argmax": {
+                "median": -0.159287017769345,
+                "first_quartile": -0.5421213765835494,
+                "third_quartile": -1.1304678275697234e-08,
+                "improved_fraction": 0.78,
+                "mean_l1": 0.23376183211803436,
+                "mean_kl": 0.40735432505607605,
+                "mean_hellinger": 0.14941610395908356,
+                "mean_flipped_bits": 0.1030896008014679
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.6342926701519875,
+                "first_quartile": -0.7112129144623587,
+                "third_quartile": -0.5410344187418652,
+                "improved_fraction": 0.965,
+                "mean_l1": 0.12205852568149567,
+                "mean_kl": 0.02695736475288868,
+                "mean_hellinger": 0.08358696103096008,
+                "mean_flipped_bits": 0.38145241141319275
+              },
+              "sample": {
+                "median": -0.6268961064908256,
+                "first_quartile": -0.7056627424607076,
+                "third_quartile": -0.5291542179532648,
+                "improved_fraction": 0.96,
+                "mean_l1": 0.12482099235057831,
+                "mean_kl": 0.02965264394879341,
+                "mean_hellinger": 0.08512811362743378,
+                "mean_flipped_bits": 0.3821588158607483
+              },
+              "argmax": {
+                "median": -0.16124806320803853,
+                "first_quartile": -0.5569913434338059,
+                "third_quartile": -3.1096066715161644e-09,
+                "improved_fraction": 0.755,
+                "mean_l1": 0.23400042951107025,
+                "mean_kl": 0.4093419015407562,
+                "mean_hellinger": 0.14949482679367065,
+                "mean_flipped_bits": 0.11089416593313217
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.6201738701962369,
+                "first_quartile": -0.7111421270254502,
+                "third_quartile": -0.5479100532541341,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.12231326103210449,
+                "mean_kl": 0.027026508003473282,
+                "mean_hellinger": 0.08481655269861221,
+                "mean_flipped_bits": 0.3548335134983063
+              },
+              "sample": {
+                "median": -0.6178996836279245,
+                "first_quartile": -0.7062366859547928,
+                "third_quartile": -0.5341874628300487,
+                "improved_fraction": 0.965,
+                "mean_l1": 0.12497393786907196,
+                "mean_kl": 0.029974455013871193,
+                "mean_hellinger": 0.08635587990283966,
+                "mean_flipped_bits": 0.35509154200553894
+              },
+              "argmax": {
+                "median": -0.1184015232725779,
+                "first_quartile": -0.5364520445502774,
+                "third_quartile": -3.1096066715161644e-09,
+                "improved_fraction": 0.755,
+                "mean_l1": 0.23555278778076172,
+                "mean_kl": 0.38457342982292175,
+                "mean_hellinger": 0.1488286405801773,
+                "mean_flipped_bits": 0.1032244861125946
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9350397957601306,
+            "first_quartile": -0.9493130617398766,
+            "third_quartile": -0.8890536194242752,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.6172104661625947,
+            "first_quartile": -0.7464159999933613,
+            "third_quartile": -0.48261245326205493,
+            "improved_fraction": 0.95
+          },
+          "repolarizer": {
+            "median": -0.7840784246213471,
+            "first_quartile": -0.8431880448018492,
+            "third_quartile": -0.6586589266021745,
+            "improved_fraction": 0.95
+          },
+          "readout": {
+            "median": -0.2115711913162463,
+            "first_quartile": -0.25566946203781427,
+            "third_quartile": -0.18847767388791087,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 0.21188846491890168,
+            "first_quartile": -0.1847793129575519,
+            "third_quartile": 0.7218397556908891,
+            "improved_fraction": 0.325
+          },
+          "mix": {
+            "median": -0.8073639787565494,
+            "first_quartile": -0.8655090095371443,
+            "third_quartile": -0.6656008677132242,
+            "improved_fraction": 0.95
+          },
+          "mix_physical": {
+            "median": -0.661288976329482,
+            "first_quartile": -0.7211880258552196,
+            "third_quartile": -0.6060145891038738,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.711436453806002,
+            "first_quartile": -0.7689235945152819,
+            "third_quartile": -0.6589363887139543,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.7490629664774371,
+            "first_quartile": -0.8049379621963275,
+            "third_quartile": -0.6764519461662564,
+            "improved_fraction": 0.95
+          },
+          "shared_scorer": {
+            "median": -0.7805874899226548,
+            "first_quartile": -0.8260547583171712,
+            "third_quartile": -0.7092468385400857,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8583960238607752,
+            "first_quartile": -0.8902009054522476,
+            "third_quartile": -0.8353776081987865,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.11735313993559071,
+            "first_quartile": -0.17389180801254828,
+            "third_quartile": -0.07741056316720961,
+            "improved_fraction": 0.975
+          },
+          "repolarizer": {
+            "median": -0.6082790276572185,
+            "first_quartile": -0.6686608063204548,
+            "third_quartile": -0.5327134056643608,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.061175438022317286,
+            "first_quartile": -0.07189036816818087,
+            "third_quartile": -0.04578715261372948,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.3522393914834085,
+            "first_quartile": -0.5257884369356415,
+            "third_quartile": -0.1528324643482155,
+            "improved_fraction": 0.85
+          },
+          "mix": {
+            "median": -0.5891099747210825,
+            "first_quartile": -0.6592513369598729,
+            "third_quartile": -0.5228825730883417,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.5655277443458386,
+            "first_quartile": -0.6164043996489733,
+            "third_quartile": -0.5207893576026851,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.6223339079441141,
+            "first_quartile": -0.6806105172698999,
+            "third_quartile": -0.5695394783572925,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.39881950349678913,
+            "first_quartile": -0.4514272062052287,
+            "third_quartile": -0.31547861331857213,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.59932413653961,
+            "first_quartile": -0.6506608265512797,
+            "third_quartile": -0.5341967313033905,
+            "improved_fraction": 1.0
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8527089230347605,
+            "first_quartile": -0.8714045060225496,
+            "third_quartile": -0.8203574924148529,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.13314046592146328,
+            "first_quartile": -0.2098719962712795,
+            "third_quartile": -0.102572623079634,
+            "improved_fraction": 0.925
+          },
+          "repolarizer": {
+            "median": -0.46757530822078575,
+            "first_quartile": -0.5572113092034743,
+            "third_quartile": -0.29956334159876896,
+            "improved_fraction": 0.9
+          },
+          "readout": {
+            "median": -0.08403629626629316,
+            "first_quartile": -0.1025815606157246,
+            "third_quartile": -0.06425419590046437,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 0.06823856072639378,
+            "first_quartile": -0.10837521662691398,
+            "third_quartile": 0.2846483076986671,
+            "improved_fraction": 0.45
+          },
+          "mix": {
+            "median": -0.5059525780617902,
+            "first_quartile": -0.5763112556352112,
+            "third_quartile": -0.3296152876324664,
+            "improved_fraction": 0.925
+          },
+          "mix_physical": {
+            "median": -0.568083166963487,
+            "first_quartile": -0.6023080336386482,
+            "third_quartile": -0.5428222648930969,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.5426058670730967,
+            "first_quartile": -0.6497172045703122,
+            "third_quartile": -0.4941596906994695,
+            "improved_fraction": 0.975
+          },
+          "linear_map": {
+            "median": -0.47978251486534085,
+            "first_quartile": -0.5308545866409,
+            "third_quartile": -0.4109128751856877,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5640575827074734,
+            "first_quartile": -0.611698012358153,
+            "third_quartile": -0.5092780256596118,
+            "improved_fraction": 1.0
+          }
+        },
+        "phase_estimation": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9268980707714207,
+            "first_quartile": -0.9482295249535349,
+            "third_quartile": -0.9106477278035386,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.14119486233066542,
+            "first_quartile": -0.19155014470083265,
+            "third_quartile": -0.09690685499900922,
+            "improved_fraction": 0.9
+          },
+          "repolarizer": {
+            "median": -0.5219601829818201,
+            "first_quartile": -0.5645734870380565,
+            "third_quartile": -0.443892746655378,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.045990103112540884,
+            "first_quartile": -0.057604483098602915,
+            "third_quartile": -0.03894566898068081,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.5125477230425155,
+            "first_quartile": -0.5815707949891835,
+            "third_quartile": -0.42459047097336905,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.5140371089847098,
+            "first_quartile": -0.5469947195717163,
+            "third_quartile": -0.4409534073122988,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.5374588257568967,
+            "first_quartile": -0.5824894490237447,
+            "third_quartile": -0.4912827679463608,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.5552148393017883,
+            "first_quartile": -0.6074932782067819,
+            "third_quartile": -0.4869225593367893,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.3077309148004562,
+            "first_quartile": -0.37231747113222174,
+            "third_quartile": -0.26994189394143636,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5959111025204096,
+            "first_quartile": -0.6636462844703769,
+            "third_quartile": -0.5465419168360504,
+            "improved_fraction": 1.0
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8858289881395223,
+            "first_quartile": -0.9291476990231892,
+            "third_quartile": -0.7143689762246108,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.19420118868629643,
+            "first_quartile": -0.39147134909575726,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.675
+          },
+          "repolarizer": {
+            "median": -0.6107982679495514,
+            "first_quartile": -0.7368906748985529,
+            "third_quartile": -0.005920760809670397,
+            "improved_fraction": 0.75
+          },
+          "readout": {
+            "median": -0.07118525077979748,
+            "first_quartile": -0.09012618222507929,
+            "third_quartile": -0.04868905191600596,
+            "improved_fraction": 0.975
+          },
+          "hammer": {
+            "median": -0.29486368796258017,
+            "first_quartile": -0.4600641509738249,
+            "third_quartile": 0.6896261319211262,
+            "improved_fraction": 0.65
+          },
+          "mix": {
+            "median": -0.6176607668066039,
+            "first_quartile": -0.7205214206543292,
+            "third_quartile": -0.1404276748244057,
+            "improved_fraction": 0.825
+          },
+          "mix_physical": {
+            "median": -0.6287345419319238,
+            "first_quartile": -0.7292579371344208,
+            "third_quartile": -0.14410110440336785,
+            "improved_fraction": 0.875
+          },
+          "mix_physical_fitted": {
+            "median": -0.5615861322738207,
+            "first_quartile": -0.7349045431378981,
+            "third_quartile": 0.17594286263547282,
+            "improved_fraction": 0.675
+          },
+          "linear_map": {
+            "median": -0.470408516797674,
+            "first_quartile": -0.5345192719498233,
+            "third_quartile": -0.3858316594730411,
+            "improved_fraction": 0.95
+          },
+          "shared_scorer": {
+            "median": -0.6459190602973012,
+            "first_quartile": -0.7377854617010322,
+            "third_quartile": -0.21750679885409094,
+            "improved_fraction": 0.825
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.8996796247861854,
+          -0.8763968263284143
+        ],
+        "threshold": [
+          -0.19741926868267137,
+          -0.1463135391838734
+        ],
+        "repolarizer": [
+          -0.597800721241809,
+          -0.539354687181217
+        ],
+        "readout": [
+          -0.07995214211838575,
+          -0.06556688533106167
+        ],
+        "hammer": [
+          -0.32607740906307586,
+          -0.13509918261126408
+        ],
+        "mix": [
+          -0.5888000425533799,
+          -0.5446605051654299
+        ],
+        "mix_physical": [
+          -0.595241500072582,
+          -0.5627491126997364
+        ],
+        "mix_physical_fitted": [
+          -0.6232980349089886,
+          -0.5742090421995814
+        ],
+        "linear_map": [
+          -0.47380990908672554,
+          -0.4131406796175518
+        ],
+        "shared_scorer": [
+          -0.6356501433001696,
+          -0.5948520951117585
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "mix_physical_fitted",
+          "median_difference": -0.019538642175278953,
+          "difference_low": -0.03560875841118334,
+          "difference_high": -0.00820198409106554,
+          "first_better_fraction": 0.61,
+          "wilcoxon_p": 2.434769038458762e-06
+        }
+      }
+    },
+    "6": {
+      "num_circuits": 200,
+      "baseline_parameters": {
+        "threshold": 0.017241379310344827,
+        "repolarizer_rate": 0.5181818181818182,
+        "mix_rate": 0.4893939393939394,
+        "mix_physical_scale": 1.1
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.4613422224928019,
+          "mean_kl": 0.20548557704435302,
+          "mean_hellinger": 0.24097873999925923
+        },
+        "oracle": {
+          "median": -0.8674311260359997,
+          "first_quartile": -0.9240017871862265,
+          "third_quartile": -0.8244864399789127,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.05033224573321141,
+          "mean_kl": 0.007162281686768217,
+          "mean_hellinger": 0.029426311385489314
+        },
+        "threshold": {
+          "median": 0.1121468832026207,
+          "first_quartile": -0.4136132476119349,
+          "third_quartile": 0.7731319957212703,
+          "improved_fraction": 0.48,
+          "mean_l1": 0.5121564089449763,
+          "mean_kl": 4.832089040967926,
+          "mean_hellinger": 0.34461983165951166
+        },
+        "repolarizer": {
+          "median": -0.4762441946980964,
+          "first_quartile": -0.5931502646530082,
+          "third_quartile": -0.3473704956038364,
+          "improved_fraction": 0.965,
+          "mean_l1": 0.24462562777983468,
+          "mean_kl": 0.3950926230593053,
+          "mean_hellinger": 0.16072487955797637
+        },
+        "readout": {
+          "median": -0.052211865871665944,
+          "first_quartile": -0.08515975538991707,
+          "third_quartile": -0.036022719662813986,
+          "improved_fraction": 0.99,
+          "mean_l1": 0.4317064933853535,
+          "mean_kl": 0.1866613889093466,
+          "mean_hellinger": 0.22788155058562712
+        },
+        "hammer": {
+          "median": -0.4065043316301397,
+          "first_quartile": -0.5713128678483407,
+          "third_quartile": -0.10405346023568228,
+          "improved_fraction": 0.815,
+          "mean_l1": 0.28876997841411933,
+          "mean_kl": 0.09299989811193779,
+          "mean_hellinger": 0.1478035043402893
+        },
+        "mix": {
+          "median": -0.4842557682575248,
+          "first_quartile": -0.5943246642698895,
+          "third_quartile": -0.3493535139678089,
+          "improved_fraction": 0.96,
+          "mean_l1": 0.24136279604516608,
+          "mean_kl": 0.38704340574920637,
+          "mean_hellinger": 0.15821203059126016
+        },
+        "mix_physical": {
+          "median": -0.5262883061227543,
+          "first_quartile": -0.597767794023242,
+          "third_quartile": -0.43957161687816293,
+          "improved_fraction": 0.95,
+          "mean_l1": 0.23057343262232544,
+          "mean_kl": 0.47475220358279047,
+          "mean_hellinger": 0.16128881289852898
+        },
+        "mix_physical_fitted": {
+          "median": -0.5325604855048669,
+          "first_quartile": -0.6067363969752186,
+          "third_quartile": -0.43637227276228463,
+          "improved_fraction": 0.94,
+          "mean_l1": 0.2304828703088782,
+          "mean_kl": 0.5676315891361692,
+          "mean_hellinger": 0.16510257776990983
+        },
+        "linear_map": {
+          "median": -0.3515804725558552,
+          "first_quartile": -0.4556643016669421,
+          "third_quartile": -0.2605280782847945,
+          "improved_fraction": 0.985,
+          "mean_l1": 0.3017433603036584,
+          "mean_kl": 0.16532931215106067,
+          "mean_hellinger": 0.1715705049690574
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.5574209867396036,
+          "median_std": 0.0017788958438820304,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.5711623712174142,
+                "first_quartile": -0.670259315054343,
+                "third_quartile": -0.4854443984436313,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.19420984387397766,
+                "mean_kl": 0.055824555456638336,
+                "mean_hellinger": 0.11999702453613281,
+                "mean_flipped_bits": 0.5516937971115112
+              },
+              "sample": {
+                "median": -0.5565354474569362,
+                "first_quartile": -0.6655988921940926,
+                "third_quartile": -0.47533396345370593,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.19834110140800476,
+                "mean_kl": 0.06256219744682312,
+                "mean_hellinger": 0.12272823601961136,
+                "mean_flipped_bits": 0.5510626435279846
+              },
+              "argmax": {
+                "median": -0.21490972006414427,
+                "first_quartile": -0.5165767409116555,
+                "third_quartile": -5.8185592866939285e-08,
+                "improved_fraction": 0.85,
+                "mean_l1": 0.3133525550365448,
+                "mean_kl": 0.8044695854187012,
+                "mean_hellinger": 0.19379645586013794,
+                "mean_flipped_bits": 0.2293573021888733
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.568131036211128,
+                "first_quartile": -0.6583177998874188,
+                "third_quartile": -0.48829000230445974,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.19609498977661133,
+                "mean_kl": 0.05642424523830414,
+                "mean_hellinger": 0.12100819498300552,
+                "mean_flipped_bits": 0.5876955389976501
+              },
+              "sample": {
+                "median": -0.5561149493610476,
+                "first_quartile": -0.6501841012046112,
+                "third_quartile": -0.4713902478065294,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.20074968039989471,
+                "mean_kl": 0.06349744647741318,
+                "mean_hellinger": 0.1242164820432663,
+                "mean_flipped_bits": 0.5871911644935608
+              },
+              "argmax": {
+                "median": -0.25942201786778635,
+                "first_quartile": -0.5588863087700515,
+                "third_quartile": -0.0419759082618822,
+                "improved_fraction": 0.895,
+                "mean_l1": 0.29820239543914795,
+                "mean_kl": 0.8453455567359924,
+                "mean_hellinger": 0.1927194595336914,
+                "mean_flipped_bits": 0.22271178662776947
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.5692285091463062,
+                "first_quartile": -0.6616994681471913,
+                "third_quartile": -0.4824691318844559,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.19747629761695862,
+                "mean_kl": 0.05671078711748123,
+                "mean_hellinger": 0.12125393003225327,
+                "mean_flipped_bits": 0.560757040977478
+              },
+              "sample": {
+                "median": -0.5608897241836382,
+                "first_quartile": -0.6495375758077822,
+                "third_quartile": -0.4676328058375253,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.20069089531898499,
+                "mean_kl": 0.06431780010461807,
+                "mean_hellinger": 0.12374551594257355,
+                "mean_flipped_bits": 0.5603918433189392
+              },
+              "argmax": {
+                "median": -0.21856764081397498,
+                "first_quartile": -0.5234916778228068,
+                "third_quartile": -5.8185592866939285e-08,
+                "improved_fraction": 0.865,
+                "mean_l1": 0.3106670677661896,
+                "mean_kl": 0.6664565205574036,
+                "mean_hellinger": 0.1914696842432022,
+                "mean_flipped_bits": 0.20023925602436066
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.5672857854924243,
+                "first_quartile": -0.6724671126749672,
+                "third_quartile": -0.480969626084601,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.1954401433467865,
+                "mean_kl": 0.056334055960178375,
+                "mean_hellinger": 0.11980418860912323,
+                "mean_flipped_bits": 0.6099647283554077
+              },
+              "sample": {
+                "median": -0.5562901008671461,
+                "first_quartile": -0.6586260395925281,
+                "third_quartile": -0.46839347510575813,
+                "improved_fraction": 0.97,
+                "mean_l1": 0.1989770531654358,
+                "mean_kl": 0.06358670443296432,
+                "mean_hellinger": 0.12250295281410217,
+                "mean_flipped_bits": 0.6100878715515137
+              },
+              "argmax": {
+                "median": -0.17508140171029007,
+                "first_quartile": -0.47478397209597445,
+                "third_quartile": -3.365475585033957e-08,
+                "improved_fraction": 0.855,
+                "mean_l1": 0.3179667592048645,
+                "mean_kl": 0.7764914035797119,
+                "mean_hellinger": 0.19495663046836853,
+                "mean_flipped_bits": 0.2346978783607483
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.5727984264577637,
+                "first_quartile": -0.6676831114845404,
+                "third_quartile": -0.492850834062933,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.19395774602890015,
+                "mean_kl": 0.05607615411281586,
+                "mean_hellinger": 0.12013322860002518,
+                "mean_flipped_bits": 0.5888146758079529
+              },
+              "sample": {
+                "median": -0.5572747118292491,
+                "first_quartile": -0.6572323375306706,
+                "third_quartile": -0.47421334890757516,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.1978040337562561,
+                "mean_kl": 0.06380822509527206,
+                "mean_hellinger": 0.1229543462395668,
+                "mean_flipped_bits": 0.5897009372711182
+              },
+              "argmax": {
+                "median": -0.21431265187470355,
+                "first_quartile": -0.5014799493073357,
+                "third_quartile": -3.181715047392069e-08,
+                "improved_fraction": 0.84,
+                "mean_l1": 0.3153232932090759,
+                "mean_kl": 0.7618408203125,
+                "mean_hellinger": 0.19361694157123566,
+                "mean_flipped_bits": 0.22586365044116974
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9145143907473294,
+            "first_quartile": -0.9500585422968062,
+            "third_quartile": -0.8406081514606641,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.5839662382887256,
+            "first_quartile": -0.7317121856462517,
+            "third_quartile": -0.35525724465719455,
+            "improved_fraction": 0.875
+          },
+          "repolarizer": {
+            "median": -0.7084677972945904,
+            "first_quartile": -0.766132058958092,
+            "third_quartile": -0.47371727755126225,
+            "improved_fraction": 0.975
+          },
+          "readout": {
+            "median": -0.1858140840357478,
+            "first_quartile": -0.2422894375982524,
+            "third_quartile": -0.1490316027657226,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": 0.04626872308711755,
+            "first_quartile": -0.2140379255299742,
+            "third_quartile": 1.004977247328803,
+            "improved_fraction": 0.5
+          },
+          "mix": {
+            "median": -0.7463958755965459,
+            "first_quartile": -0.7967702310779634,
+            "third_quartile": -0.5404777005330729,
+            "improved_fraction": 0.95
+          },
+          "mix_physical": {
+            "median": -0.6205894234304433,
+            "first_quartile": -0.6817095442614615,
+            "third_quartile": -0.5308076581671783,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.6381598434862299,
+            "first_quartile": -0.6922580132118157,
+            "third_quartile": -0.5486023901748486,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.5831037517038578,
+            "first_quartile": -0.6669605109608997,
+            "third_quartile": -0.4566541271950505,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.7244561788551123,
+            "first_quartile": -0.7857732849153081,
+            "third_quartile": -0.6110910071333706,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8462824924484298,
+            "first_quartile": -0.8704804390479847,
+            "third_quartile": -0.8180067743363456,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.7787290279276747,
+            "first_quartile": 0.3648228600486305,
+            "third_quartile": 1.1168566469646806,
+            "improved_fraction": 0.125
+          },
+          "repolarizer": {
+            "median": -0.5463073802301476,
+            "first_quartile": -0.583556042451506,
+            "third_quartile": -0.46130007791960503,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.04782670975806618,
+            "first_quartile": -0.05568601007010497,
+            "third_quartile": -0.040961750470101144,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.4922496975970003,
+            "first_quartile": -0.586331083908605,
+            "third_quartile": -0.3824817084166204,
+            "improved_fraction": 0.95
+          },
+          "mix": {
+            "median": -0.5476887902642719,
+            "first_quartile": -0.5874381313221917,
+            "third_quartile": -0.4630849872901507,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.5319795185216466,
+            "first_quartile": -0.5763389578435152,
+            "third_quartile": -0.4972264475435059,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.5569607405486374,
+            "first_quartile": -0.5874950887501308,
+            "third_quartile": -0.5126582114321017,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.3354987794299077,
+            "first_quartile": -0.42109142141457406,
+            "third_quartile": -0.28368103119942806,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5303921841883263,
+            "first_quartile": -0.5931716616868439,
+            "third_quartile": -0.4854088681664067,
+            "improved_fraction": 1.0
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8349255939119218,
+            "first_quartile": -0.8537069729393634,
+            "third_quartile": -0.8047766694339105,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.6651772391555122,
+            "first_quartile": 0.4815194658674223,
+            "third_quartile": 0.9932626470949871,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.38743903296567983,
+            "first_quartile": -0.5117014726941578,
+            "third_quartile": -0.30118799438141464,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.06217442974277883,
+            "first_quartile": -0.08138857003718247,
+            "third_quartile": -0.04926007510588126,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.2623964834702412,
+            "first_quartile": -0.410557182371407,
+            "third_quartile": -0.0939366133832914,
+            "improved_fraction": 0.9
+          },
+          "mix": {
+            "median": -0.3883841862157327,
+            "first_quartile": -0.5100378816227252,
+            "third_quartile": -0.31665967925679817,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.4913031224713289,
+            "first_quartile": -0.5468212187599554,
+            "third_quartile": -0.41901832679220224,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.48288026447384613,
+            "first_quartile": -0.5293751514587987,
+            "third_quartile": -0.38637590842796893,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.3854578082144893,
+            "first_quartile": -0.4309372319292484,
+            "third_quartile": -0.3333229017941833,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.4942597997895887,
+            "first_quartile": -0.5334997742112084,
+            "third_quartile": -0.4238373413360733,
+            "improved_fraction": 1.0
+          }
+        },
+        "phase_estimation": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9485199085826959,
+            "first_quartile": -0.9595725388998584,
+            "third_quartile": -0.9126072014324743,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.280204033091738,
+            "first_quartile": -0.36751404298385415,
+            "third_quartile": -0.160841109464946,
+            "improved_fraction": 0.8
+          },
+          "repolarizer": {
+            "median": -0.3650329375619048,
+            "first_quartile": -0.4086018772603317,
+            "third_quartile": -0.3332467571862351,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.02747193508988722,
+            "first_quartile": -0.031521289040823484,
+            "third_quartile": -0.02262609814569149,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.567089438533904,
+            "first_quartile": -0.6152892637361017,
+            "third_quartile": -0.451286084493937,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.36617721453938384,
+            "first_quartile": -0.4161225578820573,
+            "third_quartile": -0.3393732688052675,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.4598706965198086,
+            "first_quartile": -0.5072027046691241,
+            "third_quartile": -0.4230807770322379,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.4754957536795483,
+            "first_quartile": -0.5266393000871132,
+            "third_quartile": -0.42679147015767094,
+            "improved_fraction": 0.975
+          },
+          "linear_map": {
+            "median": -0.22190826150419826,
+            "first_quartile": -0.24874598983010426,
+            "third_quartile": -0.1935108495815909,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5792546482606306,
+            "first_quartile": -0.642334767921306,
+            "third_quartile": -0.49146157926718187,
+            "improved_fraction": 1.0
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8609389057389559,
+            "first_quartile": -0.9103422608260192,
+            "third_quartile": -0.7792727119030893,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": -0.1992797442406593,
+            "first_quartile": -0.4849990897619809,
+            "third_quartile": 0.9025408828915358,
+            "improved_fraction": 0.6
+          },
+          "repolarizer": {
+            "median": -0.5419303644133855,
+            "first_quartile": -0.6517430242302698,
+            "third_quartile": -0.25830698862615487,
+            "improved_fraction": 0.85
+          },
+          "readout": {
+            "median": -0.05153198777774462,
+            "first_quartile": -0.06263912650869383,
+            "third_quartile": -0.039448679519262876,
+            "improved_fraction": 0.95
+          },
+          "hammer": {
+            "median": -0.4466391549525942,
+            "first_quartile": -0.586434869504808,
+            "third_quartile": 0.03989433978786682,
+            "improved_fraction": 0.725
+          },
+          "mix": {
+            "median": -0.546323788794183,
+            "first_quartile": -0.658864267003598,
+            "third_quartile": -0.2744263092728241,
+            "improved_fraction": 0.85
+          },
+          "mix_physical": {
+            "median": -0.5681274056225492,
+            "first_quartile": -0.660713686851244,
+            "third_quartile": -0.0434506397415817,
+            "improved_fraction": 0.75
+          },
+          "mix_physical_fitted": {
+            "median": -0.5709073849943482,
+            "first_quartile": -0.6669627170211484,
+            "third_quartile": 0.06553608499566088,
+            "improved_fraction": 0.725
+          },
+          "linear_map": {
+            "median": -0.38001204268535205,
+            "first_quartile": -0.4326898969847372,
+            "third_quartile": -0.277132484805824,
+            "improved_fraction": 0.925
+          },
+          "shared_scorer": {
+            "median": -0.5990493137467057,
+            "first_quartile": -0.6770402138216595,
+            "third_quartile": -0.3424742074004112,
+            "improved_fraction": 0.87
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.8888382808118664,
+          -0.8548084677675508
+        ],
+        "threshold": [
+          -0.17125607029987822,
+          0.284911695336925
+        ],
+        "repolarizer": [
+          -0.520117143073509,
+          -0.4443548799015987
+        ],
+        "readout": [
+          -0.05707342273710128,
+          -0.046938862491681235
+        ],
+        "hammer": [
+          -0.4528491901918236,
+          -0.3464910525430484
+        ],
+        "mix": [
+          -0.5312442789448574,
+          -0.44869087791305373
+        ],
+        "mix_physical": [
+          -0.5433434916648225,
+          -0.5070458287142336
+        ],
+        "mix_physical_fitted": [
+          -0.5487514324674634,
+          -0.5133329978893452
+        ],
+        "linear_map": [
+          -0.3792439563987722,
+          -0.3266552560846188
+        ],
+        "shared_scorer": [
+          -0.585525855040541,
+          -0.5340547873432491
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "mix_physical_fitted",
+          "median_difference": -0.03823179807520288,
+          "difference_low": -0.05432676454667307,
+          "difference_high": -0.019153239556685575,
+          "first_better_fraction": 0.655,
+          "wilcoxon_p": 2.843862038581259e-10
+        }
+      }
+    },
+    "8": {
+      "num_circuits": 160,
+      "baseline_parameters": {
+        "threshold": 0.0,
+        "repolarizer_rate": 0.5565656565656565,
+        "mix_rate": 0.4606060606060606,
+        "mix_physical_scale": 0.75
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.4834547665756663,
+          "mean_kl": 0.21036413008580776,
+          "mean_hellinger": 0.25681805262467067
+        },
+        "oracle": {
+          "median": -0.769987856841019,
+          "first_quartile": -0.8815018514917226,
+          "third_quartile": -0.7205593648681146,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.0971237374750776,
+          "mean_kl": 0.03051058483757919,
+          "mean_hellinger": 0.05508262136237021
+        },
+        "threshold": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.4834547665756663,
+          "mean_kl": 0.21036413008580776,
+          "mean_hellinger": 0.25681805262467067
+        },
+        "repolarizer": {
+          "median": -0.31356725739048275,
+          "first_quartile": -0.4802721490969505,
+          "third_quartile": -0.19385114130728126,
+          "improved_fraction": 0.90625,
+          "mean_l1": 0.3231784562362801,
+          "mean_kl": 0.5827770092778612,
+          "mean_hellinger": 0.2138939683968793
+        },
+        "readout": {
+          "median": -0.05834371241566822,
+          "first_quartile": -0.09727280991242776,
+          "third_quartile": -0.03867087794164578,
+          "improved_fraction": 0.95625,
+          "mean_l1": 0.44185652465801706,
+          "mean_kl": 0.18341113943779325,
+          "mean_hellinger": 0.2398851763428264
+        },
+        "hammer": {
+          "median": -0.22401286610780055,
+          "first_quartile": -0.35003619110787787,
+          "third_quartile": -0.09351489869267672,
+          "improved_fraction": 0.80625,
+          "mean_l1": 0.3812725964390979,
+          "mean_kl": 0.14891201737446252,
+          "mean_hellinger": 0.18760958002947728
+        },
+        "mix": {
+          "median": -0.3301544608362885,
+          "first_quartile": -0.5058999740966923,
+          "third_quartile": -0.21841786154639167,
+          "improved_fraction": 0.90625,
+          "mean_l1": 0.3089292143396848,
+          "mean_kl": 0.4405497321421629,
+          "mean_hellinger": 0.2002480398613426
+        },
+        "mix_physical": {
+          "median": -0.2896612104422417,
+          "first_quartile": -0.5046991423784652,
+          "third_quartile": -0.15969793291210582,
+          "improved_fraction": 0.85625,
+          "mean_l1": 0.3523179860734887,
+          "mean_kl": 1.129315691556035,
+          "mean_hellinger": 0.23953924987623224
+        },
+        "mix_physical_fitted": {
+          "median": -0.3280240507637159,
+          "first_quartile": -0.4618166164006359,
+          "third_quartile": -0.21922739403844238,
+          "improved_fraction": 0.8625,
+          "mean_l1": 0.3360936381730656,
+          "mean_kl": 0.7132512453252506,
+          "mean_hellinger": 0.2213615167817613
+        },
+        "linear_map": {
+          "median": -0.215141393156413,
+          "first_quartile": -0.2715938329523921,
+          "third_quartile": -0.14685219137080446,
+          "improved_fraction": 0.925,
+          "mean_l1": 0.3815765299916331,
+          "mean_kl": 0.2505665087645648,
+          "mean_hellinger": 0.22410723714395692
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.3660026098476049,
+          "median_std": 0.005227913752578418,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.41987911912871534,
+                "first_quartile": -0.7185873956908527,
+                "third_quartile": -0.32141901243616205,
+                "improved_fraction": 0.98125,
+                "mean_l1": 0.2364915907382965,
+                "mean_kl": 0.07648076117038727,
+                "mean_hellinger": 0.14412863552570343,
+                "mean_flipped_bits": 0.759636640548706
+              },
+              "sample": {
+                "median": -0.3663679848414007,
+                "first_quartile": -0.6902892681936951,
+                "third_quartile": -0.2661639462517058,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.2550381124019623,
+                "mean_kl": 0.10890062153339386,
+                "mean_hellinger": 0.15460988879203796,
+                "mean_flipped_bits": 0.759630560874939
+              },
+              "argmax": {
+                "median": -0.1206387767815833,
+                "first_quartile": -0.4982185158129329,
+                "third_quartile": -0.021966729771954907,
+                "improved_fraction": 0.81875,
+                "mean_l1": 0.374453604221344,
+                "mean_kl": 1.2487587928771973,
+                "mean_hellinger": 0.2321394979953766,
+                "mean_flipped_bits": 0.2636612057685852
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.4132853956653668,
+                "first_quartile": -0.7181331150900294,
+                "third_quartile": -0.3161390691912057,
+                "improved_fraction": 0.9875,
+                "mean_l1": 0.23591108620166779,
+                "mean_kl": 0.07638172805309296,
+                "mean_hellinger": 0.14442387223243713,
+                "mean_flipped_bits": 0.7182483673095703
+              },
+              "sample": {
+                "median": -0.3693811344438451,
+                "first_quartile": -0.6931667536302134,
+                "third_quartile": -0.2741893683950438,
+                "improved_fraction": 0.96875,
+                "mean_l1": 0.253335177898407,
+                "mean_kl": 0.10709397494792938,
+                "mean_hellinger": 0.15409532189369202,
+                "mean_flipped_bits": 0.7188888788223267
+              },
+              "argmax": {
+                "median": -0.13595996504820762,
+                "first_quartile": -0.5463683044526082,
+                "third_quartile": -0.008957929396233032,
+                "improved_fraction": 0.81875,
+                "mean_l1": 0.3604624569416046,
+                "mean_kl": 1.1135339736938477,
+                "mean_hellinger": 0.22545894980430603,
+                "mean_flipped_bits": 0.24041518568992615
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.41059814681352524,
+                "first_quartile": -0.7135524077139792,
+                "third_quartile": -0.3190626385241997,
+                "improved_fraction": 0.99375,
+                "mean_l1": 0.23618045449256897,
+                "mean_kl": 0.07692696154117584,
+                "mean_hellinger": 0.14506232738494873,
+                "mean_flipped_bits": 0.7118039131164551
+              },
+              "sample": {
+                "median": -0.3558174046444661,
+                "first_quartile": -0.69888498345079,
+                "third_quartile": -0.2640144589626462,
+                "improved_fraction": 0.96875,
+                "mean_l1": 0.254133403301239,
+                "mean_kl": 0.1086939349770546,
+                "mean_hellinger": 0.1551544964313507,
+                "mean_flipped_bits": 0.7112472653388977
+              },
+              "argmax": {
+                "median": -0.10058433586168467,
+                "first_quartile": -0.521307763715517,
+                "third_quartile": -0.00500562706063487,
+                "improved_fraction": 0.84375,
+                "mean_l1": 0.35627588629722595,
+                "mean_kl": 0.8842736482620239,
+                "mean_hellinger": 0.2169627696275711,
+                "mean_flipped_bits": 0.201812744140625
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.4157122229705353,
+                "first_quartile": -0.710617187176207,
+                "third_quartile": -0.32838672471930486,
+                "improved_fraction": 0.9875,
+                "mean_l1": 0.23594681918621063,
+                "mean_kl": 0.07719646394252777,
+                "mean_hellinger": 0.14356820285320282,
+                "mean_flipped_bits": 0.7507004737854004
+              },
+              "sample": {
+                "median": -0.3697817739153497,
+                "first_quartile": -0.6923301593541186,
+                "third_quartile": -0.26443215453132524,
+                "improved_fraction": 0.96875,
+                "mean_l1": 0.2550509572029114,
+                "mean_kl": 0.11244094371795654,
+                "mean_hellinger": 0.15460708737373352,
+                "mean_flipped_bits": 0.7507362365722656
+              },
+              "argmax": {
+                "median": -0.13443933796930302,
+                "first_quartile": -0.5056970380533697,
+                "third_quartile": -0.006375195849863295,
+                "improved_fraction": 0.8125,
+                "mean_l1": 0.3648584485054016,
+                "mean_kl": 1.0649619102478027,
+                "mean_hellinger": 0.2240140438079834,
+                "mean_flipped_bits": 0.2493186891078949
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.41630561975290603,
+                "first_quartile": -0.7155392298394001,
+                "third_quartile": -0.3189663128132605,
+                "improved_fraction": 0.99375,
+                "mean_l1": 0.23659153282642365,
+                "mean_kl": 0.07700509577989578,
+                "mean_hellinger": 0.14489659667015076,
+                "mean_flipped_bits": 0.7572846412658691
+              },
+              "sample": {
+                "median": -0.36866475139296306,
+                "first_quartile": -0.6941544933685546,
+                "third_quartile": -0.2719274886514165,
+                "improved_fraction": 0.95625,
+                "mean_l1": 0.2547221779823303,
+                "mean_kl": 0.10918372869491577,
+                "mean_hellinger": 0.1548711359500885,
+                "mean_flipped_bits": 0.7574790716171265
+              },
+              "argmax": {
+                "median": -0.09081363472892193,
+                "first_quartile": -0.5019201611395773,
+                "third_quartile": -8.293444432050025e-08,
+                "improved_fraction": 0.8125,
+                "mean_l1": 0.37319692969322205,
+                "mean_kl": 0.9620809555053711,
+                "mean_hellinger": 0.22287972271442413,
+                "mean_flipped_bits": 0.2302650511264801
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9396234372140139,
+            "first_quartile": -0.9540628690442879,
+            "third_quartile": -0.9077805946856436,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.5116234554868099,
+            "first_quartile": -0.5746575628590237,
+            "third_quartile": -0.4265681985348265,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.1935616505763036,
+            "first_quartile": -0.22295124392443377,
+            "third_quartile": -0.16270572111905204,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.12975777391438748,
+            "first_quartile": -0.31704616070084646,
+            "third_quartile": 0.015520492150015268,
+            "improved_fraction": 0.725
+          },
+          "mix": {
+            "median": -0.5850944233818588,
+            "first_quartile": -0.6529507143706985,
+            "third_quartile": -0.5452176724058324,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.5116575067835702,
+            "first_quartile": -0.5459862526088952,
+            "third_quartile": -0.4617959607955176,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.46837946788849033,
+            "first_quartile": -0.49775757325513376,
+            "third_quartile": -0.4239289477488223,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.21910575430126758,
+            "first_quartile": -0.3511421144345463,
+            "third_quartile": -0.0859573724243654,
+            "improved_fraction": 0.9
+          },
+          "shared_scorer": {
+            "median": -0.7426728387900072,
+            "first_quartile": -0.7883677291628673,
+            "third_quartile": -0.6855396293478814,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.7266203308130104,
+            "first_quartile": -0.7710734996888703,
+            "third_quartile": -0.6999960225343637,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.22782346915405383,
+            "first_quartile": -0.3232598035979388,
+            "third_quartile": -0.16939756074926704,
+            "improved_fraction": 0.925
+          },
+          "readout": {
+            "median": -0.04213175625590071,
+            "first_quartile": -0.05417634184498497,
+            "third_quartile": -0.03300998154086478,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.21381663731764738,
+            "first_quartile": -0.3591351890618035,
+            "third_quartile": -0.18235149718603821,
+            "improved_fraction": 0.9
+          },
+          "mix": {
+            "median": -0.235686437538009,
+            "first_quartile": -0.32900420049182516,
+            "third_quartile": -0.16870574502263824,
+            "improved_fraction": 0.925
+          },
+          "mix_physical": {
+            "median": -0.2136330158823077,
+            "first_quartile": -0.31574685344645503,
+            "third_quartile": -0.10918850472158326,
+            "improved_fraction": 0.9
+          },
+          "mix_physical_fitted": {
+            "median": -0.2509128612865844,
+            "first_quartile": -0.3360090704681003,
+            "third_quartile": -0.16817175206850668,
+            "improved_fraction": 0.925
+          },
+          "linear_map": {
+            "median": -0.1716064622207445,
+            "first_quartile": -0.22134978386491055,
+            "third_quartile": -0.13721441035130438,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.2230453899955375,
+            "first_quartile": -0.3202780661773323,
+            "third_quartile": -0.1700162108731793,
+            "improved_fraction": 0.935
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.7591642451679046,
+            "first_quartile": -0.7759818466243401,
+            "third_quartile": -0.7368873230527059,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.2587318943042216,
+            "first_quartile": -0.3064013036676947,
+            "third_quartile": -0.21758394653081603,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.06355531390995833,
+            "first_quartile": -0.0754747312275384,
+            "third_quartile": -0.05800119248776453,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.2466642997446188,
+            "first_quartile": -0.3048195819583874,
+            "third_quartile": -0.2010543324072772,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.2900380808401798,
+            "first_quartile": -0.32858824771644324,
+            "third_quartile": -0.24813382824695523,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.24453388911337443,
+            "first_quartile": -0.28322231935005066,
+            "third_quartile": -0.1938819095985066,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.2910661995022174,
+            "first_quartile": -0.3294281075516821,
+            "third_quartile": -0.2498390712901291,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.2290753585303319,
+            "first_quartile": -0.2600379622655457,
+            "third_quartile": -0.21008129428938666,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.32648788956251773,
+            "first_quartile": -0.3653342260603015,
+            "third_quartile": -0.28619407114041884,
+            "improved_fraction": 1.0
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.7312023675125925,
+            "first_quartile": -0.8501964517407523,
+            "third_quartile": -0.58285224960212,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.3492003059479465,
+            "first_quartile": -0.5204794864612883,
+            "third_quartile": 0.16200486650172843,
+            "improved_fraction": 0.7
+          },
+          "readout": {
+            "median": -0.03492791523918802,
+            "first_quartile": -0.0445500899996579,
+            "third_quartile": -0.014610058065860118,
+            "improved_fraction": 0.825
+          },
+          "hammer": {
+            "median": -0.06990298833226173,
+            "first_quartile": -0.4712329500286163,
+            "third_quartile": 0.36885261131515734,
+            "improved_fraction": 0.6
+          },
+          "mix": {
+            "median": -0.35276877199938333,
+            "first_quartile": -0.4711915925805333,
+            "third_quartile": 0.06967259123264198,
+            "improved_fraction": 0.7
+          },
+          "mix_physical": {
+            "median": -0.08134141074994908,
+            "first_quartile": -0.5942350645146082,
+            "third_quartile": 0.7508621539050732,
+            "improved_fraction": 0.525
+          },
+          "mix_physical_fitted": {
+            "median": -0.22703466736896688,
+            "first_quartile": -0.5829047176684008,
+            "third_quartile": 0.506914303896832,
+            "improved_fraction": 0.525
+          },
+          "linear_map": {
+            "median": -0.21949338774566207,
+            "first_quartile": -0.27810164778081453,
+            "third_quartile": -0.0700014303759303,
+            "improved_fraction": 0.8
+          },
+          "shared_scorer": {
+            "median": -0.5261136813443021,
+            "first_quartile": -0.7072339014391864,
+            "third_quartile": -0.2660110012264763,
+            "improved_fraction": 0.935
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.7879232163792085,
+          -0.7587272866126549
+        ],
+        "threshold": [
+          0.0,
+          0.0
+        ],
+        "repolarizer": [
+          -0.34672764794163025,
+          -0.27321609544439973
+        ],
+        "readout": [
+          -0.06501165714744422,
+          -0.05228914581993131
+        ],
+        "hammer": [
+          -0.2516497002061781,
+          -0.19919311365167486
+        ],
+        "mix": [
+          -0.3806668624590126,
+          -0.29069736591996354
+        ],
+        "mix_physical": [
+          -0.34212830341115724,
+          -0.2481891701961835
+        ],
+        "mix_physical_fitted": [
+          -0.3532664912370093,
+          -0.29402520812168914
+        ],
+        "linear_map": [
+          -0.22881355287350333,
+          -0.20351334549750988
+        ],
+        "shared_scorer": [
+          -0.4022521936476573,
+          -0.3390910628968168
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "mix",
+          "median_difference": -0.061525922819216455,
+          "difference_low": -0.10590696410152242,
+          "difference_high": -0.03857367509235282,
+          "first_better_fraction": 0.75625,
+          "wilcoxon_p": 3.3369664733327804e-16
+        }
+      }
+    },
+    "9": {
+      "num_circuits": 160,
+      "baseline_parameters": {
+        "threshold": 0.0,
+        "repolarizer_rate": 0.5853535353535353,
+        "mix_rate": 0.5181818181818182,
+        "mix_physical_scale": 0.55
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.6348676078451634,
+          "mean_kl": 0.32987133491852616,
+          "mean_hellinger": 0.31982063554606677
+        },
+        "oracle": {
+          "median": -0.7478857648447792,
+          "first_quartile": -0.8951941536028665,
+          "third_quartile": -0.694536035775694,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.1304588323804114,
+          "mean_kl": 0.08809862192258082,
+          "mean_hellinger": 0.07858025216727962
+        },
+        "threshold": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.6348676078451634,
+          "mean_kl": 0.32987133491852616,
+          "mean_hellinger": 0.31982063554606677
+        },
+        "repolarizer": {
+          "median": -0.22493979314768797,
+          "first_quartile": -0.3505493344572023,
+          "third_quartile": -0.1172533461859655,
+          "improved_fraction": 0.875,
+          "mean_l1": 0.4827577731568001,
+          "mean_kl": 0.8622346274902648,
+          "mean_hellinger": 0.2845361586151601
+        },
+        "readout": {
+          "median": -0.036662238997388574,
+          "first_quartile": -0.0868181324901526,
+          "third_quartile": -0.019757266618222868,
+          "improved_fraction": 0.93125,
+          "mean_l1": 0.5978598309218424,
+          "mean_kl": 0.303251031539954,
+          "mean_hellinger": 0.30630990088613064
+        },
+        "hammer": {
+          "median": -0.23829786157883426,
+          "first_quartile": -0.3980206323435592,
+          "third_quartile": -0.1041784029382738,
+          "improved_fraction": 0.88125,
+          "mean_l1": 0.4672910251272217,
+          "mean_kl": 0.22751486389635955,
+          "mean_hellinger": 0.23730692681465362
+        },
+        "mix": {
+          "median": -0.22880793526991944,
+          "first_quartile": -0.38363879531292766,
+          "third_quartile": -0.11551885364713106,
+          "improved_fraction": 0.88125,
+          "mean_l1": 0.47095053796256847,
+          "mean_kl": 0.750773953342446,
+          "mean_hellinger": 0.277205914744049
+        },
+        "mix_physical": {
+          "median": -0.19514310664608525,
+          "first_quartile": -0.4069657503536721,
+          "third_quartile": -0.03123196929703341,
+          "improved_fraction": 0.78125,
+          "mean_l1": 0.5034654712803179,
+          "mean_kl": 1.768276501991322,
+          "mean_hellinger": 0.3122520148482397
+        },
+        "mix_physical_fitted": {
+          "median": -0.23420174100868738,
+          "first_quartile": -0.34426216063719417,
+          "third_quartile": -0.11132625730813145,
+          "improved_fraction": 0.8875,
+          "mean_l1": 0.48811389809270295,
+          "mean_kl": 0.8253679451542408,
+          "mean_hellinger": 0.284920370800448
+        },
+        "linear_map": {
+          "median": -0.058108108614737815,
+          "first_quartile": -0.13650564617825364,
+          "third_quartile": 0.053888145804434844,
+          "improved_fraction": 0.66875,
+          "mean_l1": 0.6387489524230678,
+          "mean_kl": 0.654453886921734,
+          "mean_hellinger": 0.33742738249842685
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.28537874960353804,
+          "median_std": 0.011426293975092348,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.32721805082962385,
+                "first_quartile": -0.6853051728040143,
+                "third_quartile": -0.1957002933305655,
+                "improved_fraction": 0.96875,
+                "mean_l1": 0.35508981347084045,
+                "mean_kl": 0.14717061817646027,
+                "mean_hellinger": 0.20068076252937317,
+                "mean_flipped_bits": 0.9387441873550415
+              },
+              "sample": {
+                "median": -0.2685076800441257,
+                "first_quartile": -0.6598398531472356,
+                "third_quartile": -0.13237337834671717,
+                "improved_fraction": 0.93125,
+                "mean_l1": 0.37780293822288513,
+                "mean_kl": 0.22672851383686066,
+                "mean_hellinger": 0.21554318070411682,
+                "mean_flipped_bits": 0.938983142375946
+              },
+              "argmax": {
+                "median": -0.07449797895423796,
+                "first_quartile": -0.5337920958063903,
+                "third_quartile": 0.010922617701451347,
+                "improved_fraction": 0.7125,
+                "mean_l1": 0.49539756774902344,
+                "mean_kl": 2.3105154037475586,
+                "mean_hellinger": 0.30610236525535583,
+                "mean_flipped_bits": 0.4943138062953949
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.34156781674369385,
+                "first_quartile": -0.6657666728750375,
+                "third_quartile": -0.2065037942621155,
+                "improved_fraction": 0.98125,
+                "mean_l1": 0.3514779210090637,
+                "mean_kl": 0.14514553546905518,
+                "mean_hellinger": 0.19957271218299866,
+                "mean_flipped_bits": 0.8640865087509155
+              },
+              "sample": {
+                "median": -0.289690221549693,
+                "first_quartile": -0.6537885138861366,
+                "third_quartile": -0.14112755022241497,
+                "improved_fraction": 0.93125,
+                "mean_l1": 0.37427523732185364,
+                "mean_kl": 0.22562232613563538,
+                "mean_hellinger": 0.2142249345779419,
+                "mean_flipped_bits": 0.863360583782196
+              },
+              "argmax": {
+                "median": -0.0887187253673413,
+                "first_quartile": -0.5519064763843511,
+                "third_quartile": -0.001403776157959333,
+                "improved_fraction": 0.75,
+                "mean_l1": 0.4912036955356598,
+                "mean_kl": 2.134099245071411,
+                "mean_hellinger": 0.300825834274292,
+                "mean_flipped_bits": 0.4745117127895355
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.3355106475744507,
+                "first_quartile": -0.6839272421744195,
+                "third_quartile": -0.19502543480686596,
+                "improved_fraction": 0.98125,
+                "mean_l1": 0.3536838889122009,
+                "mean_kl": 0.14645862579345703,
+                "mean_hellinger": 0.20150354504585266,
+                "mean_flipped_bits": 0.893976092338562
+              },
+              "sample": {
+                "median": -0.2849966017785395,
+                "first_quartile": -0.647998767272006,
+                "third_quartile": -0.1376495580860356,
+                "improved_fraction": 0.925,
+                "mean_l1": 0.37654194235801697,
+                "mean_kl": 0.2206319272518158,
+                "mean_hellinger": 0.2156129777431488,
+                "mean_flipped_bits": 0.8941848874092102
+              },
+              "argmax": {
+                "median": -0.10252061865221121,
+                "first_quartile": -0.524910227798111,
+                "third_quartile": -0.007606190375275857,
+                "improved_fraction": 0.7625,
+                "mean_l1": 0.4914962351322174,
+                "mean_kl": 1.8163448572158813,
+                "mean_hellinger": 0.292694091796875,
+                "mean_flipped_bits": 0.44892579317092896
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.34994269831197367,
+                "first_quartile": -0.6827399878034727,
+                "third_quartile": -0.20586110897676854,
+                "improved_fraction": 0.98125,
+                "mean_l1": 0.34765514731407166,
+                "mean_kl": 0.14471612870693207,
+                "mean_hellinger": 0.19795504212379456,
+                "mean_flipped_bits": 0.898154079914093
+              },
+              "sample": {
+                "median": -0.30337543611499074,
+                "first_quartile": -0.6544918584482315,
+                "third_quartile": -0.1468232112458473,
+                "improved_fraction": 0.93125,
+                "mean_l1": 0.37114930152893066,
+                "mean_kl": 0.23425546288490295,
+                "mean_hellinger": 0.2133289873600006,
+                "mean_flipped_bits": 0.8984115719795227
+              },
+              "argmax": {
+                "median": -0.0839616274250012,
+                "first_quartile": -0.5289723587826525,
+                "third_quartile": -0.00017125756530364912,
+                "improved_fraction": 0.75,
+                "mean_l1": 0.49755460023880005,
+                "mean_kl": 2.195516586303711,
+                "mean_hellinger": 0.3034251630306244,
+                "mean_flipped_bits": 0.48919373750686646
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.32964351339377873,
+                "first_quartile": -0.6839521540303355,
+                "third_quartile": -0.19866833526975286,
+                "improved_fraction": 0.98125,
+                "mean_l1": 0.35240739583969116,
+                "mean_kl": 0.1460658311843872,
+                "mean_hellinger": 0.2002929002046585,
+                "mean_flipped_bits": 0.9234187006950378
+              },
+              "sample": {
+                "median": -0.2803238085303412,
+                "first_quartile": -0.6582035206972165,
+                "third_quartile": -0.142682732773239,
+                "improved_fraction": 0.94375,
+                "mean_l1": 0.3748502731323242,
+                "mean_kl": 0.23164983093738556,
+                "mean_hellinger": 0.21500948071479797,
+                "mean_flipped_bits": 0.923596203327179
+              },
+              "argmax": {
+                "median": -0.08247411451360051,
+                "first_quartile": -0.5172359419707389,
+                "third_quartile": -0.00526737777621117,
+                "improved_fraction": 0.775,
+                "mean_l1": 0.49993959069252014,
+                "mean_kl": 2.0144293308258057,
+                "mean_hellinger": 0.2982195317745209,
+                "mean_flipped_bits": 0.4631904661655426
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9406421318709023,
+            "first_quartile": -0.9637340908427152,
+            "third_quartile": -0.9163972995289372,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.3837212449268981,
+            "first_quartile": -0.4575766408559591,
+            "third_quartile": -0.32999365313133505,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.14282009086803596,
+            "first_quartile": -0.15813258423314513,
+            "third_quartile": -0.12689677007398534,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.4044349005141906,
+            "first_quartile": -0.47670441958630577,
+            "third_quartile": -0.2801808206279236,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.4617369874885529,
+            "first_quartile": -0.5418092507063637,
+            "third_quartile": -0.42400265507142726,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.42157587596893165,
+            "first_quartile": -0.4824668689441723,
+            "third_quartile": -0.38545754535168425,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.342368340386842,
+            "first_quartile": -0.38514164031088555,
+            "third_quartile": -0.3243418733704515,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": 0.29666072718422154,
+            "first_quartile": 0.07068923287538739,
+            "third_quartile": 0.4815690533494661,
+            "improved_fraction": 0.125
+          },
+          "shared_scorer": {
+            "median": -0.722540254490292,
+            "first_quartile": -0.7812667238542049,
+            "third_quartile": -0.6600392597563184,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.717206368346345,
+            "first_quartile": -0.7476367622854555,
+            "third_quartile": -0.6762277894177011,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.062418405375759725,
+            "first_quartile": -0.2102694535377458,
+            "third_quartile": 0.007323697661214299,
+            "improved_fraction": 0.725
+          },
+          "readout": {
+            "median": -0.019499935702855672,
+            "first_quartile": -0.03689827809072682,
+            "third_quartile": -0.011495887831594468,
+            "improved_fraction": 0.975
+          },
+          "hammer": {
+            "median": -0.06854630109812546,
+            "first_quartile": -0.23408901320092151,
+            "third_quartile": 0.005225101065195576,
+            "improved_fraction": 0.75
+          },
+          "mix": {
+            "median": -0.06810469712358411,
+            "first_quartile": -0.1996885894090992,
+            "third_quartile": -0.005908980206657079,
+            "improved_fraction": 0.75
+          },
+          "mix_physical": {
+            "median": 0.008684567614424557,
+            "first_quartile": -0.16476132782151542,
+            "third_quartile": 0.11887897359779916,
+            "improved_fraction": 0.475
+          },
+          "mix_physical_fitted": {
+            "median": -0.08207869629287914,
+            "first_quartile": -0.1972251102375987,
+            "third_quartile": -0.014127392347472777,
+            "improved_fraction": 0.8
+          },
+          "linear_map": {
+            "median": -0.038371461373964286,
+            "first_quartile": -0.12588536992671445,
+            "third_quartile": -0.0063353187447262455,
+            "improved_fraction": 0.775
+          },
+          "shared_scorer": {
+            "median": -0.061192683911323334,
+            "first_quartile": -0.17634194890129695,
+            "third_quartile": -0.007593568516600747,
+            "improved_fraction": 0.79
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.7013968530137187,
+            "first_quartile": -0.7251781622099872,
+            "third_quartile": -0.6883037685248141,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.17210632012313973,
+            "first_quartile": -0.2100307953031945,
+            "third_quartile": -0.12711729117916548,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.0412245563541913,
+            "first_quartile": -0.0494630765068036,
+            "third_quartile": -0.03293022217949978,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.197934292786966,
+            "first_quartile": -0.23959886691145926,
+            "third_quartile": -0.16304988098188064,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.17777794298638322,
+            "first_quartile": -0.21195274736418745,
+            "third_quartile": -0.13848794336940107,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.13359097916556195,
+            "first_quartile": -0.1672263942711796,
+            "third_quartile": -0.05060012968692993,
+            "improved_fraction": 0.9
+          },
+          "mix_physical_fitted": {
+            "median": -0.19198666827982042,
+            "first_quartile": -0.21515882530094915,
+            "third_quartile": -0.14753047143359888,
+            "improved_fraction": 1.0
+          },
+          "linear_map": {
+            "median": -0.08942372823671421,
+            "first_quartile": -0.11370515606776097,
+            "third_quartile": -0.058626087591932746,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.19189893463588298,
+            "first_quartile": -0.2484335441046846,
+            "third_quartile": -0.1542486491057824,
+            "improved_fraction": 1.0
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.7892326416358708,
+            "first_quartile": -0.8601823030363345,
+            "third_quartile": -0.7078177559616657,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.3206929230233295,
+            "first_quartile": -0.38460205287908195,
+            "third_quartile": -0.20835507985015123,
+            "improved_fraction": 0.775
+          },
+          "readout": {
+            "median": -0.023951045950642708,
+            "first_quartile": -0.027185485123172898,
+            "third_quartile": -0.009236814568381078,
+            "improved_fraction": 0.75
+          },
+          "hammer": {
+            "median": -0.34074835409900217,
+            "first_quartile": -0.439720063330572,
+            "third_quartile": -0.11422226705742655,
+            "improved_fraction": 0.775
+          },
+          "mix": {
+            "median": -0.2980749581667326,
+            "first_quartile": -0.3557092866603045,
+            "third_quartile": -0.1825696719810439,
+            "improved_fraction": 0.775
+          },
+          "mix_physical": {
+            "median": -0.27787436504494945,
+            "first_quartile": -0.4594557744575879,
+            "third_quartile": 0.037362063885068145,
+            "improved_fraction": 0.75
+          },
+          "mix_physical_fitted": {
+            "median": -0.33862774897095704,
+            "first_quartile": -0.4194424358544951,
+            "third_quartile": -0.10700440462523628,
+            "improved_fraction": 0.75
+          },
+          "linear_map": {
+            "median": -0.16713119513807495,
+            "first_quartile": -0.19746434627781395,
+            "third_quartile": -0.0937065385147213,
+            "improved_fraction": 0.775
+          },
+          "shared_scorer": {
+            "median": -0.551961029458127,
+            "first_quartile": -0.6337553223381361,
+            "third_quartile": -0.38187242681959876,
+            "improved_fraction": 0.94
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.7826211885094877,
+          -0.7277139211109529
+        ],
+        "threshold": [
+          0.0,
+          0.0
+        ],
+        "repolarizer": [
+          -0.2835743180612843,
+          -0.20421288318572087
+        ],
+        "readout": [
+          -0.041394778778895885,
+          -0.03217395748623408
+        ],
+        "hammer": [
+          -0.27304067381402863,
+          -0.197934292786966
+        ],
+        "mix": [
+          -0.28488019616631116,
+          -0.20368517912999023
+        ],
+        "mix_physical": [
+          -0.2856249966178268,
+          -0.1540745828522291
+        ],
+        "mix_physical_fitted": [
+          -0.27144064917098876,
+          -0.2075226732424346
+        ],
+        "linear_map": [
+          -0.08930547831057704,
+          -0.030796362978835617
+        ],
+        "shared_scorer": [
+          -0.4117967404044204,
+          -0.237749386663417
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": -0.09550729619341525,
+          "difference_low": -0.1487573857881138,
+          "difference_high": -0.03639294348168592,
+          "first_better_fraction": 0.7,
+          "wilcoxon_p": 6.840547748907327e-13
+        }
+      }
+    },
+    "11": {
+      "num_circuits": 160,
+      "baseline_parameters": {
+        "threshold": 0.0,
+        "repolarizer_rate": 0.42222222222222217,
+        "mix_rate": 0.3742424242424242,
+        "mix_physical_scale": 0.25
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.7809019653707241,
+          "mean_kl": 0.6305018152097902,
+          "mean_hellinger": 0.3871411840222868
+        },
+        "oracle": {
+          "median": -0.6072665923280957,
+          "first_quartile": -0.8494333616195957,
+          "third_quartile": -0.5298980884616363,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.24784951324223875,
+          "mean_kl": 0.5636041044707978,
+          "mean_hellinger": 0.1562706834629723
+        },
+        "threshold": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.7809019653707241,
+          "mean_kl": 0.6305018152097902,
+          "mean_hellinger": 0.3871411840222868
+        },
+        "repolarizer": {
+          "median": -0.04842295253867655,
+          "first_quartile": -0.15550640948029362,
+          "third_quartile": 0.02943733550175408,
+          "improved_fraction": 0.6375,
+          "mean_l1": 0.7339240043853819,
+          "mean_kl": 1.1201272917300678,
+          "mean_hellinger": 0.3846988318809762
+        },
+        "readout": {
+          "median": -0.003319291894157753,
+          "first_quartile": -0.04467497716320299,
+          "third_quartile": 0.011241725922320048,
+          "improved_fraction": 0.5625,
+          "mean_l1": 0.7605842880973268,
+          "mean_kl": 0.6339177058627141,
+          "mean_hellinger": 0.38257935491522754
+        },
+        "hammer": {
+          "median": -0.07450522114032472,
+          "first_quartile": -0.27838956830079603,
+          "third_quartile": 0.09904091533486334,
+          "improved_fraction": 0.58125,
+          "mean_l1": 0.6945459078920044,
+          "mean_kl": 0.6795727845799766,
+          "mean_hellinger": 0.3451159297774632
+        },
+        "mix": {
+          "median": -0.032549171130602135,
+          "first_quartile": -0.17441408696506322,
+          "third_quartile": 0.05289046728265558,
+          "improved_fraction": 0.6,
+          "mean_l1": 0.7287239760547897,
+          "mean_kl": 1.3321938900060808,
+          "mean_hellinger": 0.3889568735094769
+        },
+        "mix_physical": {
+          "median": 0.01548639926323836,
+          "first_quartile": -0.2652651636963228,
+          "third_quartile": 0.2368691310912162,
+          "improved_fraction": 0.48125,
+          "mean_l1": 0.7776670526075337,
+          "mean_kl": 3.612544627257793,
+          "mean_hellinger": 0.4387441552421091
+        },
+        "mix_physical_fitted": {
+          "median": -0.031943187203073445,
+          "first_quartile": -0.18583614382439745,
+          "third_quartile": 0.047497371280910514,
+          "improved_fraction": 0.6,
+          "mean_l1": 0.7382617908442898,
+          "mean_kl": 1.3861154189091691,
+          "mean_hellinger": 0.3925597027880296
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.0765903941521203,
+          "median_std": 0.00463772652517048,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.24359976677912848,
+                "first_quartile": -0.6332216824453145,
+                "third_quartile": -0.05965381016822207,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.49515193700790405,
+                "mean_kl": 0.2530296742916107,
+                "mean_hellinger": 0.2601853013038635,
+                "mean_flipped_bits": 1.2252962589263916
+              },
+              "sample": {
+                "median": -0.07073824264740658,
+                "first_quartile": -0.5777426931999059,
+                "third_quartile": 0.059557514111171106,
+                "improved_fraction": 0.59375,
+                "mean_l1": 0.5629661679267883,
+                "mean_kl": 0.8487917184829712,
+                "mean_hellinger": 0.3064573407173157,
+                "mean_flipped_bits": 1.2254546880722046
+              },
+              "argmax": {
+                "median": 0.1614278793623251,
+                "first_quartile": -0.5062450993209415,
+                "third_quartile": 0.31556500799362897,
+                "improved_fraction": 0.43125,
+                "mean_l1": 0.7334065437316895,
+                "mean_kl": 4.842901229858398,
+                "mean_hellinger": 0.42368048429489136,
+                "mean_flipped_bits": 0.7008827328681946
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.23195139785032326,
+                "first_quartile": -0.6387781308889362,
+                "third_quartile": -0.06547592901096602,
+                "improved_fraction": 0.99375,
+                "mean_l1": 0.49301308393478394,
+                "mean_kl": 0.2513486444950104,
+                "mean_hellinger": 0.25918033719062805,
+                "mean_flipped_bits": 1.1126948595046997
+              },
+              "sample": {
+                "median": -0.07826918923272616,
+                "first_quartile": -0.5783279041283123,
+                "third_quartile": 0.04578906703208247,
+                "improved_fraction": 0.61875,
+                "mean_l1": 0.559349536895752,
+                "mean_kl": 0.8821557760238647,
+                "mean_hellinger": 0.30572062730789185,
+                "mean_flipped_bits": 1.112054467201233
+              },
+              "argmax": {
+                "median": 0.057163850143681,
+                "first_quartile": -0.5163942627906197,
+                "third_quartile": 0.13013692368822644,
+                "improved_fraction": 0.44375,
+                "mean_l1": 0.6722575426101685,
+                "mean_kl": 3.5710043907165527,
+                "mean_hellinger": 0.3885323107242584,
+                "mean_flipped_bits": 0.6112090945243835
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.24248210917117155,
+                "first_quartile": -0.6298055721229717,
+                "third_quartile": -0.06708823334473023,
+                "improved_fraction": 0.9875,
+                "mean_l1": 0.495790958404541,
+                "mean_kl": 0.25287163257598877,
+                "mean_hellinger": 0.2606101930141449,
+                "mean_flipped_bits": 1.1995463371276855
+              },
+              "sample": {
+                "median": -0.07653330081446572,
+                "first_quartile": -0.5691484969235654,
+                "third_quartile": 0.06026919507925581,
+                "improved_fraction": 0.6125,
+                "mean_l1": 0.5647503733634949,
+                "mean_kl": 0.8745746612548828,
+                "mean_hellinger": 0.30792587995529175,
+                "mean_flipped_bits": 1.1984145641326904
+              },
+              "argmax": {
+                "median": 0.11478069040847691,
+                "first_quartile": -0.4825883902502242,
+                "third_quartile": 0.23370571174347046,
+                "improved_fraction": 0.4375,
+                "mean_l1": 0.710099458694458,
+                "mean_kl": 4.31441593170166,
+                "mean_hellinger": 0.41025352478027344,
+                "mean_flipped_bits": 0.6672927737236023
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.2230014003455798,
+                "first_quartile": -0.6316926374242429,
+                "third_quartile": -0.07353908559756514,
+                "improved_fraction": 0.9875,
+                "mean_l1": 0.49406498670578003,
+                "mean_kl": 0.2538045048713684,
+                "mean_hellinger": 0.25920233130455017,
+                "mean_flipped_bits": 1.1823451519012451
+              },
+              "sample": {
+                "median": -0.0842520094904052,
+                "first_quartile": -0.5778148611110958,
+                "third_quartile": 0.05032335007158328,
+                "improved_fraction": 0.64375,
+                "mean_l1": 0.5595453381538391,
+                "mean_kl": 0.935999870300293,
+                "mean_hellinger": 0.3069153130054474,
+                "mean_flipped_bits": 1.1832542419433594
+              },
+              "argmax": {
+                "median": 0.15002841854452076,
+                "first_quartile": -0.5106484061538189,
+                "third_quartile": 0.3085697197781044,
+                "improved_fraction": 0.425,
+                "mean_l1": 0.7462829947471619,
+                "mean_kl": 4.940381050109863,
+                "mean_hellinger": 0.4281795918941498,
+                "mean_flipped_bits": 0.7197830080986023
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.2334677971999389,
+                "first_quartile": -0.6333146304805688,
+                "third_quartile": -0.07160229855544059,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.49527662992477417,
+                "mean_kl": 0.252302348613739,
+                "mean_hellinger": 0.2602775990962982,
+                "mean_flipped_bits": 1.196368932723999
+              },
+              "sample": {
+                "median": -0.07315922857559784,
+                "first_quartile": -0.5802756734862424,
+                "third_quartile": 0.06009513125606938,
+                "improved_fraction": 0.6125,
+                "mean_l1": 0.5625684857368469,
+                "mean_kl": 0.887428879737854,
+                "mean_hellinger": 0.3072763979434967,
+                "mean_flipped_bits": 1.1967414617538452
+              },
+              "argmax": {
+                "median": 0.10926254301926856,
+                "first_quartile": -0.5226105134040093,
+                "third_quartile": 0.19747732659041453,
+                "improved_fraction": 0.4375,
+                "mean_l1": 0.6970912218093872,
+                "mean_kl": 4.130434989929199,
+                "mean_hellinger": 0.4037734866142273,
+                "mean_flipped_bits": 0.6533371210098267
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9229895152299192,
+            "first_quartile": -0.944271224875175,
+            "third_quartile": -0.9013738322421742,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.18940136462985596,
+            "first_quartile": -0.22736071186692386,
+            "third_quartile": -0.15885169489834677,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.11297660872874477,
+            "first_quartile": -0.13089646092341048,
+            "third_quartile": -0.10130187176349131,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.41521514020134465,
+            "first_quartile": -0.5244393902879202,
+            "third_quartile": -0.36114387914032536,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.28256170353893806,
+            "first_quartile": -0.3211146364688796,
+            "third_quartile": -0.26194452220768966,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.33042961008690924,
+            "first_quartile": -0.38027624608241933,
+            "third_quartile": -0.30725069212609984,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.20494508798010672,
+            "first_quartile": -0.2198276677328368,
+            "third_quartile": -0.18740627141752209,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.6916107150781443,
+            "first_quartile": -0.7262126692836122,
+            "third_quartile": -0.6571041194345996,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.4977806809370994,
+            "first_quartile": -0.547947706705139,
+            "third_quartile": -0.46147254263305726,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": 0.08446745186886657,
+            "first_quartile": 0.03465140115728222,
+            "third_quartile": 0.14037120914148157,
+            "improved_fraction": 0.125
+          },
+          "readout": {
+            "median": 0.017357736024196116,
+            "first_quartile": 0.005531041656796028,
+            "third_quartile": 0.031496077501039804,
+            "improved_fraction": 0.2
+          },
+          "hammer": {
+            "median": 0.20683821955237186,
+            "first_quartile": 0.07472366849847913,
+            "third_quartile": 0.3302128907972241,
+            "improved_fraction": 0.075
+          },
+          "mix": {
+            "median": 0.11239356602707132,
+            "first_quartile": 0.04982561940173312,
+            "third_quartile": 0.1734917642135984,
+            "improved_fraction": 0.075
+          },
+          "mix_physical": {
+            "median": 0.33153671446172683,
+            "first_quartile": 0.1877660697855177,
+            "third_quartile": 0.46643954996891585,
+            "improved_fraction": 0.075
+          },
+          "mix_physical_fitted": {
+            "median": 0.08309951486959774,
+            "first_quartile": 0.04064158184351291,
+            "third_quartile": 0.13238904012548863,
+            "improved_fraction": 0.1
+          },
+          "shared_scorer": {
+            "median": 0.09916739001181224,
+            "first_quartile": 0.07134154439005425,
+            "third_quartile": 0.1267893517081507,
+            "improved_fraction": 0.03
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.5682648193257982,
+            "first_quartile": -0.5980473121068729,
+            "third_quartile": -0.5476473702103429,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.01322359669447835,
+            "first_quartile": -0.04014036898267945,
+            "third_quartile": 0.012330587033551912,
+            "improved_fraction": 0.625
+          },
+          "readout": {
+            "median": -0.003083504978119756,
+            "first_quartile": -0.009739552669594717,
+            "third_quartile": 0.004073859587266728,
+            "improved_fraction": 0.6
+          },
+          "hammer": {
+            "median": -0.02944922918018304,
+            "first_quartile": -0.08043089694532968,
+            "third_quartile": 0.02695550319588476,
+            "improved_fraction": 0.55
+          },
+          "mix": {
+            "median": -0.003434915401704307,
+            "first_quartile": -0.027374147496378707,
+            "third_quartile": 0.02753813598985473,
+            "improved_fraction": 0.575
+          },
+          "mix_physical": {
+            "median": 0.07521183587111845,
+            "first_quartile": 0.015999495196910296,
+            "third_quartile": 0.14613814174700307,
+            "improved_fraction": 0.175
+          },
+          "mix_physical_fitted": {
+            "median": -0.006924116471306951,
+            "first_quartile": -0.030617439410456426,
+            "third_quartile": 0.02375143551010204,
+            "improved_fraction": 0.6
+          },
+          "shared_scorer": {
+            "median": 0.000759597350568478,
+            "first_quartile": -0.04058879580056331,
+            "third_quartile": 0.03516330205269952,
+            "improved_fraction": 0.49
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.7187961946126875,
+            "first_quartile": -0.7757623773805954,
+            "third_quartile": -0.5707622372479253,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.10418514975633565,
+            "first_quartile": -0.14411767309181284,
+            "third_quartile": -0.04236148116660617,
+            "improved_fraction": 0.8
+          },
+          "readout": {
+            "median": 0.0004406243003946672,
+            "first_quartile": -0.007165249268895861,
+            "third_quartile": 0.016198020817741004,
+            "improved_fraction": 0.45
+          },
+          "hammer": {
+            "median": -0.19928519434558753,
+            "first_quartile": -0.2518233160690514,
+            "third_quartile": 0.06483522930797782,
+            "improved_fraction": 0.7
+          },
+          "mix": {
+            "median": -0.08052082618393308,
+            "first_quartile": -0.12013325486224466,
+            "third_quartile": 0.004369059160060481,
+            "improved_fraction": 0.75
+          },
+          "mix_physical": {
+            "median": -0.15168379076927715,
+            "first_quartile": -0.23588943387520434,
+            "third_quartile": 0.2511984866652709,
+            "improved_fraction": 0.675
+          },
+          "mix_physical_fitted": {
+            "median": -0.12468351451808612,
+            "first_quartile": -0.17549467741983224,
+            "third_quartile": 0.042553122705916296,
+            "improved_fraction": 0.7
+          },
+          "shared_scorer": {
+            "median": -0.4630942150722289,
+            "first_quartile": -0.5403610921630293,
+            "third_quartile": -0.33992672218341224,
+            "improved_fraction": 0.945
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.665675713440914,
+          -0.5770698917440029
+        ],
+        "threshold": [
+          0.0,
+          0.0
+        ],
+        "repolarizer": [
+          -0.0949338801534035,
+          -0.024016936158460164
+        ],
+        "readout": [
+          -0.00745233542856362,
+          0.00017129044594258624
+        ],
+        "hammer": [
+          -0.13552063711849233,
+          -0.002174341813074336
+        ],
+        "mix": [
+          -0.06797029789956874,
+          -0.0024245370628224157
+        ],
+        "mix_physical": [
+          -0.10145886497842875,
+          0.08042831645495849
+        ],
+        "mix_physical_fitted": [
+          -0.08835891086105319,
+          -0.0062703381683363694
+        ],
+        "shared_scorer": [
+          -0.37879444133728063,
+          -0.0266476841026296
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": -0.17500610919126627,
+          "difference_low": -0.22265207607026966,
+          "difference_high": -0.12227729696168094,
+          "first_better_fraction": 0.7625,
+          "wilcoxon_p": 1.0719005898596177e-17
+        }
+      }
+    },
+    "12": {
+      "num_circuits": 80,
+      "baseline_parameters": {
+        "threshold": 0.0,
+        "repolarizer_rate": 0.2015151515151515,
+        "mix_rate": 0.05757575757575757,
+        "mix_physical_scale": 0.05
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.9139469691728591,
+          "mean_kl": 1.5829827337381812,
+          "mean_hellinger": 0.45682849891251054
+        },
+        "oracle": {
+          "median": -0.533722489490783,
+          "first_quartile": -0.8323460102314086,
+          "third_quartile": -0.439953913774733,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.3367045940307206,
+          "mean_kl": 1.2427048746898777,
+          "mean_hellinger": 0.21459069699122235
+        },
+        "threshold": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 0.9139469691728591,
+          "mean_kl": 1.5829827337381812,
+          "mean_hellinger": 0.45682849891251054
+        },
+        "repolarizer": {
+          "median": -0.012327475498487757,
+          "first_quartile": -0.04219894826862078,
+          "third_quartile": 0.023767710969180005,
+          "improved_fraction": 0.6375,
+          "mean_l1": 0.8994048044218932,
+          "mean_kl": 1.5791498103959982,
+          "mean_hellinger": 0.4526443221402047
+        },
+        "readout": {
+          "median": 0.0073496908605584985,
+          "first_quartile": -0.01889715347751997,
+          "third_quartile": 0.021320308740084334,
+          "improved_fraction": 0.3625,
+          "mean_l1": 0.9040151987834257,
+          "mean_kl": 1.5929554348823807,
+          "mean_hellinger": 0.45535314755128964
+        },
+        "hammer": {
+          "median": 0.003048392965050641,
+          "first_quartile": -0.2537158837466717,
+          "third_quartile": 0.230274955394512,
+          "improved_fraction": 0.4875,
+          "mean_l1": 0.8703190316978011,
+          "mean_kl": 1.7246322752641234,
+          "mean_hellinger": 0.4312083946567139
+        },
+        "mix": {
+          "median": 0.004905545151077647,
+          "first_quartile": -0.03156242223365714,
+          "third_quartile": 0.029256556721955554,
+          "improved_fraction": 0.45,
+          "mean_l1": 0.9009123339439256,
+          "mean_kl": 1.5966705831814472,
+          "mean_hellinger": 0.4547532670317649
+        },
+        "mix_physical": {
+          "median": 0.07446302004961514,
+          "first_quartile": -0.2007853993005701,
+          "third_quartile": 0.31828149067809036,
+          "improved_fraction": 0.3875,
+          "mean_l1": 0.9503508459791984,
+          "mean_kl": 4.36043258307446,
+          "mean_hellinger": 0.5083549693941973
+        },
+        "mix_physical_fitted": {
+          "median": 0.0010514738022891585,
+          "first_quartile": -0.04260956582168602,
+          "third_quartile": 0.035882437581634445,
+          "improved_fraction": 0.5,
+          "mean_l1": 0.900572309620286,
+          "mean_kl": 1.6157481497538,
+          "mean_hellinger": 0.45570023177504393
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.024906834473950666,
+          "median_std": 0.008397010068153554,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.2551193167071309,
+                "first_quartile": -0.5876454323065968,
+                "third_quartile": -0.10984301905289735,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.5924109220504761,
+                "mean_kl": 0.342680424451828,
+                "mean_hellinger": 0.30540403723716736,
+                "mean_flipped_bits": 1.355851173400879
+              },
+              "sample": {
+                "median": -0.03983167628198296,
+                "first_quartile": -0.5648390232227558,
+                "third_quartile": 0.08532578465701243,
+                "improved_fraction": 0.5,
+                "mean_l1": 0.6994972825050354,
+                "mean_kl": 2.029433488845825,
+                "mean_hellinger": 0.38366833329200745,
+                "mean_flipped_bits": 1.355596899986267
+              },
+              "argmax": {
+                "median": 0.21875006904065003,
+                "first_quartile": -0.5202394013856003,
+                "third_quartile": 0.39446475420105465,
+                "improved_fraction": 0.425,
+                "mean_l1": 0.880592942237854,
+                "mean_kl": 6.235201835632324,
+                "mean_hellinger": 0.4879118502140045,
+                "mean_flipped_bits": 0.7956924438476562
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.2312971372892702,
+                "first_quartile": -0.589458411844461,
+                "third_quartile": -0.10725581759323038,
+                "improved_fraction": 0.9875,
+                "mean_l1": 0.5947593450546265,
+                "mean_kl": 0.34552425146102905,
+                "mean_hellinger": 0.3057546615600586,
+                "mean_flipped_bits": 1.2662819623947144
+              },
+              "sample": {
+                "median": -0.02825396427768543,
+                "first_quartile": -0.5581197133069608,
+                "third_quartile": 0.08644527336500657,
+                "improved_fraction": 0.525,
+                "mean_l1": 0.6986179351806641,
+                "mean_kl": 2.114410877227783,
+                "mean_hellinger": 0.38390159606933594,
+                "mean_flipped_bits": 1.2667419910430908
+              },
+              "argmax": {
+                "median": 0.08999320500082206,
+                "first_quartile": -0.49550704402691265,
+                "third_quartile": 0.13474189626529565,
+                "improved_fraction": 0.4,
+                "mean_l1": 0.7989447712898254,
+                "mean_kl": 4.407641410827637,
+                "mean_hellinger": 0.4437375068664551,
+                "mean_flipped_bits": 0.7079544067382812
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.22859714280901314,
+                "first_quartile": -0.5840651021396921,
+                "third_quartile": -0.10350933234506204,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.5967236757278442,
+                "mean_kl": 0.3466404974460602,
+                "mean_hellinger": 0.3068771958351135,
+                "mean_flipped_bits": 1.352691411972046
+              },
+              "sample": {
+                "median": -0.019720581342852313,
+                "first_quartile": -0.5645122579085851,
+                "third_quartile": 0.08848185752977296,
+                "improved_fraction": 0.5,
+                "mean_l1": 0.703495442867279,
+                "mean_kl": 2.105267286300659,
+                "mean_hellinger": 0.38599783182144165,
+                "mean_flipped_bits": 1.353428602218628
+              },
+              "argmax": {
+                "median": 0.22373502398723139,
+                "first_quartile": -0.48016698113764206,
+                "third_quartile": 0.4303744042750215,
+                "improved_fraction": 0.425,
+                "mean_l1": 0.9108993411064148,
+                "mean_kl": 6.5184783935546875,
+                "mean_hellinger": 0.4990689754486084,
+                "mean_flipped_bits": 0.8588196039199829
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.21728632796093494,
+                "first_quartile": -0.5851771495820927,
+                "third_quartile": -0.10715855813686255,
+                "improved_fraction": 0.9875,
+                "mean_l1": 0.5957208871841431,
+                "mean_kl": 0.34918737411499023,
+                "mean_hellinger": 0.3047657012939453,
+                "mean_flipped_bits": 1.3588447570800781
+              },
+              "sample": {
+                "median": -0.016620491094308236,
+                "first_quartile": -0.5620630877090267,
+                "third_quartile": 0.08697982909795156,
+                "improved_fraction": 0.5,
+                "mean_l1": 0.6995478868484497,
+                "mean_kl": 2.175520181655884,
+                "mean_hellinger": 0.38372012972831726,
+                "mean_flipped_bits": 1.3577667474746704
+              },
+              "argmax": {
+                "median": 0.24171398471094313,
+                "first_quartile": -0.46757287922816715,
+                "third_quartile": 0.48684600782415033,
+                "improved_fraction": 0.4,
+                "mean_l1": 0.9244441986083984,
+                "mean_kl": 6.683819770812988,
+                "mean_hellinger": 0.5032449960708618,
+                "mean_flipped_bits": 0.8605316281318665
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.24324600123722673,
+                "first_quartile": -0.5859865445944098,
+                "third_quartile": -0.11117326399771751,
+                "improved_fraction": 0.975,
+                "mean_l1": 0.5931097269058228,
+                "mean_kl": 0.3422606885433197,
+                "mean_hellinger": 0.30489590764045715,
+                "mean_flipped_bits": 1.3312797546386719
+              },
+              "sample": {
+                "median": -0.02010745937292438,
+                "first_quartile": -0.5623214598673152,
+                "third_quartile": 0.08569240693251695,
+                "improved_fraction": 0.5,
+                "mean_l1": 0.6986238360404968,
+                "mean_kl": 2.0524821281433105,
+                "mean_hellinger": 0.3832634389400482,
+                "mean_flipped_bits": 1.3321014642715454
+              },
+              "argmax": {
+                "median": 0.11760566693214436,
+                "first_quartile": -0.4960052567277104,
+                "third_quartile": 0.2233247680523891,
+                "improved_fraction": 0.4375,
+                "mean_l1": 0.8155691027641296,
+                "mean_kl": 4.9898271560668945,
+                "mean_hellinger": 0.4555063843727112,
+                "mean_flipped_bits": 0.7140868902206421
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.8997215869283954,
+            "first_quartile": -0.9428016854138663,
+            "third_quartile": -0.8604737194298904,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.06427056530647587,
+            "first_quartile": -0.07800336528295566,
+            "third_quartile": -0.05398742572713686,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.07844848934300247,
+            "first_quartile": -0.10225739887155798,
+            "third_quartile": -0.07225441055580917,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.42425527025803045,
+            "first_quartile": -0.4899229483362123,
+            "third_quartile": -0.39491421542310434,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.10019691287217118,
+            "first_quartile": -0.116727874414474,
+            "third_quartile": -0.09046851139436418,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.27773581476540676,
+            "first_quartile": -0.29650184660592643,
+            "third_quartile": -0.24845599819679823,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.09594813820471142,
+            "first_quartile": -0.11258929621866767,
+            "third_quartile": -0.08634914765888296,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.622259155909415,
+            "first_quartile": -0.6846426646124509,
+            "third_quartile": -0.5715874389644476,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.39914915678302887,
+            "first_quartile": -0.437876009467261,
+            "third_quartile": -0.38198711127095075,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": 0.035364466589500196,
+            "first_quartile": 0.02883305859290907,
+            "third_quartile": 0.040508330618359,
+            "improved_fraction": 0.15
+          },
+          "readout": {
+            "median": 0.02433597636628738,
+            "first_quartile": 0.020881502639861972,
+            "third_quartile": 0.029905778743462678,
+            "improved_fraction": 0.1
+          },
+          "hammer": {
+            "median": 0.29828660158148035,
+            "first_quartile": 0.25769532477525553,
+            "third_quartile": 0.3205917642772054,
+            "improved_fraction": 0.05
+          },
+          "mix": {
+            "median": 0.03603698876656218,
+            "first_quartile": 0.030387146231002644,
+            "third_quartile": 0.043363611380284134,
+            "improved_fraction": 0.1
+          },
+          "mix_physical": {
+            "median": 0.3511067743612612,
+            "first_quartile": 0.3222193829718147,
+            "third_quartile": 0.3908086800617117,
+            "improved_fraction": 0.0
+          },
+          "mix_physical_fitted": {
+            "median": 0.042417685886307316,
+            "first_quartile": 0.03629245723414415,
+            "third_quartile": 0.05041899274674204,
+            "improved_fraction": 0.1
+          },
+          "shared_scorer": {
+            "median": 0.10441797090616367,
+            "first_quartile": 0.0946609368126187,
+            "third_quartile": 0.11661780669476893,
+            "improved_fraction": 0.0
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.4908844763394704,
+            "first_quartile": -0.5065897433304386,
+            "third_quartile": -0.45135696967376115,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.0005714605778925541,
+            "first_quartile": -0.011402406815228423,
+            "third_quartile": 0.006979459444720815,
+            "improved_fraction": 0.5
+          },
+          "readout": {
+            "median": 0.00949224163212177,
+            "first_quartile": 0.0068022269540019,
+            "third_quartile": 0.015567882683402645,
+            "improved_fraction": 0.05
+          },
+          "hammer": {
+            "median": 0.08488261914897131,
+            "first_quartile": 0.008622634719292085,
+            "third_quartile": 0.14116066945323608,
+            "improved_fraction": 0.15
+          },
+          "mix": {
+            "median": 0.011114559582053797,
+            "first_quartile": 0.005184488476161552,
+            "third_quartile": 0.019630611929754863,
+            "improved_fraction": 0.1
+          },
+          "mix_physical": {
+            "median": 0.14489333746242838,
+            "first_quartile": 0.08063033849621262,
+            "third_quartile": 0.19933269492448635,
+            "improved_fraction": 0.0
+          },
+          "mix_physical_fitted": {
+            "median": 0.01262243897713236,
+            "first_quartile": 0.004621653890977098,
+            "third_quartile": 0.022909187898616064,
+            "improved_fraction": 0.15
+          },
+          "shared_scorer": {
+            "median": 0.0557469232146835,
+            "first_quartile": 0.04132056288661841,
+            "third_quartile": 0.07346766695698442,
+            "improved_fraction": 0.02
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.6790638795853396,
+            "first_quartile": -0.7944434081789732,
+            "third_quartile": -0.5503989000607923,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.028561611527107917,
+            "first_quartile": -0.0360271387835501,
+            "third_quartile": -0.020715059472097223,
+            "improved_fraction": 0.9
+          },
+          "readout": {
+            "median": 0.004470273316382908,
+            "first_quartile": -0.0008283013965999595,
+            "third_quartile": 0.014130226852435505,
+            "improved_fraction": 0.3
+          },
+          "hammer": {
+            "median": -0.07524176374819139,
+            "first_quartile": -0.2057956410439279,
+            "third_quartile": 0.00849931711373791,
+            "improved_fraction": 0.75
+          },
+          "mix": {
+            "median": -0.002231498057227284,
+            "first_quartile": -0.007917964754393627,
+            "third_quartile": 0.010243697829860787,
+            "improved_fraction": 0.6
+          },
+          "mix_physical": {
+            "median": -0.054188514738168395,
+            "first_quartile": -0.1434672103939954,
+            "third_quartile": 0.074195315511739,
+            "improved_fraction": 0.55
+          },
+          "mix_physical_fitted": {
+            "median": -0.015191021196989132,
+            "first_quartile": -0.02574017357233674,
+            "third_quartile": 0.002665461557722963,
+            "improved_fraction": 0.75
+          },
+          "shared_scorer": {
+            "median": -0.3979836015131531,
+            "first_quartile": -0.5479667116692928,
+            "third_quartile": -0.21341031208402794,
+            "improved_fraction": 1.0
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.6683496446200419,
+          -0.4926983367826069
+        ],
+        "threshold": [
+          0.0,
+          0.0
+        ],
+        "repolarizer": [
+          -0.02750115273577541,
+          -0.002851119331615462
+        ],
+        "readout": [
+          0.002790761365662759,
+          0.011739570177430374
+        ],
+        "hammer": [
+          -0.05119867386727251,
+          0.09413245268251834
+        ],
+        "mix": [
+          -0.005007162513163887,
+          0.011872887340651382
+        ],
+        "mix_physical": [
+          -0.0066513884639684846,
+          0.15704398499013805
+        ],
+        "mix_physical_fitted": [
+          -0.014437319658644733,
+          0.014336316535832477
+        ],
+        "shared_scorer": [
+          -0.37888980369428993,
+          0.051415526779982665
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "repolarizer",
+          "median_difference": -0.02730487705720648,
+          "difference_low": -0.3441221152637312,
+          "difference_high": 0.04748695818378932,
+          "first_better_fraction": 0.5,
+          "wilcoxon_p": 0.00014832143020199832
+        }
+      }
+    },
+    "13": {
+      "num_circuits": 40,
+      "baseline_parameters": {
+        "threshold": 0.0,
+        "repolarizer_rate": 0.3742424242424242,
+        "mix_rate": 0.01919191919191919,
+        "mix_physical_scale": 0.0
+      },
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 1.0595532949186424,
+          "mean_kl": 3.5706211614475833,
+          "mean_hellinger": 0.5402452992433571
+        },
+        "oracle": {
+          "median": -0.4529911234822259,
+          "first_quartile": -0.7644531222896436,
+          "third_quartile": -0.3825092731416112,
+          "improved_fraction": 1.0,
+          "mean_l1": 0.44138149421158374,
+          "mean_kl": 2.320157005688899,
+          "mean_hellinger": 0.2766488598423196
+        },
+        "threshold": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_l1": 1.0595532949186424,
+          "mean_kl": 3.5706211614475833,
+          "mean_hellinger": 0.5402452992433571
+        },
+        "repolarizer": {
+          "median": -0.005403178293399658,
+          "first_quartile": -0.034748547295620505,
+          "third_quartile": 0.011282785796860807,
+          "improved_fraction": 0.6,
+          "mean_l1": 1.0476360541844454,
+          "mean_kl": 3.5620640300142306,
+          "mean_hellinger": 0.535244679137309
+        },
+        "readout": {
+          "median": 0.008011227428797618,
+          "first_quartile": -0.005409808194184588,
+          "third_quartile": 0.014205932018373588,
+          "improved_fraction": 0.25,
+          "mean_l1": 1.0513065759836047,
+          "mean_kl": 3.5702900404950926,
+          "mean_hellinger": 0.5377550419067004
+        },
+        "hammer": {
+          "median": 0.08681630237149204,
+          "first_quartile": -0.1897909049841382,
+          "third_quartile": 0.18281671395077764,
+          "improved_fraction": 0.4,
+          "mean_l1": 1.0172331353695205,
+          "mean_kl": 3.7044320275264875,
+          "mean_hellinger": 0.5063729655493809
+        },
+        "mix": {
+          "median": 0.007926030153949801,
+          "first_quartile": -0.007419421975540073,
+          "third_quartile": 0.014746274209703253,
+          "improved_fraction": 0.25,
+          "mean_l1": 1.050650397167948,
+          "mean_kl": 3.570115108523557,
+          "mean_hellinger": 0.5374974954341922
+        },
+        "mix_physical": {
+          "median": 0.10027095251991339,
+          "first_quartile": -0.10718920571051792,
+          "third_quartile": 0.2135014291110729,
+          "improved_fraction": 0.4,
+          "mean_l1": 1.1244805096923283,
+          "mean_kl": 5.458242134850655,
+          "mean_hellinger": 0.5802752452842748
+        },
+        "mix_physical_fitted": {
+          "median": 0.008011227428797618,
+          "first_quartile": -0.005409808194184588,
+          "third_quartile": 0.014205932018373588,
+          "improved_fraction": 0.25,
+          "mean_l1": 1.0513065759836047,
+          "mean_kl": 3.5702900404950926,
+          "mean_hellinger": 0.5377550419067004
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": 0.010674518117866136,
+          "median_std": 0.008068062539284408,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.30409272572372803,
+                "first_quartile": -0.5542233848944687,
+                "third_quartile": -0.17868176577200906,
+                "improved_fraction": 1.0,
+                "mean_l1": 0.6767969131469727,
+                "mean_kl": 0.42521923780441284,
+                "mean_hellinger": 0.33999723196029663,
+                "mean_flipped_bits": 1.4591271877288818
+              },
+              "sample": {
+                "median": -0.0014036275210038685,
+                "first_quartile": -0.5323610732996559,
+                "third_quartile": 0.076468272548738,
+                "improved_fraction": 0.5,
+                "mean_l1": 0.85258549451828,
+                "mean_kl": 4.017510414123535,
+                "mean_hellinger": 0.4662264287471771,
+                "mean_flipped_bits": 1.459100365638733
+              },
+              "argmax": {
+                "median": 0.1996391626752213,
+                "first_quartile": -0.40761896990406093,
+                "third_quartile": 0.2898625898846269,
+                "improved_fraction": 0.425,
+                "mean_l1": 1.0220208168029785,
+                "mean_kl": 7.438634395599365,
+                "mean_hellinger": 0.5479825735092163,
+                "mean_flipped_bits": 0.906726062297821
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.28392764783929864,
+                "first_quartile": -0.5307444581120276,
+                "third_quartile": -0.1809242139443876,
+                "improved_fraction": 1.0,
+                "mean_l1": 0.6808726191520691,
+                "mean_kl": 0.42993515729904175,
+                "mean_hellinger": 0.34127116203308105,
+                "mean_flipped_bits": 1.3917624950408936
+              },
+              "sample": {
+                "median": 0.01418369488666097,
+                "first_quartile": -0.5152659467016507,
+                "third_quartile": 0.06721530058940262,
+                "improved_fraction": 0.475,
+                "mean_l1": 0.8518902063369751,
+                "mean_kl": 4.076462268829346,
+                "mean_hellinger": 0.46635180711746216,
+                "mean_flipped_bits": 1.3922240734100342
+              },
+              "argmax": {
+                "median": 0.026074835531329516,
+                "first_quartile": -0.38949201810644035,
+                "third_quartile": 0.07796697941114988,
+                "improved_fraction": 0.4,
+                "mean_l1": 0.9423149824142456,
+                "mean_kl": 5.68954610824585,
+                "mean_hellinger": 0.5071751475334167,
+                "mean_flipped_bits": 0.821209728717804
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.28953234651931026,
+                "first_quartile": -0.5433924725904017,
+                "third_quartile": -0.17852634112447496,
+                "improved_fraction": 1.0,
+                "mean_l1": 0.6806069612503052,
+                "mean_kl": 0.4292337894439697,
+                "mean_hellinger": 0.3414059281349182,
+                "mean_flipped_bits": 1.4631119966506958
+              },
+              "sample": {
+                "median": 0.012817459358274884,
+                "first_quartile": -0.5225278271565457,
+                "third_quartile": 0.07611705004145553,
+                "improved_fraction": 0.475,
+                "mean_l1": 0.8535383939743042,
+                "mean_kl": 4.0482611656188965,
+                "mean_hellinger": 0.46637171506881714,
+                "mean_flipped_bits": 1.4654083251953125
+              },
+              "argmax": {
+                "median": 0.25329129824336727,
+                "first_quartile": -0.3930507227010428,
+                "third_quartile": 0.40418229102661646,
+                "improved_fraction": 0.375,
+                "mean_l1": 1.0981380939483643,
+                "mean_kl": 8.23551082611084,
+                "mean_hellinger": 0.575846791267395,
+                "mean_flipped_bits": 1.1004486083984375
+              }
+            },
+            "3": {
+              "expected": {
+                "median": -0.2836223654382226,
+                "first_quartile": -0.5374283831246977,
+                "third_quartile": -0.17964737472795375,
+                "improved_fraction": 1.0,
+                "mean_l1": 0.6845830678939819,
+                "mean_kl": 0.43646201491355896,
+                "mean_hellinger": 0.3414381146430969,
+                "mean_flipped_bits": 1.4718700647354126
+              },
+              "sample": {
+                "median": 0.005460399285346654,
+                "first_quartile": -0.5183637830749388,
+                "third_quartile": 0.07156224518691122,
+                "improved_fraction": 0.5,
+                "mean_l1": 0.8525345921516418,
+                "mean_kl": 4.1250104904174805,
+                "mean_hellinger": 0.46571046113967896,
+                "mean_flipped_bits": 1.4708709716796875
+              },
+              "argmax": {
+                "median": 0.22857544666535007,
+                "first_quartile": -0.3836323313486446,
+                "third_quartile": 0.31667813773751013,
+                "improved_fraction": 0.375,
+                "mean_l1": 1.0708038806915283,
+                "mean_kl": 7.9088544845581055,
+                "mean_hellinger": 0.5651930570602417,
+                "mean_flipped_bits": 0.9992309808731079
+              }
+            },
+            "4": {
+              "expected": {
+                "median": -0.2980177670501104,
+                "first_quartile": -0.546326340162214,
+                "third_quartile": -0.1806271082047679,
+                "improved_fraction": 1.0,
+                "mean_l1": 0.6781878471374512,
+                "mean_kl": 0.42637771368026733,
+                "mean_hellinger": 0.3397890031337738,
+                "mean_flipped_bits": 1.4349892139434814
+              },
+              "sample": {
+                "median": 0.022314664580052043,
+                "first_quartile": -0.5374953625071317,
+                "third_quartile": 0.07213034723493902,
+                "improved_fraction": 0.475,
+                "mean_l1": 0.8514690399169922,
+                "mean_kl": 4.037978172302246,
+                "mean_hellinger": 0.46538519859313965,
+                "mean_flipped_bits": 1.4355926513671875
+              },
+              "argmax": {
+                "median": 0.059965796898784826,
+                "first_quartile": -0.41159001436137843,
+                "third_quartile": 0.09954686426149197,
+                "improved_fraction": 0.4,
+                "mean_l1": 0.9434768557548523,
+                "mean_kl": 5.799645900726318,
+                "mean_hellinger": 0.5089347958564758,
+                "mean_flipped_bits": 0.7651916742324829
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9548142141809588,
+            "first_quartile": -0.9572462310745962,
+            "third_quartile": -0.892996303900331,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.04635177401418382,
+            "first_quartile": -0.07744469639157309,
+            "third_quartile": -0.04590839611676917,
+            "improved_fraction": 1.0
+          },
+          "readout": {
+            "median": -0.07168708003098495,
+            "first_quartile": -0.07689366215460072,
+            "third_quartile": -0.05637455702702751,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.5088674010982276,
+            "first_quartile": -0.5788512064561069,
+            "third_quartile": -0.43097174760670687,
+            "improved_fraction": 1.0
+          },
+          "mix": {
+            "median": -0.07527694210360694,
+            "first_quartile": -0.08054444309690795,
+            "third_quartile": -0.06049749489138215,
+            "improved_fraction": 1.0
+          },
+          "mix_physical": {
+            "median": -0.1633881265676369,
+            "first_quartile": -0.20096347684951255,
+            "third_quartile": -0.15993024816833812,
+            "improved_fraction": 1.0
+          },
+          "mix_physical_fitted": {
+            "median": -0.07168708003098495,
+            "first_quartile": -0.07689366215460072,
+            "third_quartile": -0.05637455702702751,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5894313741860078,
+            "first_quartile": -0.6304058214473545,
+            "third_quartile": -0.5553568818396111,
+            "improved_fraction": 1.0
+          }
+        },
+        "hlf": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.3303582293358468,
+            "first_quartile": -0.3927493284872428,
+            "third_quartile": -0.2930392657826849,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": 0.02592678299267437,
+            "first_quartile": 0.017147473612040585,
+            "third_quartile": 0.04376709477988379,
+            "improved_fraction": 0.2
+          },
+          "readout": {
+            "median": 0.01285520413538065,
+            "first_quartile": 0.008204018124929971,
+            "third_quartile": 0.01455238194847496,
+            "improved_fraction": 0.0
+          },
+          "hammer": {
+            "median": 0.25872232023197667,
+            "first_quartile": 0.2079385265227379,
+            "third_quartile": 0.32786134190349225,
+            "improved_fraction": 0.1
+          },
+          "mix": {
+            "median": 0.014224351513236626,
+            "first_quartile": 0.008945527876040712,
+            "third_quartile": 0.016121663465958433,
+            "improved_fraction": 0.0
+          },
+          "mix_physical": {
+            "median": 0.25263229823359834,
+            "first_quartile": 0.2135014291110729,
+            "third_quartile": 0.316841216728899,
+            "improved_fraction": 0.1
+          },
+          "mix_physical_fitted": {
+            "median": 0.01285520413538065,
+            "first_quartile": 0.00820401812492992,
+            "third_quartile": 0.014552381948475045,
+            "improved_fraction": 0.0
+          },
+          "shared_scorer": {
+            "median": 0.06970989213708725,
+            "first_quartile": 0.06161200587931473,
+            "third_quartile": 0.09460194244345556,
+            "improved_fraction": 0.0
+          }
+        },
+        "iqp": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.42676519790059775,
+            "first_quartile": -0.436928415346939,
+            "third_quartile": -0.4002778184924525,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": 0.0022917524772695505,
+            "first_quartile": -0.002376790572690331,
+            "third_quartile": 0.005489842847933057,
+            "improved_fraction": 0.5
+          },
+          "readout": {
+            "median": 0.008827618848014415,
+            "first_quartile": 0.007294166984443113,
+            "third_quartile": 0.009890832811558468,
+            "improved_fraction": 0.0
+          },
+          "hammer": {
+            "median": 0.12067295844635152,
+            "first_quartile": 0.09254945466044884,
+            "third_quartile": 0.1408666771077504,
+            "improved_fraction": 0.0
+          },
+          "mix": {
+            "median": 0.008630396751450721,
+            "first_quartile": 0.00742369297349665,
+            "third_quartile": 0.01033668940147712,
+            "improved_fraction": 0.0
+          },
+          "mix_physical": {
+            "median": 0.13092017176364823,
+            "first_quartile": 0.11625256994844839,
+            "third_quartile": 0.15404125179345263,
+            "improved_fraction": 0.0
+          },
+          "mix_physical_fitted": {
+            "median": 0.008827618848014526,
+            "first_quartile": 0.007294166984443113,
+            "third_quartile": 0.009890832811558468,
+            "improved_fraction": 0.0
+          },
+          "shared_scorer": {
+            "median": 0.07527328765304747,
+            "first_quartile": 0.05668329364952948,
+            "third_quartile": 0.09141670411062786,
+            "improved_fraction": 0.02
+          }
+        },
+        "qft": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.6680167488219352,
+            "first_quartile": -0.7561731917637212,
+            "third_quartile": -0.43752531778195825,
+            "improved_fraction": 1.0
+          },
+          "threshold": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "repolarizer": {
+            "median": -0.01710952790195628,
+            "first_quartile": -0.029397121739634678,
+            "third_quartile": 0.0033425107387067016,
+            "improved_fraction": 0.7
+          },
+          "readout": {
+            "median": 0.01488100576047207,
+            "first_quartile": 0.007367082803446624,
+            "third_quartile": 0.01975779012053587,
+            "improved_fraction": 0.0
+          },
+          "hammer": {
+            "median": -0.02203504805136021,
+            "first_quartile": -0.1531759883692024,
+            "third_quartile": 0.1528283626371621,
+            "improved_fraction": 0.5
+          },
+          "mix": {
+            "median": 0.01427860216289966,
+            "first_quartile": 0.006224159785746952,
+            "third_quartile": 0.02067201982989294,
+            "improved_fraction": 0.0
+          },
+          "mix_physical": {
+            "median": -0.0026620442357436283,
+            "first_quartile": -0.0753651552773548,
+            "third_quartile": 0.19151270847528218,
+            "improved_fraction": 0.5
+          },
+          "mix_physical_fitted": {
+            "median": 0.01488100576047207,
+            "first_quartile": 0.007367082803446624,
+            "third_quartile": 0.019757790120535707,
+            "improved_fraction": 0.0
+          },
+          "shared_scorer": {
+            "median": -0.3537322093823183,
+            "first_quartile": -0.4237560852013799,
+            "third_quartile": -0.14516569026796955,
+            "improved_fraction": 0.92
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.7295606020733266,
+          -0.40237368701034515
+        ],
+        "threshold": [
+          0.0,
+          0.0
+        ],
+        "repolarizer": [
+          -0.028303485351904533,
+          0.005437203506496112
+        ],
+        "readout": [
+          0.005872104737015295,
+          0.010046247755098166
+        ],
+        "hammer": [
+          -0.13717474919060887,
+          0.13944797622706442
+        ],
+        "mix": [
+          0.004950829128668902,
+          0.0101533687616535
+        ],
+        "mix_physical": [
+          -0.06320815433113493,
+          0.1522498256876224
+        ],
+        "mix_physical_fitted": [
+          0.005893571072748565,
+          0.010101707666383587
+        ],
+        "shared_scorer": [
+          -0.4002507379056975,
+          0.0620938148859899
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "repolarizer",
+          "median_difference": 0.004178885675211754,
+          "difference_low": -0.36943946729597055,
+          "difference_high": 0.05153817762572914,
+          "first_better_fraction": 0.475,
+          "wilcoxon_p": 0.01735451403225378
+        }
+      }
+    }
+  }
+}
