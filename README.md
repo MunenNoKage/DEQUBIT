@@ -177,6 +177,57 @@ All numbers, per circuit family too:
   p < 1e-4; `expected_inference`). The most probable
   action for every shot is much worse (-0.03 to -0.27).
 
+### Clifford circuits on 11 to 63 qubits
+
+A density matrix of 14 qubits no longer fits in memory, so larger circuits come from
+[`data2/clifford_generation.py`](data2/clifford_generation.py): Bernstein-Vazirani,
+hidden shift and GHZ circuits on 11 to 63 qubits of the same device, under the device
+noise twirled into Pauli noise (TV 0.01 from the full noise at 8 qubits), sampled with
+Pauli frames; see [`data2/description.md`](data2/description.md), section 15. Their
+ideal output has one or two bitstrings. 20 circuits per family and size, 92 160 shots,
+validation split.
+
+The models are the ones above, trained on 3 to 11 qubits, without retraining.
+[`dequbit.sparse`](src/dequbit/sparse.py) corrects only the measured bitstrings, so
+nothing of size 2**n is built. Repolarizer and MIX subtract rate / 2**n from every
+bitstring, which changes nothing at these sizes, and readout inversion spreads every
+shot over 2**n bitstrings, so HAMMER is the baseline. "Shared scorer, then HAMMER"
+applies HAMMER to the shots the scorer corrected.
+
+Median L1 relative change (5 seeds, sampled corrections; `results/metrics_clifford_validation.json`):
+
+| Method | 11 | 13 | 16 | 20 | 24 | 32 | 40 | 48 | 56 | 63 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| HAMMER | -0.902 | -0.922 | -0.942 | -0.935 | -0.937 | -0.930 | -0.892 | -0.890 | -0.855 | -0.833 |
+| Shared scorer | -0.845 | -0.815 | -0.752 | -0.711 | -0.700 | -0.709 | -0.636 | -0.594 | -0.455 | -0.404 |
+| Shared scorer, then HAMMER | **-0.914** | **-0.932** | **-0.962** | **-0.964** | **-0.972** | **-0.989** | **-0.992** | **-0.992** | **-0.987** | **-0.937** |
+| Oracle | -0.995 | -0.995 | -0.998 | -0.999 | -0.999 | -0.999 | -0.999 | -0.999 | -0.999 | -0.999 |
+
+Mean probability of the ideal outputs:
+
+| | 11 | 20 | 32 | 48 | 63 |
+|---|---|---|---|---|---|
+| No correction | 0.750 | 0.505 | 0.327 | 0.179 | 0.091 |
+| HAMMER | 0.990 | 0.969 | 0.948 | 0.900 | 0.807 |
+| Shared scorer | 0.957 | 0.869 | 0.753 | 0.578 | 0.413 |
+| Shared scorer, then HAMMER | 0.999 | 0.997 | 0.985 | 0.970 | 0.957 |
+
+- The scorer followed by HAMMER beats HAMMER at every size, with paired p <= 1e-4 and
+  on 67 to 100% of the circuits; from 32 qubits on on every circuit. The margin grows
+  with the size: -0.012 at 11 qubits, -0.10 to -0.13 at 48 to 63.
+- The two do different things. The scorer moves shots back to likely outcomes up to two
+  flips away, which HAMMER cannot do; HAMMER then sharpens the distribution toward the
+  most supported outcome, which suits a single correct answer. On the spread ideal
+  distributions of the main dataset the same combination does harm (+0.48 at 5
+  qubits, -0.04 against -0.42 for the scorer alone at 11), so it is a method for
+  circuits with one or a few correct answers.
+- Alone, the scorer improves every size but stays behind HAMMER on these circuits. It
+  can only undo up to two flips, while at 63 qubits most shots are farther from the
+  correct answer (the bv circuits keep 1.8% of the shots correct), and it was trained
+  on spread ideal distributions only.
+- Per family at 63 qubits (HAMMER / scorer then HAMMER): Bernstein-Vazirani -0.621 /
+  -0.884, hidden shift -0.833 / -0.938, GHZ -0.929 / -0.993.
+
 ### Ablations
 
 Every ablation is a variant of `ablation.variants` in the config, run with
@@ -329,6 +380,9 @@ radius, are in [`results/experiments.md`](results/experiments.md).
 4. **Done.** HAMMER as a baseline, confidence intervals and paired tests, ablations of
    the inputs, the training sizes and the circuit families, robustness to calibration
    drift and to the number of shots.
+5. **Done.** Clifford circuits on up to 63 qubits with Pauli-twirled device noise, and
+   corrections of the measured bitstrings only, for circuits too large for 2**n
+   vectors.
 
 The test circuits are evaluated once, for the final results.
 
@@ -352,6 +406,7 @@ python -m dequbit train --all       # every model of evaluation.models, every se
 python -m dequbit train --model shared_scorer --seed 1
 python -m dequbit evaluate          # models and baselines on the validation circuits
 python -m dequbit ablate no_circuit_context   # one variant of ablation.variants
+python -m dequbit evaluate-clifford # shared scorer and HAMMER on Clifford circuits up to 63 qubits
 python -m dequbit evaluate --split test
 python -m dequbit --set actions.radius=1 train --model mlp   # change one config value
 make data                           # regenerate data_v4/: several hours, see data2/description.md
@@ -390,10 +445,12 @@ src/dequbit/
                         bootstrap intervals, paired comparison, Wilcoxon test
     evaluate.py         corrected circuits, metrics of every method, figures
     utils.py            seeding, logging, environment
+    sparse.py           corrections and metrics on the measured bitstrings only
     pipeline.py         load circuits, train a model, evaluate every method
-    cli.py              python -m dequbit train | evaluate | ablate
-data2/                  generation.py of the current dataset, description.md
-data_v4/                generated .h5 files, not committed
+    cli.py              python -m dequbit train | evaluate | evaluate-clifford | ablate
+data2/                  generation.py of the current dataset, clifford_generation.py of the
+                        large Clifford circuits, description.md
+data_v4/, data_clifford/  generated .h5 files, not committed
 data/                   the 5-qubit dataset of the midterm, data card
 config/default.yaml     paths, hyperparameters, seed
 tests/                  one test file per module
