@@ -20,6 +20,10 @@ from torch import nn
 from dequbit.actions import build_masks, hamming_weights
 from dequbit.dataset import (
     CALIBRATION_NAMES,
+    CLIFFORD_BITSTRINGS_GROUP,
+    CLIFFORD_COUNTS_GROUP,
+    CLIFFORD_TARGET_BITSTRINGS_GROUP,
+    CLIFFORD_TARGET_PROBS_GROUP,
     GATE_INFIDELITY,
     LOG_READOUT_P01,
     LOG_READOUT_P10,
@@ -29,10 +33,6 @@ from dequbit.dataset import (
     index_to_bits,
 )
 
-NOISY_BITSTRINGS_GROUP = "noisy_bitstrings"
-NOISY_COUNTS_GROUP = "noisy_counts"
-TARGET_BITSTRINGS_GROUP = "target_bitstrings"
-TARGET_PROBS_GROUP = "target_probs"
 # Bitstrings are int64, and bit 63 would make them negative.
 MAX_SPARSE_QUBITS = 63
 # (bitstring, action) pairs scored at once, which bounds the memory.
@@ -93,7 +93,7 @@ def load_sparse_circuits(path: Path) -> list[SparseCircuit]:
         if num_qubits > MAX_SPARSE_QUBITS:
             raise ValueError(f"{path} has {num_qubits} qubits, at most {MAX_SPARSE_QUBITS}")
 
-        keys = sorted(file[NOISY_BITSTRINGS_GROUP])
+        keys = sorted(file[CLIFFORD_BITSTRINGS_GROUP])
         metadata = file[METADATA_GROUP]
         calibration = {name: file[NOISE_MODEL_GROUP][name][:] for name in CALIBRATION_NAMES}
         qubit_features = compute_qubit_features(
@@ -106,10 +106,10 @@ def load_sparse_circuits(path: Path) -> list[SparseCircuit]:
 
         return [
             SparseCircuit(
-                bitstrings=file[NOISY_BITSTRINGS_GROUP][key][:].astype(np.int64),
-                counts=file[NOISY_COUNTS_GROUP][key][:].astype(np.int64),
-                target_bitstrings=file[TARGET_BITSTRINGS_GROUP][key][:].astype(np.int64),
-                target_probs=file[TARGET_PROBS_GROUP][key][:].astype(np.float64),
+                bitstrings=file[CLIFFORD_BITSTRINGS_GROUP][key][:].astype(np.int64),
+                counts=file[CLIFFORD_COUNTS_GROUP][key][:].astype(np.int64),
+                target_bitstrings=file[CLIFFORD_TARGET_BITSTRINGS_GROUP][key][:].astype(np.int64),
+                target_probs=file[CLIFFORD_TARGET_PROBS_GROUP][key][:].astype(np.float64),
                 qubit_features=qubit_features[index],
                 circuit_type=str(circuit_types[index]),
                 num_qubits=num_qubits,

@@ -22,6 +22,11 @@ TARGETS_GROUP = "probs"
 NOISY_SHOTS_GROUP = "noisy_bitstrings"
 NOISE_MODEL_GROUP = "noise_model"
 METADATA_GROUP = "circuit_meta"
+# Groups of the files of data2/clifford_generation.py.
+CLIFFORD_BITSTRINGS_GROUP = "noisy_bitstrings"
+CLIFFORD_COUNTS_GROUP = "noisy_counts"
+CLIFFORD_TARGET_BITSTRINGS_GROUP = "target_bitstrings"
+CLIFFORD_TARGET_PROBS_GROUP = "target_probs"
 CALIBRATION_NAMES = ("readout_p01", "readout_p10", "t1", "t2", "error_1q", "error_2q")
 # Description of every measured bit, in this order along the last axis of
 # Circuits.qubit_features.
@@ -205,6 +210,84 @@ def load_circuits(path: Path, shots_per_circuit: int) -> Circuits:
             measured_qubits=metadata["measured_qubit"][:],
             calibration={name: file[NOISE_MODEL_GROUP][name][:] for name in CALIBRATION_NAMES},
         )
+
+
+def load_clifford_circuits(path: Path, shots_per_circuit: int) -> Circuits:
+    """Read a file of data2/clifford_generation.py into dense counts and targets.
+
+    The file stores the distinct measured bitstrings and the support of P_target; here
+    both become vectors of 2**num_qubits entries, so this is for small circuits only.
+
+    Args:
+        path: File, for example data_clifford/clifford_train_N5.h5.
+        shots_per_circuit: Number of shots every circuit must have; the file stores
+            counts, not the shots in order, so fewer shots cannot be taken.
+
+    Returns:
+        Circuits of the file.
+
+    Raises:
+        ValueError: If the file was not written completely or its circuits do not have
+            shots_per_circuit shots.
+    """
+    with h5py.File(path, "r") as file:
+        if not file.attrs["complete"]:
+            raise ValueError(f"{path} was not written completely")
+        if file.attrs["num_shots"] != shots_per_circuit:
+            raise ValueError(
+                f"{path} has {file.attrs['num_shots']} shots per circuit, "
+                f"not {shots_per_circuit}"
+            )
+
+        num_qubits = int(file.attrs["num_qubits"])
+        keys = sorted(file[CLIFFORD_BITSTRINGS_GROUP])
+        counts = np.zeros((len(keys), 2**num_qubits), dtype=np.int64)
+        targets = np.zeros((len(keys), 2**num_qubits), dtype=np.float32)
+        for row, key in enumerate(keys):
+            counts[row, file[CLIFFORD_BITSTRINGS_GROUP][key][:]] = file[CLIFFORD_COUNTS_GROUP][key][
+                :
+            ]
+            support = file[CLIFFORD_TARGET_BITSTRINGS_GROUP][key][:]
+            targets[row, support] = file[CLIFFORD_TARGET_PROBS_GROUP][key][:]
+        metadata = file[METADATA_GROUP]
+
+        return Circuits(
+            counts=counts,
+            targets=targets,
+            circuit_types=metadata["circuit_type"].asstr()[:],
+            one_qubit_gates=metadata["gates_1q_per_qubit"][:],
+            two_qubit_gates=metadata["gates_2q_per_pair"][:],
+            measured_qubits=metadata["measured_qubit"][:],
+            calibration={name: file[NOISE_MODEL_GROUP][name][:] for name in CALIBRATION_NAMES},
+        )
+
+
+def concatenate_circuits(first: Circuits, second: Circuits) -> Circuits:
+    """Put the circuits of two sets of the same device qubits into one.
+
+    Args:
+        first: Circuits of one number of qubits.
+        second: Circuits of the same number of qubits and the same calibration.
+
+    Returns:
+        The circuits of first, then those of second.
+
+    Raises:
+        ValueError: If the two sets have different calibrations.
+    """
+    for name in CALIBRATION_NAMES:
+        if not np.allclose(first.calibration[name], second.calibration[name]):
+            raise ValueError(f"the circuits have different calibrations ({name})")
+
+    return replace(
+        first,
+        counts=np.concatenate([first.counts, second.counts]),
+        targets=np.concatenate([first.targets, second.targets]),
+        circuit_types=np.concatenate([first.circuit_types, second.circuit_types]),
+        one_qubit_gates=np.concatenate([first.one_qubit_gates, second.one_qubit_gates]),
+        two_qubit_gates=np.concatenate([first.two_qubit_gates, second.two_qubit_gates]),
+        measured_qubits=np.concatenate([first.measured_qubits, second.measured_qubits]),
+    )
 
 
 def select_circuits(circuits: Circuits, keep: np.ndarray) -> Circuits:

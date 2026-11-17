@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import h5py
 import numpy as np
 import pytest
 
@@ -9,6 +10,7 @@ from dequbit.config import load_config
 from dequbit.models import build_model, save_model
 from dequbit.pipeline import (
     THEN_HAMMER_SUFFIX,
+    _training_circuits,
     ablation_config,
     evaluate_baselines,
     evaluate_clifford_split,
@@ -27,6 +29,7 @@ from tests.conftest import (
     FAKE_SHOTS,
     FAKE_SPLIT_CIRCUITS,
     FAKE_UNTRAINED_QUBITS,
+    write_fake_clifford_file,
 )
 
 
@@ -175,6 +178,28 @@ def test_train_model_leaves_out_excluded_types(fake_config: Path) -> None:
 
     _, history = train_model(config, "shared_scorer", seed=0, num_qubits=None)
 
+    assert history[-1]["step"] == 20
+
+
+def test_training_circuits_include_clifford_circuits_of_listed_sizes(fake_config: Path) -> None:
+    """With data.clifford_qubit_counts the Clifford circuits join the v4 circuits."""
+    config = load_config(fake_config)
+    num_qubits = FAKE_QUBIT_COUNTS[0]
+    config["data"]["clifford_qubit_counts"] = [num_qubits]
+    for split, file_split in (("train", "train"), ("validation", "val")):
+        path = Path(
+            config["paths"]["clifford_data"].format(split=file_split, num_qubits=num_qubits)
+        )
+        write_fake_clifford_file(path, 6, seed=0, num_qubits=num_qubits)
+        source = config["paths"]["data"].format(split=file_split, num_qubits=num_qubits)
+        with h5py.File(source, "r") as v4_file, h5py.File(path, "a") as clifford_file:
+            del clifford_file["noise_model"]
+            v4_file.copy("noise_model", clifford_file)
+
+    circuits = _training_circuits(config, "train", num_qubits)
+    _, history = train_model(config, "shared_scorer", seed=0, num_qubits=None)
+
+    assert len(circuits.counts) == FAKE_SPLIT_CIRCUITS["train"] + 6
     assert history[-1]["step"] == 20
 
 

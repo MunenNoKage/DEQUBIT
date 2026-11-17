@@ -27,7 +27,9 @@ from torch import nn
 from dequbit.config import Config, apply_overrides
 from dequbit.dataset import (
     Circuits,
+    concatenate_circuits,
     load_circuits,
+    load_clifford_circuits,
     make_dataset,
     perturb_calibration,
     select_circuits,
@@ -659,6 +661,9 @@ def ablation_config(config: Config, name: str) -> Config:
 def _training_circuits(config: Config, split: str, num_qubits: int) -> Circuits:
     """Read the circuits a model is trained or validated on.
 
+    Where num_qubits is one of data.clifford_qubit_counts, the Clifford circuits of the
+    same split are added.
+
     Args:
         config: Full config.
         split: "train" or "validation".
@@ -668,6 +673,12 @@ def _training_circuits(config: Config, split: str, num_qubits: int) -> Circuits:
         The circuits of the split without the families of data.excluded_types.
     """
     circuits = load_split(config, split, num_qubits)
+    if num_qubits in config["data"]["clifford_qubit_counts"]:
+        path = config["paths"]["clifford_data"].format(
+            split=SPLIT_FILE_NAMES[split], num_qubits=num_qubits
+        )
+        clifford = load_clifford_circuits(Path(path), config["data"]["shots_per_circuit"])
+        circuits = concatenate_circuits(circuits, clifford)
     excluded = config["data"]["excluded_types"]
 
     return select_circuits(circuits, ~np.isin(circuits.circuit_types, excluded))

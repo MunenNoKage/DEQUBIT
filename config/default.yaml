@@ -31,6 +31,10 @@ data:
   # Circuit families left out of training and validation, to test the models on
   # families they never saw: any of qft, phase_estimation, hlf, bv, iqp.
   excluded_types: []
+  # Numbers of qubits whose training and validation circuits also include the Clifford
+  # circuits of paths.clifford_data (one or two correct outputs); small sizes only,
+  # since they are read into 2**num_qubits vectors.
+  clifford_qubit_counts: []
 
 actions:
   # Largest number of bits one action flips: 1 gives single flips, 2 adds pair flips.
@@ -142,6 +146,11 @@ ablation:
         - model.shared_scorer.use_neighbourhood=true
         - training.min_shots=1024
         - evaluation.seeds=[0, 1, 2, 3, 4]
+        - evaluation.models=[shared_scorer]
+    with_clifford_training:
+      train: true
+      overrides:
+        - data.clifford_qubit_counts=[5, 8, 11]
         - evaluation.models=[shared_scorer]
     trained_on_3_to_8_qubits:
       train: true

@@ -1,5 +1,6 @@
 """Tests for dequbit.dataset."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import h5py
@@ -15,8 +16,10 @@ from dequbit.dataset import (
     QUBIT_FEATURE_NAMES,
     READOUT_REFERENCE_RATE,
     Circuits,
+    concatenate_circuits,
     index_to_bits,
     load_circuits,
+    load_clifford_circuits,
     make_dataset,
     perturb_calibration,
     select_circuits,
@@ -27,6 +30,7 @@ from tests.conftest import (
     FAKE_NUM_QUBITS,
     FAKE_READOUT_P01,
     FAKE_SHOTS,
+    write_fake_clifford_file,
     write_fake_file,
 )
 
@@ -176,3 +180,40 @@ def test_perturb_calibration_drifts_rates_but_not_shots(fake_circuits: Circuits)
     assert (error_2q > 0).sum() == (fake_circuits.calibration["error_2q"] > 0).sum()
     assert perturbed.calibration["readout_p10"].max() <= MAX_PERTURBED_RATE
     np.testing.assert_array_equal(perturbed.counts, fake_circuits.counts)
+
+
+def test_load_clifford_circuits_gives_dense_counts_and_targets(tmp_path: Path) -> None:
+    """A Clifford file becomes counts and targets over every bitstring."""
+    path = tmp_path / "clifford_train_N3.h5"
+    write_fake_clifford_file(path, num_circuits=4, seed=0, num_qubits=3)
+
+    circuits = load_clifford_circuits(path, FAKE_SHOTS)
+
+    assert circuits.counts.shape == (4, 8)
+    assert (circuits.counts.sum(axis=1) == FAKE_SHOTS).all()
+    assert np.allclose(circuits.targets.sum(axis=1), 1)
+    assert circuits.qubit_features.shape == (4, 3, len(QUBIT_FEATURE_NAMES))
+
+
+def test_load_clifford_circuits_rejects_another_number_of_shots(tmp_path: Path) -> None:
+    """Counts cannot be cut to fewer shots, so the shots must match."""
+    path = tmp_path / "clifford_train_N3.h5"
+    write_fake_clifford_file(path, num_circuits=2, seed=0, num_qubits=3)
+
+    with pytest.raises(ValueError, match="shots"):
+        load_clifford_circuits(path, FAKE_SHOTS // 2)
+
+
+def test_concatenate_circuits_needs_the_same_calibration(tmp_path: Path) -> None:
+    """Circuits of the same device qubits join; another calibration is refused."""
+    path = tmp_path / "clifford_train_N3.h5"
+    write_fake_clifford_file(path, num_circuits=2, seed=0, num_qubits=3)
+    circuits = load_clifford_circuits(path, FAKE_SHOTS)
+
+    joined = concatenate_circuits(circuits, circuits)
+    other = replace(circuits, calibration={**circuits.calibration, "error_1q": np.full(3, 0.5)})
+
+    assert len(joined.counts) == 4
+    assert list(joined.circuit_types) == [*circuits.circuit_types, *circuits.circuit_types]
+    with pytest.raises(ValueError, match="calibration"):
+        concatenate_circuits(circuits, other)
