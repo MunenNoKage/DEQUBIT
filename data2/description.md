@@ -469,3 +469,60 @@ the test environment.
 | Exact targets | `probs/` (ideal distribution) |
 | Transpilation | `optimization_level=1`, restricted to the nested qubit subset |
 | Resumable | yes (per-circuit) |
+
+---
+
+## 15. Clifford circuits on up to 63 qubits (`clifford_generation.py`)
+
+The density matrix needs 4^N numbers and stops at 13 qubits. For larger N,
+`clifford_generation.py` samples Clifford circuits under Pauli noise with Pauli
+frames: one noiseless reference outcome, and for every shot a Pauli operator that
+is pushed through the Clifford gates as two bit vectors (X and Z part). The X part
+at a measurement flips the reference bit. All shots are processed at once in NumPy.
+
+Noise: the gate errors of `AerSimulator.from_backend(FakeSherbrooke)` (depolarising
+and thermal relaxation) are replaced by their Pauli twirl, the Pauli channel on the
+diagonal of the chi matrix; readout errors are kept. Checks:
+
+| Check (13 qubits, 200,000 shots unless noted) | Result |
+|---|---|
+| Frames vs Aer stabilizer, same twirled noise | TV 0.010 to 0.024, the same as between two runs of the sampler (0.009 to 0.027); P(ideal support) within 0.002 |
+| Time per circuit | frames 0.8 to 2.6 s, Aer 103 to 281 s |
+| Twirled vs full noise (8 qubits, 92,160 shots, density matrix) | TV 0.006 to 0.014; P(ideal support) within 0.01 |
+
+Circuits (no bricks, so the ideal output stays small):
+
+| Type | Circuit | Ideal support |
+|---|---|---|
+| `bv` | Bernstein-Vazirani as in `generation.py` | 2 bitstrings (the last qubit is random) |
+| `hidden_shift` | hidden shift of the bent function sum x_2i x_2i+1 | 1 bitstring |
+| `ghz` | GHZ grown from a random qubit along a breadth-first tree of the couplings | 2 bitstrings |
+
+Hidden linear function circuits were left out: without bricks their output is
+uniform over an affine subspace of dimension N-2 to N-10, which no correction can
+change at these sizes.
+
+Sizes and splits: N = 11, 13, 16, 20, 24, 32, 40, 48, 56, 63; qubit subsets of
+`generation.py` up to 13, grown greedily beyond; `val` and `test` with 20 circuits
+per type and 92,160 shots; seeds differ from those of `generation.py`. Run time:
+about 25 minutes for both splits (two processes), 221 MB.
+
+Files `data_clifford/clifford_{split}_N{N}.h5`:
+
+| Path | Content |
+|---|---|
+| `noisy_bitstrings/circuit_XXXXX` | distinct noisy outcomes, int64, bit j = qubit j, sorted |
+| `noisy_counts/circuit_XXXXX` | their counts |
+| `target_bitstrings/circuit_XXXXX`, `target_probs/circuit_XXXXX` | support of P_target and its probabilities |
+| `qasm/circuit_XXXXX` | logical circuit |
+| `circuit_meta/`, `noise_model/` | as in the v4 files (gate counts per qubit and pair, measured qubit, calibration) |
+
+```bash
+cd data2
+python clifford_generation.py --check                       # compare with Aer on 13 qubits
+python clifford_generation.py --splits val test --out ../data_clifford
+```
+
+Noisy probability of the ideal support (one validation circuit): 13 qubits 0.63
+(bv) to 0.78 (ghz); 32 qubits 0.21 (bv), 0.31 (hidden shift), 0.47 (ghz); 63 qubits
+0.018 (bv), 0.064 (hidden shift), 0.18 (ghz).

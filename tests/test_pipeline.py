@@ -6,9 +6,12 @@ import numpy as np
 import pytest
 
 from dequbit.config import load_config
+from dequbit.models import build_model, save_model
 from dequbit.pipeline import (
+    THEN_HAMMER_SUFFIX,
     ablation_config,
     evaluate_baselines,
+    evaluate_clifford_split,
     evaluate_split,
     evaluated_models,
     load_split,
@@ -18,6 +21,7 @@ from dequbit.pipeline import (
 )
 from tests.conftest import (
     FAKE_CIRCUIT_TYPES,
+    FAKE_CLIFFORD_QUBITS,
     FAKE_NUM_QUBITS,
     FAKE_QUBIT_COUNTS,
     FAKE_SHOTS,
@@ -190,3 +194,26 @@ def test_evaluate_split_with_drifted_calibration_changes_calibrated_baselines(
     true_size, drifted_size = true_metrics["qubits"]["2"], drifted_metrics["qubits"]["2"]
     assert true_size["baselines"]["readout"] != drifted_size["baselines"]["readout"]
     assert true_size["baselines"]["threshold"] == drifted_size["baselines"]["threshold"]
+
+
+def test_evaluate_clifford_split_compares_scorer_and_hammer(fake_config: Path) -> None:
+    """The Clifford evaluation scores HAMMER, the scorer and the scorer followed by HAMMER."""
+    config = load_config(fake_config)
+    radius = config["actions"]["radius"]
+    model_config = {**config["model"], "name": "shared_scorer"}
+    for seed in config["evaluation"]["seeds"]:
+        model = build_model(model_config, None, radius)
+        save_model(
+            model, model_config, None, radius, model_path(config, "shared_scorer", seed, None)
+        )
+
+    metrics, changes = evaluate_clifford_split(config, "validation")
+
+    size_metrics = metrics["qubits"][str(FAKE_CLIFFORD_QUBITS)]
+    combined = f"shared_scorer{THEN_HAMMER_SUFFIX}"
+    assert set(size_metrics["baselines"]) == {"identity", "oracle", "hammer"}
+    assert set(size_metrics["models"]) == {"shared_scorer", combined}
+    assert size_metrics["baselines"]["identity"]["median"] == 0.0
+    assert size_metrics["baselines"]["oracle"]["median"] == pytest.approx(-1.0)
+    assert size_metrics["comparisons"][combined]["baseline"] == "hammer"
+    assert len(changes[FAKE_CLIFFORD_QUBITS]["shared_scorer"]) == 2 * size_metrics["num_circuits"]

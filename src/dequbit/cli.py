@@ -16,6 +16,7 @@ from dequbit.evaluate import (
 from dequbit.models import MODEL_NAMES, save_model
 from dequbit.pipeline import (
     ablation_config,
+    evaluate_clifford_split,
     evaluate_split,
     evaluated_models,
     load_history,
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the parser with the train, evaluate and ablate subcommands.
+    """Build the parser with the train, evaluate, evaluate-clifford and ablate subcommands.
 
     Returns:
         Parser of the command-line arguments.
@@ -64,6 +65,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     evaluate_parser = commands.add_parser("evaluate", help="evaluate models and baselines")
     evaluate_parser.add_argument(
+        "--split", choices=EVALUATION_SPLITS, help="circuits (default: evaluation.split)"
+    )
+
+    clifford_parser = commands.add_parser(
+        "evaluate-clifford",
+        help="evaluate the size-independent models and HAMMER on large Clifford circuits",
+    )
+    clifford_parser.add_argument(
         "--split", choices=EVALUATION_SPLITS, help="circuits (default: evaluation.split)"
     )
 
@@ -128,6 +137,21 @@ def run_evaluate(config: Config, split: str) -> None:
     medians = _medians_by_qubits(changes)
     plot_medians_by_qubits(medians, figures / f"l1_relative_change_by_qubits_{split}.png", models)
     logger.info("wrote metrics and figures to %s", figures)
+
+
+def run_evaluate_clifford(config: Config, split: str) -> None:
+    """Evaluate on the Clifford circuits and write the metrics and one figure over sizes.
+
+    Args:
+        config: Full config.
+        split: "validation" or "test".
+    """
+    metrics, changes = evaluate_clifford_split(config, split)
+    write_json(metrics, Path(config["paths"]["clifford_metrics"].format(split=split)))
+
+    figure = Path(config["paths"]["figures_dir"]) / f"l1_relative_change_clifford_{split}.png"
+    plot_medians_by_qubits(_medians_by_qubits(changes), figure, config["evaluation"]["models"])
+    logger.info("wrote Clifford metrics and %s", figure)
 
 
 def run_ablation(config: Config, name: str, split: str | None) -> None:
@@ -198,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "evaluate":
         run_evaluate(config, args.split or config["evaluation"]["split"])
+    elif args.command == "evaluate-clifford":
+        run_evaluate_clifford(config, args.split or config["evaluation"]["split"])
     elif args.command == "ablate":
         run_ablation(config, args.variant, args.split)
     elif args.all:

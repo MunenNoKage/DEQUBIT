@@ -83,26 +83,51 @@ class Circuits:
     def qubit_features(self) -> np.ndarray:
         """Describe the errors that can hit every measured bit, from the decoded circuit.
 
-        The gate infidelity of a bit is -sum(log(1 - error)) over every gate of the
-        transpiled circuit on the device qubit measured into that bit, with two-qubit
-        gates counted on both of their qubits. A qubit that no gate touched has 0. The
-        readout errors are those of the same device qubit.
-
         Returns:
-            Features in the order of QUBIT_FEATURE_NAMES, float32 of shape
+            Output of compute_qubit_features for these circuits, shape
             (circuits, num_qubits, len(QUBIT_FEATURE_NAMES)).
         """
-        calibration = self.calibration
-        one_qubit = self.one_qubit_gates * -np.log1p(-calibration["error_1q"])
-        two_qubit = (self.two_qubit_gates * -np.log1p(-calibration["error_2q"])).sum(axis=-1)
-        infidelity = np.take_along_axis(one_qubit + two_qubit, self.measured_qubits, axis=1)
+        return compute_qubit_features(
+            self.one_qubit_gates, self.two_qubit_gates, self.measured_qubits, self.calibration
+        )
 
-        p01 = calibration["readout_p01"][self.measured_qubits]
-        p10 = calibration["readout_p10"][self.measured_qubits]
-        log_p01 = np.log(np.maximum(p01, READOUT_RATE_FLOOR) / READOUT_REFERENCE_RATE)
-        log_p10 = np.log(np.maximum(p10, READOUT_RATE_FLOOR) / READOUT_REFERENCE_RATE)
 
-        return np.stack([infidelity, log_p01, log_p10], axis=-1).astype(np.float32)
+def compute_qubit_features(
+    one_qubit_gates: np.ndarray,
+    two_qubit_gates: np.ndarray,
+    measured_qubits: np.ndarray,
+    calibration: dict[str, np.ndarray],
+) -> np.ndarray:
+    """Describe the errors that can hit every measured bit, from the decoded circuit.
+
+    The gate infidelity of a bit is -sum(log(1 - error)) over every gate of the
+    transpiled circuit on the device qubit measured into that bit, with two-qubit gates
+    counted on both of their qubits. A qubit that no gate touched has 0. The readout
+    errors are those of the same device qubit.
+
+    Args:
+        one_qubit_gates: One-qubit gates on every device qubit, shape
+            (circuits, num_qubits).
+        two_qubit_gates: Two-qubit gates between every pair of device qubits, shape
+            (circuits, num_qubits, num_qubits).
+        measured_qubits: Device qubit measured into every bit, shape
+            (circuits, num_qubits).
+        calibration: Error rates of the device qubits, as in Circuits.calibration.
+
+    Returns:
+        Features in the order of QUBIT_FEATURE_NAMES, float32 of shape
+        (circuits, num_qubits, len(QUBIT_FEATURE_NAMES)).
+    """
+    one_qubit = one_qubit_gates * -np.log1p(-calibration["error_1q"])
+    two_qubit = (two_qubit_gates * -np.log1p(-calibration["error_2q"])).sum(axis=-1)
+    infidelity = np.take_along_axis(one_qubit + two_qubit, measured_qubits, axis=1)
+
+    p01 = calibration["readout_p01"][measured_qubits]
+    p10 = calibration["readout_p10"][measured_qubits]
+    log_p01 = np.log(np.maximum(p01, READOUT_RATE_FLOOR) / READOUT_REFERENCE_RATE)
+    log_p10 = np.log(np.maximum(p10, READOUT_RATE_FLOOR) / READOUT_REFERENCE_RATE)
+
+    return np.stack([infidelity, log_p01, log_p10], axis=-1).astype(np.float32)
 
 
 def unpack_shots(packed: np.ndarray, num_qubits: int) -> np.ndarray:

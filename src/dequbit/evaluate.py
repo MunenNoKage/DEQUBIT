@@ -58,6 +58,7 @@ METHOD_LABELS = {
     "mlp": "MLP",
     "shared_scorer": "Shared scorer",
     "per_qubit": "Per-qubit flip",
+    "shared_scorer_hammer": "Shared scorer, then HAMMER",
 }
 # Methods that only mark the scale: nothing corrected and the best possible correction.
 REFERENCE_METHODS = ("identity", "oracle")

@@ -16,6 +16,10 @@ paths:
   figures_dir: results/figures
   # Metrics and figures of every ablation variant go to a folder of its name here.
   ablations: results/ablations
+  # Clifford circuits of data2/clifford_generation.py, evaluated by
+  # python -m dequbit evaluate-clifford.
+  clifford_data: data_clifford/clifford_{split}_N{num_qubits}.h5
+  clifford_metrics: results/metrics_clifford_{split}.json
 
 data:
   # Numbers of qubits of the circuits used, each with its own files. The shared scorer
@@ -98,6 +102,8 @@ evaluation:
   # Numbers of qubits evaluated. Numbers outside data.qubit_counts were not trained on:
   # there the shared scorer corrects circuits larger than any it has seen.
   qubit_counts: [3, 5, 6, 8, 9, 11, 12, 13]
+  # Numbers of qubits of the Clifford circuits, far beyond the trained sizes.
+  clifford_qubit_counts: [11, 13, 16, 20, 24, 32, 40, 48, 56, 63]
   # Every model and seed needs a model file from python -m dequbit train.
   models: [mlp, shared_scorer]
   seeds: [0, 1, 2, 3, 4]

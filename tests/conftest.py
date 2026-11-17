@@ -20,6 +20,9 @@ FAKE_READOUT_P01 = np.array([0.03, 0.05])
 FAKE_READOUT_P10 = np.array([0.06, 0.08])
 FAKE_SPLIT_CIRCUITS = {"train": 40, "val": 12, "test": 10}
 FAKE_CIRCUIT_TYPES = ("bv", "qft")
+# Number of qubits of the fake Clifford files and the flip probability of their bits.
+FAKE_CLIFFORD_QUBITS = 6
+FAKE_FLIP_PROBABILITY = 0.05
 
 
 def write_fake_file(
@@ -73,6 +76,46 @@ def write_fake_file(
         noise_model["error_2q"] = 0.01 * first_pair
 
 
+def write_fake_clifford_file(path: Path, num_circuits: int, seed: int, num_qubits: int) -> None:
+    """Write a file in the format of data2/clifford_generation.py.
+
+    Every circuit has one random correct bitstring, and every bit of every shot is
+    flipped with probability FAKE_FLIP_PROBABILITY.
+
+    Args:
+        path: File to write.
+        num_circuits: Number of circuits.
+        seed: Seed of the correct bitstrings and the shots.
+        num_qubits: Number of measured qubits.
+    """
+    rng = np.random.default_rng(seed)
+
+    with h5py.File(path, "w") as file:
+        file.attrs.update(num_qubits=num_qubits, num_shots=FAKE_SHOTS, complete=True)
+        for index in range(num_circuits):
+            key = f"circuit_{index:05d}"
+            correct = int(rng.integers(2**num_qubits))
+            flips = rng.random((FAKE_SHOTS, num_qubits)) < FAKE_FLIP_PROBABILITY
+            shots = correct ^ (flips.astype(np.int64) @ (1 << np.arange(num_qubits)))
+            bitstrings, counts = np.unique(shots, return_counts=True)
+            file[f"noisy_bitstrings/{key}"] = bitstrings
+            file[f"noisy_counts/{key}"] = counts.astype(np.int32)
+            file[f"target_bitstrings/{key}"] = np.array([correct], dtype=np.int64)
+            file[f"target_probs/{key}"] = np.array([1.0])
+
+        metadata = file.create_group("circuit_meta")
+        types = [FAKE_CIRCUIT_TYPES[index % 2] for index in range(num_circuits)]
+        metadata.create_dataset("circuit_type", data=types, dtype=h5py.string_dtype())
+        metadata["gates_1q_per_qubit"] = np.ones((num_circuits, num_qubits), np.int32)
+        metadata["gates_2q_per_pair"] = np.zeros((num_circuits, num_qubits, num_qubits), np.int32)
+        metadata["measured_qubit"] = np.tile(np.arange(num_qubits), (num_circuits, 1))
+
+        noise_model = file.create_group("noise_model")
+        for name in ("readout_p01", "readout_p10", "t1", "t2", "error_1q"):
+            noise_model[name] = np.full(num_qubits, 0.01)
+        noise_model["error_2q"] = np.zeros((num_qubits, num_qubits))
+
+
 @pytest.fixture
 def fake_circuits(tmp_path: Path) -> Circuits:
     """Write one fake file and read it.
@@ -103,6 +146,8 @@ def fake_config(tmp_path: Path) -> Path:
         for num_qubits in (*FAKE_QUBIT_COUNTS, FAKE_UNTRAINED_QUBITS):
             path = tmp_path / f"noisy_{split}_N{num_qubits}.h5"
             write_fake_file(path, num_circuits, seed, num_qubits)
+        path = tmp_path / f"clifford_{split}_N{FAKE_CLIFFORD_QUBITS}.h5"
+        write_fake_clifford_file(path, num_circuits, seed, FAKE_CLIFFORD_QUBITS)
 
     config = load_config(CONFIG_PATH)
     config["paths"].update(
@@ -112,6 +157,8 @@ def fake_config(tmp_path: Path) -> Path:
             "metrics": str(tmp_path / "results" / "metrics_{split}.json"),
             "figures_dir": str(tmp_path / "results" / "figures"),
             "ablations": str(tmp_path / "results" / "ablations"),
+            "clifford_data": str(tmp_path / "clifford_{split}_N{num_qubits}.h5"),
+            "clifford_metrics": str(tmp_path / "results" / "metrics_clifford_{split}.json"),
         }
     )
     config["data"].update(
@@ -123,6 +170,7 @@ def fake_config(tmp_path: Path) -> Path:
             "models": ["shared_scorer"],
             "seeds": [0, 1],
             "qubit_counts": [*FAKE_QUBIT_COUNTS, FAKE_UNTRAINED_QUBITS],
+            "clifford_qubit_counts": [FAKE_CLIFFORD_QUBITS],
         }
     )
     config["logging"]["level"] = "WARNING"

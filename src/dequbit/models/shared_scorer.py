@@ -114,10 +114,24 @@ class SharedScorer(nn.Module):
             # 2**num_qubits, actions, distances).
             relative = neighbourhood[:, destination_table] - neighbourhood.unsqueeze(2)
             features = torch.cat([features, relative], dim=-1)
+
+        return self.score(features, flipped_bits)
+
+    def score(self, features: torch.Tensor, flipped_bits: torch.Tensor) -> torch.Tensor:
+        """Compute the action logits from the features of every pair.
+
+        Args:
+            features: Features of every pair of a bitstring and an action, in the order
+                of forward, shape (..., actions, input features).
+            flipped_bits: Number of bits every action flips, shape (actions,).
+
+        Returns:
+            Action logits, shape (..., actions).
+        """
         scores = self.head(self.hidden(features)).squeeze(-1)
         # The identity logit of initial_logits grows with the number of actions, which
         # depends on the number of qubits, so it is added to the output and not learned.
-        start = initial_logits(len(masks)).to(counts.device)
+        start = initial_logits(len(flipped_bits)).to(features.device)
 
         return scores + self.flip_bias[flipped_bits] + start
 

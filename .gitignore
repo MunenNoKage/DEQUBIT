@@ -226,6 +226,7 @@ models/*
 
 # Datasets written by data2/generation.py: several GB, regenerated from the script.
 data_v4/
+data_clifford/
 
 # results/metrics.json, results/experiments.md and results/figures/*.png ARE committed.
 # They are small, and they are what makes the numbers in README.md checkable without

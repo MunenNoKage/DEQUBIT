@@ -8,6 +8,9 @@ dequbit.models.SIZE_INDEPENDENT_MODELS is trained once on all of them; every oth
 is trained once per number of qubits. Every method is evaluated per number of qubits of
 evaluation.qubit_counts, which may hold numbers no model was trained on: there only the
 baselines and the models of SIZE_INDEPENDENT_MODELS are evaluated.
+
+Clifford circuits of data2/clifford_generation.py, up to 63 qubits, are evaluated
+without 2**num_qubits vectors by dequbit.sparse, with the size-independent models only.
 """
 
 import copy
@@ -18,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 from torch import nn
 
 from dequbit.config import Config, apply_overrides
@@ -42,6 +46,17 @@ from dequbit.metrics import (
     summarize_relative_changes,
 )
 from dequbit.models import SIZE_INDEPENDENT_MODELS, build_model, load_model
+from dequbit.sparse import (
+    SPARSE_INFERENCE_MODES,
+    SparseCircuit,
+    corrected_shots,
+    corrected_support_mass,
+    hammer_support_mass,
+    l1_from_support_mass,
+    load_sparse_circuits,
+    noisy_support_mass,
+    oracle_support_mass,
+)
 from dequbit.training import train
 from dequbit.utils import collect_environment, resolve_device, set_seed
 
@@ -51,6 +66,9 @@ SPLIT_FILE_NAMES = {"train": "train", "validation": "val", "test": "test"}
 # Files kept in memory after the first read: every split of every number of qubits, so
 # training several models or seeds in one run reads each file once.
 CACHED_FILES = 32
+
+# Name of a model followed by HAMMER on the Clifford circuits: the model name plus this.
+THEN_HAMMER_SUFFIX = "_hammer"
 
 # Counting the shots of a file takes up to half a minute, and the circuits are only read.
 _load_circuits = lru_cache(maxsize=CACHED_FILES)(load_circuits)
@@ -357,6 +375,251 @@ def evaluate_split(
         )
 
     return metrics, changes
+
+
+def evaluate_clifford_size(
+    config: Config, split: str, num_qubits: int
+) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
+    """Evaluate HAMMER and the size-independent models on Clifford circuits of one size.
+
+    Only baselines that work without 2**num_qubits vectors take part: no correction, the
+    oracle and HAMMER. Repolarizer and MIX subtract rate / 2**num_qubits from every
+    bitstring, which changes nothing at these sizes, and readout inversion spreads every
+    shot over 2**num_qubits bitstrings. Every model is also evaluated followed by HAMMER,
+    as NAME_hammer: HAMMER applied to the shots the model corrected.
+
+    Args:
+        config: Full config.
+        split: "validation" or "test".
+        num_qubits: One of evaluation.clifford_qubit_counts.
+
+    Returns:
+        Metrics of the circuits, with the mean probability every method puts on the
+        support of P_target, confidence intervals and paired comparisons, and the L1
+        relative changes of every method by name.
+    """
+    path = Path(
+        config["paths"]["clifford_data"].format(
+            split=SPLIT_FILE_NAMES[split], num_qubits=num_qubits
+        )
+    )
+    circuits = load_sparse_circuits(path)
+    device = resolve_device(config["training"]["device"])
+    rng = np.random.default_rng(config["seed"])
+
+    baseline_masses = {
+        "identity": [noisy_support_mass(circuit) for circuit in circuits],
+        "oracle": [oracle_support_mass(circuit, rng) for circuit in circuits],
+        "hammer": [hammer_support_mass(circuit, device) for circuit in circuits],
+    }
+    noisy_distances = _support_distances(baseline_masses["identity"], circuits)
+    metrics: dict[str, Any] = {"num_circuits": len(circuits), "baselines": {}, "models": {}}
+    changes = {}
+    for name, masses in baseline_masses.items():
+        changes[name] = _support_changes(masses, circuits, noisy_distances)
+        metrics["baselines"][name] = _sparse_summary(changes[name], masses)
+
+    model_names = [
+        name for name in config["evaluation"]["models"] if name in SIZE_INDEPENDENT_MODELS
+    ]
+    for model_name in model_names:
+        logger.info("evaluating %s on %d-qubit Clifford circuits", model_name, num_qubits)
+        metrics["models"][model_name], changes[model_name] = _evaluate_sparse_model(
+            config, model_name, circuits, noisy_distances, device
+        )
+        combined = f"{model_name}{THEN_HAMMER_SUFFIX}"
+        metrics["models"][combined], changes[combined] = _evaluate_sparse_model_then_hammer(
+            config, model_name, circuits, noisy_distances, device
+        )
+    types = np.array([circuit.circuit_type for circuit in circuits])
+    metrics["circuit_types"] = _metrics_by_type(changes, types)
+    metrics.update(_significance(config, changes, list(metrics["models"])))
+
+    return metrics, changes
+
+
+def evaluate_clifford_split(
+    config: Config, split: str
+) -> tuple[dict[str, Any], dict[int, dict[str, np.ndarray]]]:
+    """Evaluate every size of evaluation.clifford_qubit_counts of one split.
+
+    Args:
+        config: Full config.
+        split: "validation" or "test".
+
+    Returns:
+        All metrics, as written to paths.clifford_metrics, and the L1 relative changes
+        of every method by number of qubits and method name.
+    """
+    metrics: dict[str, Any] = {
+        "split": split,
+        "environment": collect_environment(),
+        "qubits": {},
+    }
+    changes = {}
+    for num_qubits in config["evaluation"]["clifford_qubit_counts"]:
+        metrics["qubits"][str(num_qubits)], changes[num_qubits] = evaluate_clifford_size(
+            config, split, num_qubits
+        )
+
+    return metrics, changes
+
+
+def _evaluate_sparse_model(
+    config: Config,
+    model_name: str,
+    circuits: list[SparseCircuit],
+    noisy_distances: np.ndarray,
+    device: torch.device,
+) -> tuple[dict[str, Any], np.ndarray]:
+    """Evaluate the saved models of one name on sparse circuits, as evaluate_model.
+
+    Args:
+        config: Full config.
+        model_name: One of SIZE_INDEPENDENT_MODELS.
+        circuits: Circuits to correct.
+        noisy_distances: L1 distance of every noisy distribution, shape (circuits,).
+        device: Device of the computation.
+
+    Returns:
+        Metrics per seed and mode with the mean and standard deviation of the median
+        over the seeds in the configured mode, and the L1 relative changes of all seeds
+        in that mode one after another, shape (seeds * circuits,).
+
+    Raises:
+        ValueError: If evaluation.inference is not a mode of SPARSE_INFERENCE_MODES.
+        FileNotFoundError: If a model of some seed has not been trained.
+    """
+    mode = config["evaluation"]["inference"]
+    if mode not in SPARSE_INFERENCE_MODES:
+        raise ValueError(f"inference {mode!r} is not one of {SPARSE_INFERENCE_MODES}")
+    radius = config["actions"]["radius"]
+
+    per_seed: dict[str, dict[str, Any]] = {}
+    mode_changes = []
+    for seed in config["evaluation"]["seeds"]:
+        path = model_path(config, model_name, seed, None)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} is missing")
+        model = load_model(path).to(device)
+        generator = torch.Generator(device=device).manual_seed(config["seed"])
+
+        per_seed[str(seed)] = {}
+        for inference in SPARSE_INFERENCE_MODES:
+            masses = [
+                corrected_support_mass(model, circuit, radius, inference, generator, device)
+                for circuit in circuits
+            ]
+            seed_changes = _support_changes(masses, circuits, noisy_distances)
+            per_seed[str(seed)][inference] = _sparse_summary(seed_changes, masses)
+            if inference == mode:
+                mode_changes.append(seed_changes)
+
+    medians = [per_seed[seed][mode]["median"] for seed in per_seed]
+    summary = {
+        "inference": mode,
+        "median_mean": float(np.mean(medians)),
+        "median_std": float(np.std(medians)),
+        "seeds": per_seed,
+    }
+
+    return summary, np.concatenate(mode_changes)
+
+
+def _evaluate_sparse_model_then_hammer(
+    config: Config,
+    model_name: str,
+    circuits: list[SparseCircuit],
+    noisy_distances: np.ndarray,
+    device: torch.device,
+) -> tuple[dict[str, Any], np.ndarray]:
+    """Evaluate HAMMER applied to the shots corrected by the saved models of one name.
+
+    Args:
+        config: Full config.
+        model_name: One of SIZE_INDEPENDENT_MODELS.
+        circuits: Circuits to correct.
+        noisy_distances: L1 distance of every noisy distribution, shape (circuits,).
+        device: Device of the computation.
+
+    Returns:
+        Metrics per seed, with the mean and standard deviation of the median over the
+        seeds, and the L1 relative changes of all seeds one after another, shape
+        (seeds * circuits,).
+    """
+    radius = config["actions"]["radius"]
+
+    per_seed: dict[str, dict[str, Any]] = {}
+    seed_changes = []
+    for seed in config["evaluation"]["seeds"]:
+        model = load_model(model_path(config, model_name, seed, None)).to(device)
+        generator = torch.Generator(device=device).manual_seed(config["seed"])
+        masses = [
+            hammer_support_mass(corrected_shots(model, circuit, radius, generator, device), device)
+            for circuit in circuits
+        ]
+        seed_changes.append(_support_changes(masses, circuits, noisy_distances))
+        per_seed[str(seed)] = {"sample": _sparse_summary(seed_changes[-1], masses)}
+
+    medians = [per_seed[seed]["sample"]["median"] for seed in per_seed]
+    summary = {
+        "inference": "sample",
+        "median_mean": float(np.mean(medians)),
+        "median_std": float(np.std(medians)),
+        "seeds": per_seed,
+    }
+
+    return summary, np.concatenate(seed_changes)
+
+
+def _support_distances(masses: list[np.ndarray], circuits: list[SparseCircuit]) -> np.ndarray:
+    """Compute the L1 distance to P_target of every circuit from its mass on the support.
+
+    Args:
+        masses: Probability on the support of P_target of every circuit.
+        circuits: The circuits, in the same order.
+
+    Returns:
+        L1 distances, shape (circuits,).
+    """
+    return np.array(
+        [
+            l1_from_support_mass(mass, circuit.target_probs)
+            for mass, circuit in zip(masses, circuits)
+        ]
+    )
+
+
+def _support_changes(
+    masses: list[np.ndarray], circuits: list[SparseCircuit], noisy_distances: np.ndarray
+) -> np.ndarray:
+    """Compute the L1 relative change of every circuit from its mass on the support.
+
+    Args:
+        masses: Probability of the corrected distribution on the support of every circuit.
+        circuits: The circuits, in the same order.
+        noisy_distances: L1 distance of every noisy distribution, shape (circuits,).
+
+    Returns:
+        L1 relative changes, shape (circuits,).
+    """
+    return (_support_distances(masses, circuits) - noisy_distances) / noisy_distances
+
+
+def _sparse_summary(changes: np.ndarray, masses: list[np.ndarray]) -> dict[str, float]:
+    """Summarize the relative changes and the mean probability on the support.
+
+    Args:
+        changes: L1 relative change of every circuit, shape (circuits,).
+        masses: Probability on the support of P_target of every circuit.
+
+    Returns:
+        Median, quartiles, improved share and mean_support_probability.
+    """
+    return {
+        **summarize_relative_changes(changes),
+        "mean_support_probability": float(np.mean([mass.sum() for mass in masses])),
+    }
 
 
 def ablation_config(config: Config, name: str) -> Config:
