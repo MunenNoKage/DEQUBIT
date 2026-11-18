@@ -107,7 +107,7 @@ evaluation:
   # there the shared scorer corrects circuits larger than any it has seen.
   qubit_counts: [3, 5, 6, 8, 9, 11, 12, 13]
   # Numbers of qubits of the Clifford circuits, far beyond the trained sizes.
-  clifford_qubit_counts: [11, 13, 16, 20, 24, 32, 40, 48, 56, 63]
+  clifford_qubit_counts: [11, 13, 16, 20, 24, 32, 40, 48, 56, 63, 80, 100, 112]
   # Every model and seed needs a model file from python -m dequbit train.
   models: [mlp, shared_scorer]
   seeds: [0, 1, 2, 3, 4]

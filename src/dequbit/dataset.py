@@ -244,10 +244,10 @@ def load_clifford_circuits(path: Path, shots_per_circuit: int) -> Circuits:
         counts = np.zeros((len(keys), 2**num_qubits), dtype=np.int64)
         targets = np.zeros((len(keys), 2**num_qubits), dtype=np.float32)
         for row, key in enumerate(keys):
-            counts[row, file[CLIFFORD_BITSTRINGS_GROUP][key][:]] = file[CLIFFORD_COUNTS_GROUP][key][
-                :
-            ]
-            support = file[CLIFFORD_TARGET_BITSTRINGS_GROUP][key][:]
+            # Small circuits have one word per bitstring, stored as a column or a vector.
+            measured = file[CLIFFORD_BITSTRINGS_GROUP][key][:].reshape(-1)
+            counts[row, measured] = file[CLIFFORD_COUNTS_GROUP][key][:]
+            support = file[CLIFFORD_TARGET_BITSTRINGS_GROUP][key][:].reshape(-1)
             targets[row, support] = file[CLIFFORD_TARGET_PROBS_GROUP][key][:]
         metadata = file[METADATA_GROUP]
 

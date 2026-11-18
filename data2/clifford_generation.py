@@ -1,4 +1,4 @@
-"""Clifford circuits on up to 63 qubits of FakeSherbrooke with Pauli-twirled device noise.
+"""Clifford circuits on up to 112 qubits of FakeSherbrooke with Pauli-twirled device noise.
 
 The density matrix of generation.py needs 4**n numbers and stops at 13 qubits. Clifford
 circuits under Pauli noise can be sampled exactly for any size by Pauli frames: the noise
@@ -11,14 +11,17 @@ same Pauli error probabilities; readout errors are kept as they are.
 Qubit subsets, transpilation, calibration and gate counts come from generation.py, so the
 qubits of N <= 13 are the qubits of the v4 dataset. Families have a small ideal support,
 so the L1 distance to P_target stays exact without 2**n vectors:
-  bv            Bernstein-Vazirani, one bitstring (as in generation.py, without bricks);
-  hidden_shift  hidden shift of the bent function sum x_2i x_2i+1, one bitstring;
+  bv            Bernstein-Vazirani as in generation.py without bricks, two bitstrings
+                (the last qubit is the ancilla, in |->, and its bit is random);
+  hidden_shift  hidden shift of the bent function sum x_2i x_2i+1, one bitstring (two
+                for odd n: the qubit outside every pair ends in |+>);
   ghz           GHZ state grown along the couplings of the subset, two bitstrings.
 
 Output per (split, N): clifford_{split}_N{N}.h5 with, per circuit, the distinct noisy
-bitstrings and their counts, the support of P_target with its probabilities (bit j of an
-integer = qubit j, as in v4), the qasm of the logical circuit, and the circuit_meta and
-noise_model groups of v4.
+bitstrings and their counts, the support of P_target with its probabilities, the qasm of
+the logical circuit, and the circuit_meta and noise_model groups of v4. A bitstring is a
+row of 63-bit int64 words: bit j = qubit j is bit j % 63 of word j // 63, so up to 63
+qubits it is the integer of v4.
 
   python data2/clifford_generation.py --N 11 13 16 20 --splits val
   python data2/clifford_generation.py --check   # compare with Aer on 13 qubits
@@ -38,9 +41,12 @@ from qiskit.quantum_info import Chi, Clifford, StabilizerState, pauli_basis
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, device, pauli_error
 
-NUM_QUBITS_LIST = [11, 13, 16, 20, 24, 32, 40, 48, 56, 63]
-# Bitstrings are stored as int64, so 63 qubits is the largest size.
-MAX_NUM_QUBITS = 63
+NUM_QUBITS_LIST = [11, 13, 16, 20, 24, 32, 40, 48, 56, 63, 80, 100, 112]
+# The greedy order adds qubits with readout errors of 0.25 to 1 and broken couplings
+# (error 1) after the 112th; they are left out, as on hardware.
+MAX_NUM_QUBITS = 112
+# Bits of one int64 word of a bitstring, as in dequbit.sparse; the sign bit stays unused.
+WORD_BITS = 63
 CIRCUIT_TYPES = ["bv", "hidden_shift", "ghz"]
 NUM_SHOTS = v4.NUM_SHOTS
 COUNT_PER_TYPE = {"val": 20, "test": 20}
@@ -66,7 +72,7 @@ def make_bv(n, rng, neighbours):
 def make_hidden_shift(n, rng, neighbours):
     """Hidden shift of f(x) = sum x_2i x_2i+1, which is its own dual; outputs the shift.
 
-    For odd n the last qubit only gets the shift: H, X^s, H, H measures s there too.
+    For odd n the last qubit is in no pair and ends in |+>, so its bit is random.
     """
     shift = rng.integers(0, 2, size=n)
     pairs = [(q, q + 1) for q in range(0, n - 1, 2)]
@@ -122,14 +128,24 @@ def ideal_support(qc):
     """Support of P_target of a Clifford circuit.
 
     Returns:
-        Bitstrings as int64 (bit j = qubit j), shape (support,), and their
-        probabilities, shape (support,).
+        Bitstrings as words, shape (support, words), and their probabilities, shape
+        (support,).
     """
     probs = StabilizerState(Clifford(qc)).probabilities_dict()
-    bitstrings = np.array([int(key, 2) for key in probs], dtype=np.int64)
+    bitstrings = np.array([to_words(int(key, 2), qc.num_qubits) for key in probs], dtype=np.int64)
     values = np.array(list(probs.values()), dtype=np.float64)
-    order = np.argsort(bitstrings)
-    return bitstrings[order], values[order] / values.sum()
+    return bitstrings, values / values.sum()
+
+
+def num_words(n):
+    """Number of WORD_BITS-bit words of a bitstring of n bits."""
+    return -(-n // WORD_BITS)
+
+
+def to_words(value, n):
+    """Words of a bitstring given as a Python integer, the lowest bits first."""
+    mask = (1 << WORD_BITS) - 1
+    return [(value >> (WORD_BITS * word)) & mask for word in range(num_words(n))]
 
 
 def reference_outcome(qc, seed):
@@ -251,7 +267,7 @@ def sample_noisy_outcomes(qc_t, reference, gates, readout, shots, rng):
         rng: Random generator.
 
     Returns:
-        Outcomes as int64 (bit j = clbit j), shape (shots,).
+        Outcomes as words (bit j = clbit j), shape (shots, words).
     """
     used = sorted({qc_t.find_bit(q).index for inst in qc_t.data for q in inst.qubits})
     row = {q: i for i, q in enumerate(used)}
@@ -259,7 +275,7 @@ def sample_noisy_outcomes(qc_t, reference, gates, readout, shots, rng):
     # random in the ideal circuit random in every shot, so one reference outcome suffices.
     x_frame = np.zeros((len(used), shots), dtype=np.uint8)
     z_frame = rng.integers(0, 2, size=(len(used), shots), dtype=np.uint8)
-    outcomes = np.zeros(shots, dtype=np.int64)
+    outcomes = np.zeros((shots, num_words(len(reference))), dtype=np.int64)
 
     for inst in qc_t.data:
         name = inst.operation.name
@@ -272,7 +288,8 @@ def sample_noisy_outcomes(qc_t, reference, gates, readout, shots, rng):
             clbit = qc_t.find_bit(inst.clbits[0]).index
             bits = reference[clbit] ^ x_frame[rows[0]]
             bits = _readout_flip(bits, readout[qubits[0]], rng)
-            outcomes |= bits.astype(np.int64) << clbit
+            word, bit = divmod(clbit, WORD_BITS)
+            outcomes[:, word] |= bits.astype(np.int64) << bit
             continue
         power = _rz_power(float(inst.operation.params[0])) if name == "rz" else 0
         matrix = _symplectic(name, power)
@@ -337,7 +354,7 @@ def process_circuit(qc, n, subset, backend, gates, readout, shots, seed):
     qm.measure_all()
     qc_t = v4.transpile_in_subset(qm, backend, subset, seed)
     outcomes = sample_noisy_outcomes(qc_t, reference, gates, readout, shots, rng)
-    bitstrings, counts = np.unique(outcomes, return_counts=True)
+    bitstrings, counts = np.unique(outcomes, axis=0, return_counts=True)
     return qc_log, qc_t, bitstrings, counts.astype(np.int32), support, probs
 
 
@@ -443,11 +460,13 @@ def check(backend, subsets, directed, gates, readout):
         aer = sim.run(qc_t, shots=CHECK_SHOTS, seed_simulator=seed).result().get_counts()
         aer_time = time.perf_counter() - start
 
-        ours = dict(zip(bitstrings.tolist(), counts.tolist()))
+        ours = dict(zip(bitstrings[:, 0].tolist(), counts.tolist()))
         theirs = {int(key.replace(" ", ""), 2): value for key, value in aer.items()}
         keys = set(ours) | set(theirs)
         tv = 0.5 * sum(abs(ours.get(k, 0) - theirs.get(k, 0)) for k in keys) / CHECK_SHOTS
-        success = [sum(d.get(int(s), 0) for s in support) / CHECK_SHOTS for d in (ours, theirs)]
+        success = [
+            sum(d.get(int(s), 0) for s in support[:, 0]) / CHECK_SHOTS for d in (ours, theirs)
+        ]
         print(
             f"{circuit_type}: TV {tv:.4f}, P(ideal support) frames {success[0]:.4f} "
             f"Aer {success[1]:.4f}, time frames {frames_time:.1f}s Aer {aer_time:.1f}s"

@@ -472,7 +472,7 @@ the test environment.
 
 ---
 
-## 15. Clifford circuits on up to 63 qubits (`clifford_generation.py`)
+## 15. Clifford circuits on up to 112 qubits (`clifford_generation.py`)
 
 The density matrix needs 4^N numbers and stops at 13 qubits. For larger N,
 `clifford_generation.py` samples Clifford circuits under Pauli noise with Pauli
@@ -495,25 +495,32 @@ Circuits (no bricks, so the ideal output stays small):
 | Type | Circuit | Ideal support |
 |---|---|---|
 | `bv` | Bernstein-Vazirani as in `generation.py` | 2 bitstrings (the last qubit is random) |
-| `hidden_shift` | hidden shift of the bent function sum x_2i x_2i+1 | 1 bitstring |
+| `hidden_shift` | hidden shift of the bent function sum x_2i x_2i+1 | 1 bitstring; 2 for odd N (the qubit outside every pair is random) |
 | `ghz` | GHZ grown from a random qubit along a breadth-first tree of the couplings | 2 bitstrings |
 
 Hidden linear function circuits were left out: without bricks their output is
 uniform over an affine subspace of dimension N-2 to N-10, which no correction can
 change at these sizes.
 
-Sizes and splits: N = 11, 13, 16, 20, 24, 32, 40, 48, 56, 63; qubit subsets of
-`generation.py` up to 13, grown greedily beyond; `val` and `test` with 20 circuits
-per type and 92,160 shots; seeds differ from those of `generation.py`. Run time:
-about 25 minutes for both splits (two processes), 221 MB.
+Sizes and splits: N = 11, 13, 16, 20, 24, 32, 40, 48, 56, 63, 80, 100, 112; qubit
+subsets of `generation.py` up to 13, grown greedily beyond; `val` and `test` with 20
+circuits per type and 92,160 shots; seeds differ from those of `generation.py`. The
+greedy order adds qubits with readout errors of 0.25 to 1 and broken couplings
+(error 1) after the 112th (the largest subset up to 112 has readout errors up to 0.15
+and two-qubit errors up to 0.031), so N stops at 112 of the 127 qubits, as an
+experiment on the device would. Run time: about 25 minutes for both splits up to 63
+qubits (two processes), 221 MB; 80 to 112 qubits take 4 to 17 s per circuit.
+
+Training data for a variant of the shared scorer: `train` with 300 circuits per type
+and `val` with 20 per type at N = 5, 8, 11 (`--splits train --N 5 8 11 --count 300`).
 
 Files `data_clifford/clifford_{split}_N{N}.h5`:
 
 | Path | Content |
 |---|---|
-| `noisy_bitstrings/circuit_XXXXX` | distinct noisy outcomes, int64, bit j = qubit j, sorted |
+| `noisy_bitstrings/circuit_XXXXX` | distinct noisy outcomes, int64 of shape (distinct, ceil(N/63)): bit j = qubit j is bit j % 63 of word j // 63; up to 63 qubits the integer of v4 |
 | `noisy_counts/circuit_XXXXX` | their counts |
-| `target_bitstrings/circuit_XXXXX`, `target_probs/circuit_XXXXX` | support of P_target and its probabilities |
+| `target_bitstrings/circuit_XXXXX`, `target_probs/circuit_XXXXX` | support of P_target in the same words, and its probabilities |
 | `qasm/circuit_XXXXX` | logical circuit |
 | `circuit_meta/`, `noise_model/` | as in the v4 files (gate counts per qubit and pair, measured qubit, calibration) |
 
@@ -525,4 +532,5 @@ python clifford_generation.py --splits val test --out ../data_clifford
 
 Noisy probability of the ideal support (one validation circuit): 13 qubits 0.63
 (bv) to 0.78 (ghz); 32 qubits 0.21 (bv), 0.31 (hidden shift), 0.47 (ghz); 63 qubits
-0.018 (bv), 0.064 (hidden shift), 0.18 (ghz).
+0.018 (bv), 0.064 (hidden shift), 0.18 (ghz); 80 qubits 0.0055, 0.018, 0.098; 100
+qubits 0.0007, 0.0029, 0.048. With all 127 qubits it is 0 for every family.
