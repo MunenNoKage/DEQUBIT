@@ -41,7 +41,7 @@ HASH_MULTIPLIER = -7046029254386353131
 # (bitstring, action) pairs scored at once, which bounds the memory.
 PAIRS_PER_CHUNK = 1_000_000
 # Rows of the distance matrix between measured bitstrings computed at once in HAMMER.
-HAMMER_ROWS_PER_CHUNK = 512
+HAMMER_ROWS_PER_CHUNK = 256
 SPARSE_INFERENCE_MODES = ("expected", "sample")
 
 
@@ -264,7 +264,7 @@ def sparse_global_context(counts: torch.Tensor, num_qubits: int) -> torch.Tensor
 def sparse_pair_features(
     index: RowIndex,
     counts: torch.Tensor,
-    rows: slice,
+    rows: slice | torch.Tensor,
     masks: torch.Tensor,
     flipped_bits: torch.Tensor,
     qubit_features: torch.Tensor | None,
@@ -277,7 +277,7 @@ def sparse_pair_features(
     Args:
         index: Index of the distinct measured bitstrings.
         counts: Their counts as floats, shape (distinct,).
-        rows: Positions of the bitstrings whose pairs are built.
+        rows: Positions of the bitstrings whose pairs are built, a slice or a tensor.
         masks: Masks of the actions as words, shape (actions, words).
         flipped_bits: Number of bits every action flips, shape (actions,).
         qubit_features: Qubit features of the circuit, shape
@@ -347,8 +347,15 @@ def corrected_support_mass(
     targets = torch.as_tensor(circuit.target_bitstrings, device=device)
     masks = action_masks(circuit.num_qubits, radius).to(device)
     mask_index = RowIndex(masks)
+    # Only bitstrings within radius flips of the support can move probability onto it,
+    # and at many qubits they are few, so the others are not scored.
+    bits = words_to_bits(torch.as_tensor(circuit.bitstrings, device=device), circuit.num_qubits)
+    target_bits = words_to_bits(targets, circuit.num_qubits)
+    distances = _hamming_distances(bits.float(), target_bits.float())
+    near = torch.nonzero(distances.min(dim=1).values <= radius).flatten()
+
     mass = torch.zeros(len(targets), device=device, dtype=torch.float64)
-    for shots, counts, action_probs in _action_probabilities(model, circuit, masks, device):
+    for shots, counts, action_probs in _action_probabilities(model, circuit, masks, device, near):
         # Probability that bitstring x moves to every target bitstring, shape
         # (rows, support); 0 where the target is more than radius flips away.
         actions, reachable = mask_index.find(shots.unsqueeze(1) ^ targets)
@@ -396,15 +403,24 @@ def corrected_shots(
 
 
 def _action_probabilities(
-    model: nn.Module, circuit: SparseCircuit, masks: torch.Tensor, device: torch.device
+    model: nn.Module,
+    circuit: SparseCircuit,
+    masks: torch.Tensor,
+    device: torch.device,
+    rows: torch.Tensor | None = None,
 ) -> Iterator[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """Yield P(a | x) of the measured bitstrings of a circuit, a block of bitstrings at a time.
+
+    The features of every bitstring still use the counts of all measured bitstrings, so
+    a subset of rows gets the same probabilities as in a pass over all of them.
 
     Args:
         model: Trained SharedScorer without neighbourhood counts, on device.
         circuit: Circuit to correct.
         masks: Masks of the actions from action_masks, on device, shape (actions, words).
         device: Device of the computation.
+        rows: Positions of the measured bitstrings to score, shape (rows,); None scores
+            all of them.
 
     Yields:
         The bitstrings of the block, shape (rows, words), their counts, shape (rows,),
@@ -424,15 +440,16 @@ def _action_probabilities(
         qubit_features = torch.as_tensor(circuit.qubit_features, device=device)
     flipped_bits = words_to_bits(masks, circuit.num_qubits).sum(dim=-1)
 
+    if rows is None:
+        rows = torch.arange(len(counts), device=device)
     rows_per_chunk = max(1, PAIRS_PER_CHUNK // len(masks))
     with torch.no_grad():
-        for start in range(0, len(counts), rows_per_chunk):
-            rows = slice(start, start + rows_per_chunk)
+        for block in rows.split(rows_per_chunk):
             features = sparse_pair_features(
-                index, counts, rows, masks, flipped_bits, qubit_features, circuit.num_qubits
+                index, counts, block, masks, flipped_bits, qubit_features, circuit.num_qubits
             )
             action_probs = model.score(features, flipped_bits).softmax(dim=-1)
-            yield index.rows[rows], counts[rows], action_probs
+            yield index.rows[block], counts[block], action_probs
 
 
 def _moved_mass(

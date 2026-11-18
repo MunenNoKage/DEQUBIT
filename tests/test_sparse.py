@@ -225,6 +225,34 @@ def test_expected_correction_matches_the_dense_one_on_the_support() -> None:
     np.testing.assert_allclose(mass, dense[0, circuit.target_bitstrings[:, 0]].numpy(), rtol=1e-5)
 
 
+def test_expected_correction_skips_far_bitstrings_without_changing_the_result() -> None:
+    """On 6 qubits most bitstrings are over two flips from the target and are not scored."""
+    num_qubits = 6
+    rng = np.random.default_rng(SEED)
+    counts = rng.integers(1, 30, size=2**num_qubits)
+    circuit = SparseCircuit(
+        bitstrings=np.arange(2**num_qubits, dtype=np.int64)[:, np.newaxis],
+        counts=counts.astype(np.int64),
+        target_bitstrings=np.array([[0]], dtype=np.int64),
+        target_probs=np.array([1.0]),
+        qubit_features=rng.random((num_qubits, NUM_QUBIT_FEATURES)).astype(np.float32),
+        circuit_type="bv",
+        num_qubits=num_qubits,
+    )
+    model = trained_like_scorer()
+    destination_table = destinations(build_masks(num_qubits, RADIUS), num_qubits)
+    dense_input = torch.as_tensor(counts, dtype=torch.float32).unsqueeze(0)
+    qubit_features = torch.as_tensor(circuit.qubit_features).unsqueeze(0)
+
+    with torch.no_grad():
+        _, dense = predict_distributions(model, dense_input, qubit_features, destination_table)
+    mass = corrected_support_mass(
+        model, circuit, RADIUS, "expected", torch.Generator().manual_seed(SEED), CPU
+    )
+
+    np.testing.assert_allclose(mass, dense[0, [0]].numpy(), rtol=1e-5)
+
+
 def test_correction_does_not_depend_on_which_word_holds_the_qubits() -> None:
     """Moving the active qubits from the first word to the second changes nothing."""
     model = trained_like_scorer()
