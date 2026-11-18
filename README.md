@@ -177,15 +177,16 @@ All numbers, per circuit family too:
   p < 1e-4; `expected_inference`). The most probable
   action for every shot is much worse (-0.03 to -0.27).
 
-### Clifford circuits on 11 to 63 qubits
+### Clifford circuits on 11 to 112 qubits
 
 A density matrix of 14 qubits no longer fits in memory, so larger circuits come from
 [`data2/clifford_generation.py`](data2/clifford_generation.py): Bernstein-Vazirani,
-hidden shift and GHZ circuits on 11 to 63 qubits of the same device, under the device
+hidden shift and GHZ circuits on 11 to 112 qubits of the same device, under the device
 noise twirled into Pauli noise (TV 0.01 from the full noise at 8 qubits), sampled with
 Pauli frames; see [`data2/description.md`](data2/description.md), section 15. Their
 ideal output has one or two bitstrings. 20 circuits per family and size, 92 160 shots,
-validation split.
+validation split. 112 is the largest subset of the device without broken qubits: the
+remaining 15 have readout errors of 0.25 to 1 and couplings with error 1.
 
 The models are the ones above, trained on 3 to 11 qubits, without retraining.
 [`dequbit.sparse`](src/dequbit/sparse.py) corrects only the measured bitstrings, so
@@ -194,27 +195,34 @@ bitstring, which changes nothing at these sizes, and readout inversion spreads e
 shot over 2**n bitstrings, so HAMMER is the baseline. "Shared scorer, then HAMMER"
 applies HAMMER to the shots the scorer corrected.
 
-Median L1 relative change (5 seeds, sampled corrections; `results/metrics_clifford_validation.json`):
+Median L1 relative change and mean probability of the ideal outputs (5 seeds, sampled
+corrections; `results/metrics_clifford_validation.json`; the oracle reaches -0.995 to
+-0.999). The last two columns compare the scorer then HAMMER with HAMMER on the same
+circuits: median paired difference and share of circuits where it is better.
 
-| Method | 11 | 13 | 16 | 20 | 24 | 32 | 40 | 48 | 56 | 63 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| HAMMER | -0.902 | -0.922 | -0.942 | -0.935 | -0.937 | -0.930 | -0.892 | -0.890 | -0.855 | -0.833 |
-| Shared scorer | -0.845 | -0.815 | -0.752 | -0.711 | -0.700 | -0.709 | -0.636 | -0.594 | -0.455 | -0.404 |
-| Shared scorer, then HAMMER | **-0.914** | **-0.932** | **-0.962** | **-0.964** | **-0.972** | **-0.989** | **-0.992** | **-0.992** | **-0.987** | **-0.937** |
-| Oracle | -0.995 | -0.995 | -0.998 | -0.999 | -0.999 | -0.999 | -0.999 | -0.999 | -0.999 | -0.999 |
+| Qubits | P noisy | HAMMER | Shared scorer | Scorer, then HAMMER | P HAMMER | P scorer, then HAMMER | Paired difference | Better on |
+|---|---|---|---|---|---|---|---|---|
+| 11 | 0.750 | -0.902 | -0.845 | **-0.914** | 0.990 | 0.999 | -0.012 | 98% |
+| 13 | 0.713 | -0.922 | -0.815 | **-0.932** | 0.989 | 0.998 | -0.010 | 97% |
+| 16 | 0.628 | -0.942 | -0.752 | **-0.962** | 0.983 | 0.998 | -0.015 | 67% |
+| 20 | 0.505 | -0.935 | -0.711 | **-0.964** | 0.969 | 0.997 | -0.031 | 80% |
+| 24 | 0.446 | -0.937 | -0.700 | **-0.972** | 0.963 | 0.995 | -0.045 | 95% |
+| 32 | 0.327 | -0.930 | -0.709 | **-0.989** | 0.948 | 0.985 | -0.041 | 100% |
+| 40 | 0.220 | -0.892 | -0.636 | **-0.992** | 0.917 | 0.982 | -0.078 | 100% |
+| 48 | 0.179 | -0.890 | -0.594 | **-0.992** | 0.900 | 0.970 | -0.100 | 100% |
+| 56 | 0.124 | -0.855 | -0.455 | **-0.987** | 0.864 | 0.964 | -0.129 | 100% |
+| 63 | 0.091 | -0.833 | -0.404 | **-0.937** | 0.807 | 0.957 | -0.101 | 100% |
+| 80 | 0.041 | -0.704 | -0.206 | **-0.966** | 0.649 | 0.902 | -0.262 | 100% |
+| 100 | 0.017 | -0.385 | -0.053 | **-0.882** | 0.499 | 0.888 | -0.453 | 100% |
+| 112 | 0.009 | -0.287 | -0.018 | **-0.756** | 0.410 | 0.830 | -0.382 | 100% |
 
-Mean probability of the ideal outputs:
-
-| | 11 | 20 | 32 | 48 | 63 |
-|---|---|---|---|---|---|
-| No correction | 0.750 | 0.505 | 0.327 | 0.179 | 0.091 |
-| HAMMER | 0.990 | 0.969 | 0.948 | 0.900 | 0.807 |
-| Shared scorer | 0.957 | 0.869 | 0.753 | 0.578 | 0.413 |
-| Shared scorer, then HAMMER | 0.999 | 0.997 | 0.985 | 0.970 | 0.957 |
+![Median L1 relative change of the Clifford circuits by number of qubits](results/figures/l1_relative_change_clifford_validation.png)
 
 - The scorer followed by HAMMER beats HAMMER at every size, with paired p <= 1e-4 and
   on 67 to 100% of the circuits; from 32 qubits on on every circuit. The margin grows
-  with the size: -0.012 at 11 qubits, -0.10 to -0.13 at 48 to 63.
+  with the size: -0.012 at 11 qubits, -0.10 to -0.13 at 48 to 63, -0.26 to -0.45 at 80
+  to 112. At 112 qubits, where 0.9% of the noisy shots are correct, HAMMER puts 41% of
+  the probability on the ideal outputs and the combination 83%.
 - The two do different things. The scorer moves shots back to likely outcomes up to two
   flips away, which HAMMER cannot do; HAMMER then sharpens the distribution toward the
   most supported outcome, which suits a single correct answer. On the spread ideal
@@ -223,10 +231,18 @@ Mean probability of the ideal outputs:
   circuits with one or a few correct answers.
 - Alone, the scorer improves every size but stays behind HAMMER on these circuits. It
   can only undo up to two flips, while at 63 qubits most shots are farther from the
-  correct answer (the bv circuits keep 1.8% of the shots correct), and it was trained
-  on spread ideal distributions only.
-- Per family at 63 qubits (HAMMER / scorer then HAMMER): Bernstein-Vazirani -0.621 /
-  -0.884, hidden shift -0.833 / -0.938, GHZ -0.929 / -0.993.
+  correct answer (the bv circuits keep 1.8% of the shots correct). From 48 qubits on it
+  reaches that bound: it moves all the probability that lies within two flips of the
+  ideal outputs (0.413 of 0.4133 at 63 qubits, 0.579 of 0.581 at 48), so a larger
+  radius, not a better model, is what could still help there.
+- Trained with Clifford circuits as well (300 per family at 5, 8 and 11 qubits,
+  `with_clifford_training`, 3 seeds), the scorer is unchanged on the main dataset
+  (within 0.007 at every size) and better on these circuits up to 32 qubits (-0.826
+  against -0.711 at 20, -0.754 against -0.709 at 32); followed by HAMMER it reaches
+  -0.991 at 20 and -0.966 at 63 qubits (against -0.964 and -0.937).
+- Per family (HAMMER / scorer then HAMMER) at 63 qubits: Bernstein-Vazirani -0.621 /
+  -0.884, hidden shift -0.833 / -0.938, GHZ -0.929 / -0.993; at 112 qubits: -0.277 /
+  -0.704, -0.275 / -0.760, -0.685 / -0.975.
 
 ### Ablations
 
@@ -380,7 +396,7 @@ radius, are in [`results/experiments.md`](results/experiments.md).
 4. **Done.** HAMMER as a baseline, confidence intervals and paired tests, ablations of
    the inputs, the training sizes and the circuit families, robustness to calibration
    drift and to the number of shots.
-5. **Done.** Clifford circuits on up to 63 qubits with Pauli-twirled device noise, and
+5. **Done.** Clifford circuits on up to 112 qubits with Pauli-twirled device noise, and
    corrections of the measured bitstrings only, for circuits too large for 2**n
    vectors.
 
@@ -406,7 +422,7 @@ python -m dequbit train --all       # every model of evaluation.models, every se
 python -m dequbit train --model shared_scorer --seed 1
 python -m dequbit evaluate          # models and baselines on the validation circuits
 python -m dequbit ablate no_circuit_context   # one variant of ablation.variants
-python -m dequbit evaluate-clifford # shared scorer and HAMMER on Clifford circuits up to 63 qubits
+python -m dequbit evaluate-clifford # shared scorer and HAMMER on Clifford circuits up to 112 qubits
 python -m dequbit evaluate --split test
 python -m dequbit --set actions.radius=1 train --model mlp   # change one config value
 make data                           # regenerate data_v4/: several hours, see data2/description.md
