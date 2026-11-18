@@ -7,7 +7,8 @@ mitigation.
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
 Status: models, baselines, training and evaluation implemented; results on the
-validation circuits of 3 to 13 qubits. The Streamlit demo is not implemented yet.
+validation circuits of 3 to 13 qubits, and on Clifford circuits of 11 to 112 qubits.
+The Streamlit demo is not implemented yet.
 
 ## Problem
 
