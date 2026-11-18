@@ -219,11 +219,22 @@ circuits: median paired difference and share of circuits where it is better.
 
 ![Probability of the ideal outputs of the Clifford circuits by number of qubits](results/figures/support_probability_clifford_validation.png)
 
-- The scorer followed by HAMMER beats HAMMER at every size, with paired p <= 1e-4 and
-  on 67 to 100% of the circuits; from 32 qubits on on every circuit. The margin grows
-  with the size: -0.012 at 11 qubits, -0.10 to -0.13 at 48 to 63, -0.26 to -0.45 at 80
-  to 112. At 112 qubits, where 0.9% of the noisy shots are correct, HAMMER puts 41% of
-  the probability on the ideal outputs and the combination 83%.
+- The scorer followed by HAMMER beats one pass of HAMMER at every size, with paired
+  p <= 1e-4 and on 67 to 100% of the circuits; from 32 qubits on on every circuit. The
+  margin grows with the size: -0.012 at 11 qubits, -0.10 to -0.13 at 48 to 63, -0.26 to
+  -0.45 at 80 to 112. At 112 qubits, where 0.9% of the noisy shots are correct, HAMMER
+  puts 41% of the probability on the ideal outputs and the combination 83%.
+- Most of that margin is the second sharpening step, which HAMMER applied to its own
+  output gives as well. HAMMER twice reaches -0.983 / -0.987 / -0.952 / -0.987 / -0.950
+  at 16 / 32 / 63 / 80 / 112 qubits (probability of the ideal outputs 0.998 / 0.990 /
+  0.952 at 63 / 80 / 112), ahead of the scorer then HAMMER everywhere except 32 qubits,
+  where they are level. With the same number of passes the scorer adds little: scorer
+  then HAMMER twice against HAMMER three times is -0.931 / -0.979 / -0.934 / -0.995 /
+  -0.971 against -0.966 / -0.974 / -0.902 / -0.974 / -0.960 (scorer seed 0). Extra
+  passes do harm at 11 qubits (HAMMER twice -0.783, three times -0.529), where hidden
+  shift and Bernstein-Vazirani have two ideal outputs and repeated sharpening favours
+  one of them, and on the spread distributions of the main dataset at every size
+  (HAMMER twice +0.089 against -0.345 once at 11 qubits).
 - The two do different things. The scorer moves shots back to likely outcomes up to two
   flips away, which HAMMER cannot do; HAMMER then sharpens the distribution toward the
   most supported outcome, which suits a single correct answer. On the spread ideal
