@@ -216,7 +216,7 @@ circuits: median paired difference and share of circuits where it is better.
 | 100 | 0.017 | -0.385 | -0.053 | **-0.882** | 0.499 | 0.888 | -0.453 | 100% |
 | 112 | 0.009 | -0.287 | -0.018 | **-0.756** | 0.410 | 0.830 | -0.382 | 100% |
 
-![Median L1 relative change of the Clifford circuits by number of qubits](results/figures/l1_relative_change_clifford_validation.png)
+![Probability of the ideal outputs of the Clifford circuits by number of qubits](results/figures/support_probability_clifford_validation.png)
 
 - The scorer followed by HAMMER beats HAMMER at every size, with paired p <= 1e-4 and
   on 67 to 100% of the circuits; from 32 qubits on on every circuit. The margin grows
