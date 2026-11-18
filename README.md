@@ -240,7 +240,9 @@ circuits: median paired difference and share of circuits where it is better.
   `with_clifford_training`, 3 seeds), the scorer is unchanged on the main dataset
   (within 0.007 at every size) and better on these circuits up to 32 qubits (-0.826
   against -0.711 at 20, -0.754 against -0.709 at 32); followed by HAMMER it reaches
-  -0.991 at 20 and -0.966 at 63 qubits (against -0.964 and -0.937).
+  -0.991 at 20 and -0.966 at 63 qubits (against -0.964 and -0.937). At 80 and 112
+  qubits the two models are level (scorer then HAMMER -0.965 and -0.785 against -0.966
+  and -0.756, seed spread 0.05 at 112).
 - Per family (HAMMER / scorer then HAMMER) at 63 qubits: Bernstein-Vazirani -0.621 /
   -0.884, hidden shift -0.833 / -0.938, GHZ -0.929 / -0.993; at 112 qubits: -0.277 /
   -0.704, -0.275 / -0.760, -0.685 / -0.975.
