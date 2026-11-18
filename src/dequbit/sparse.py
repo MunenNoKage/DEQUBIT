@@ -41,11 +41,8 @@ HASH_MULTIPLIER = -7046029254386353131
 # (bitstring, action) pairs scored at once, which bounds the memory.
 PAIRS_PER_CHUNK = 1_000_000
 # Rows of the distance matrix between measured bitstrings computed at once in HAMMER.
-HAMMER_ROWS_PER_CHUNK = 256
+HAMMER_ROWS_PER_CHUNK = 512
 SPARSE_INFERENCE_MODES = ("expected", "sample")
-BITS_PER_BYTE = 8
-BYTE_VALUES = 256
-BYTES_PER_WORD = 8
 
 
 @dataclass
@@ -509,13 +506,14 @@ def hammer_support_mass(circuit: SparseCircuit, device: torch.device) -> np.ndar
     num_qubits = circuit.num_qubits
     num_counted = (num_qubits + 1) // 2
     bitstrings = torch.as_tensor(circuit.bitstrings, device=device)
+    bits = words_to_bits(bitstrings, num_qubits).float()
     probabilities = torch.as_tensor(circuit.counts, device=device, dtype=torch.float64)
     probabilities = probabilities / probabilities.sum()
-    table = _byte_popcounts(device)
 
     strength = torch.zeros(num_qubits + 1, device=device, dtype=torch.float64)
-    for rows in _row_chunks(len(bitstrings)):
-        distances = _hamming_distances(bitstrings[rows], bitstrings, table)
+    all_rows = torch.arange(len(bitstrings), device=device)
+    for rows in all_rows.split(HAMMER_ROWS_PER_CHUNK):
+        distances = _hamming_distances(bits[rows], bits)
         weights = probabilities.expand_as(distances)
         strength += torch.bincount(
             distances.flatten(), weights=weights.flatten(), minlength=num_qubits + 1
@@ -528,9 +526,11 @@ def hammer_support_mass(circuit: SparseCircuit, device: torch.device) -> np.ndar
     )
 
     scores = probabilities.clone()
-    for rows in _row_chunks(len(bitstrings)):
-        distances = _hamming_distances(bitstrings[rows], bitstrings, table)
-        # Only neighbours less likely than x add to its score; x itself is not one.
+    # Only neighbours less likely than x add to its score, so the least likely bitstrings,
+    # most of them at many qubits, keep their own probability as score.
+    likelier = all_rows[probabilities > probabilities.min()]
+    for rows in likelier.split(HAMMER_ROWS_PER_CHUNK):
+        distances = _hamming_distances(bits[rows], bits)
         less_likely = probabilities.unsqueeze(0) < probabilities[rows].unsqueeze(-1)
         scores[rows] += (distance_weights[distances] * probabilities * less_likely).sum(dim=1)
 
@@ -566,32 +566,20 @@ def _row_keys(words: torch.Tensor) -> torch.Tensor:
     return keys
 
 
-def _row_chunks(num_rows: int) -> list[slice]:
-    """Split num_rows rows into slices of HAMMER_ROWS_PER_CHUNK rows."""
-    return [
-        slice(start, start + HAMMER_ROWS_PER_CHUNK)
-        for start in range(0, num_rows, HAMMER_ROWS_PER_CHUNK)
-    ]
+def _hamming_distances(rows: torch.Tensor, columns: torch.Tensor) -> torch.Tensor:
+    """Hamming distances between two sets of bitstrings given by their bits.
 
+    d(x, y) = |x| + |y| - 2 x.y, so one matrix product gives a whole block; the values
+    are integers up to the number of qubits, which float32 holds exactly.
 
-def _byte_popcounts(device: torch.device) -> torch.Tensor:
-    """Number of set bits of every byte value, shape (BYTE_VALUES,)."""
-    values = torch.arange(BYTE_VALUES, device=device)
+    Args:
+        rows: Bits of some bitstrings as floats, shape (rows, num_qubits).
+        columns: Bits of other bitstrings as floats, shape (columns, num_qubits).
 
-    return sum((values >> bit) & 1 for bit in range(BITS_PER_BYTE))
-
-
-def _hamming_distances(
-    rows: torch.Tensor, columns: torch.Tensor, table: torch.Tensor
-) -> torch.Tensor:
-    """Hamming distances between two sets of bitstrings given as words, (rows, columns).
-
-    Torch has no popcount, so the set bits of the XOR are counted one byte at a time.
+    Returns:
+        Distances, int64 of shape (rows, columns).
     """
-    distances = torch.zeros(len(rows), len(columns), dtype=torch.int64, device=rows.device)
-    for word in range(rows.shape[-1]):
-        xor = rows[:, word].unsqueeze(-1) ^ columns[:, word]
-        for byte in range(BYTES_PER_WORD):
-            distances += table[(xor >> (BITS_PER_BYTE * byte)) & (BYTE_VALUES - 1)]
+    overlap = rows @ columns.T
+    distances = rows.sum(dim=-1, keepdim=True) + columns.sum(dim=-1) - 2 * overlap
 
-    return distances
+    return distances.round().long()
