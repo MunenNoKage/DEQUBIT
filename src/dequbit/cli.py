@@ -10,6 +10,7 @@ from dequbit.config import DEFAULT_CONFIG_PATH, Config, apply_overrides, load_co
 from dequbit.evaluate import (
     plot_l1_relative_change,
     plot_medians_by_qubits,
+    plot_support_probability_by_qubits,
     plot_training_histories,
     write_json,
 )
@@ -140,7 +141,7 @@ def run_evaluate(config: Config, split: str) -> None:
 
 
 def run_evaluate_clifford(config: Config, split: str) -> None:
-    """Evaluate on the Clifford circuits and write the metrics and one figure over sizes.
+    """Evaluate on the Clifford circuits and write the metrics and two figures over sizes.
 
     Args:
         config: Full config.
@@ -149,9 +150,44 @@ def run_evaluate_clifford(config: Config, split: str) -> None:
     metrics, changes = evaluate_clifford_split(config, split)
     write_json(metrics, Path(config["paths"]["clifford_metrics"].format(split=split)))
 
-    figure = Path(config["paths"]["figures_dir"]) / f"l1_relative_change_clifford_{split}.png"
-    plot_medians_by_qubits(_medians_by_qubits(changes), figure, config["evaluation"]["models"])
-    logger.info("wrote Clifford metrics and %s", figure)
+    figures = Path(config["paths"]["figures_dir"])
+    models = [name for size in metrics["qubits"].values() for name in size["models"]]
+    plot_medians_by_qubits(
+        _medians_by_qubits(changes), figures / f"l1_relative_change_clifford_{split}.png", models
+    )
+    plot_support_probability_by_qubits(
+        support_probabilities_by_qubits(metrics),
+        figures / f"support_probability_clifford_{split}.png",
+        models,
+    )
+    logger.info("wrote Clifford metrics and figures to %s", figures)
+
+
+def support_probabilities_by_qubits(metrics: dict) -> dict[str, dict[int, float]]:
+    """Take the mean probability on the ideal outputs of every method from Clifford metrics.
+
+    The oracle is left out, since its probability is 1. For a model it is the mean over
+    the seeds in the mode the model was evaluated in.
+
+    Args:
+        metrics: Output of dequbit.pipeline.evaluate_clifford_split.
+
+    Returns:
+        Probabilities by method name and number of qubits.
+    """
+    probabilities: dict[str, dict[int, float]] = {}
+    for size, size_metrics in metrics["qubits"].items():
+        for name, values in size_metrics["baselines"].items():
+            if name != "oracle":
+                probabilities.setdefault(name, {})[int(size)] = values["mean_support_probability"]
+        for name, values in size_metrics["models"].items():
+            seeds = values["seeds"].values()
+            mean = np.mean(
+                [seed[values["inference"]]["mean_support_probability"] for seed in seeds]
+            )
+            probabilities.setdefault(name, {})[int(size)] = float(mean)
+
+    return probabilities
 
 
 def run_ablation(config: Config, name: str, split: str | None) -> None:

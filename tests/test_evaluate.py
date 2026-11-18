@@ -16,6 +16,7 @@ from dequbit.evaluate import (
     method_metrics,
     plot_l1_relative_change,
     plot_medians_by_qubits,
+    plot_support_probability_by_qubits,
     plot_training_histories,
     write_json,
 )
@@ -279,5 +280,15 @@ def test_plot_medians_by_qubits_writes_image(tmp_path: Path) -> None:
     medians = {"mlp": {3: -0.7, 5: -0.6, 8: -0.5}, "linear_map": {3: -0.6, 5: -0.5}}
 
     plot_medians_by_qubits(medians, path, models=["mlp"])
+
+    assert path.read_bytes().startswith(b"\x89PNG")
+
+
+def test_plot_support_probability_by_qubits_writes_image(tmp_path: Path) -> None:
+    """Probabilities of a baseline and a model by size are written as PNG."""
+    path = tmp_path / "figures" / "support.png"
+    probabilities = {"hammer": {11: 0.99, 63: 0.81}, "shared_scorer_hammer": {11: 1.0, 63: 0.96}}
+
+    plot_support_probability_by_qubits(probabilities, path, models=["shared_scorer_hammer"])
 
     assert path.read_bytes().startswith(b"\x89PNG")

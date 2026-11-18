@@ -365,9 +365,54 @@ def plot_medians_by_qubits(
         path: Image file to write; missing parent folders are created.
         models: Names of the learned models among the methods, drawn with thick lines.
     """
+    _plot_by_qubits(
+        medians,
+        path,
+        models,
+        "median L1 relative change",
+        "Median change of the L1 distance to P_target (lower is better)",
+    )
+
+
+def plot_support_probability_by_qubits(
+    probabilities: dict[str, dict[int, float]], path: Path, models: Sequence[str] = ()
+) -> None:
+    """Draw the mean probability every method puts on the ideal outputs, by number of qubits.
+
+    Args:
+        probabilities: Mean probability on the support of P_target by method name and
+            number of qubits.
+        path: Image file to write; missing parent folders are created.
+        models: Names of the learned models among the methods, drawn with thick lines.
+    """
+    _plot_by_qubits(
+        probabilities,
+        path,
+        models,
+        "mean probability of the ideal outputs",
+        "Probability of the ideal outputs after correction (higher is better)",
+    )
+
+
+def _plot_by_qubits(
+    values: dict[str, dict[int, float]],
+    path: Path,
+    models: Sequence[str],
+    ylabel: str,
+    title: str,
+) -> None:
+    """Draw one value of every method against the number of qubits.
+
+    Args:
+        values: Value by method name and number of qubits; a method may lack some sizes.
+        path: Image file to write; missing parent folders are created.
+        models: Names of the learned models among the methods, drawn with thick lines.
+        ylabel: Label of the vertical axis.
+        title: Title of the figure.
+    """
     figure = Figure(figsize=(8, 4.5))
     axes = figure.add_subplot()
-    for name, by_qubits in medians.items():
+    for name, by_qubits in values.items():
         qubit_counts = sorted(by_qubits)
         axes.plot(
             qubit_counts,
@@ -379,11 +424,11 @@ def plot_medians_by_qubits(
             label=METHOD_LABELS.get(name, name),
         )
 
-    all_qubit_counts = sorted({size for by_qubits in medians.values() for size in by_qubits})
+    all_qubit_counts = sorted({size for by_qubits in values.values() for size in by_qubits})
     axes.set_xticks(all_qubit_counts)
     axes.set_xlabel("number of qubits")
-    axes.set_ylabel("median L1 relative change")
-    axes.set_title("Median change of the L1 distance to P_target (lower is better)")
+    axes.set_ylabel(ylabel)
+    axes.set_title(title)
     axes.grid(alpha=0.3)
     axes.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
 

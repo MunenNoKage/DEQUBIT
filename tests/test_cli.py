@@ -9,7 +9,8 @@ import torch
 from dequbit.cli import build_parser, main
 from dequbit.config import load_config
 from dequbit.dataset import QUBIT_FEATURE_NAMES
-from dequbit.models import load_model
+from dequbit.models import build_model, load_model, save_model
+from dequbit.pipeline import model_path
 
 
 def test_parser_reads_train_options() -> None:
@@ -95,3 +96,26 @@ def test_evaluate_reports_missing_model(fake_config: Path) -> None:
     """Evaluating a model that was never trained raises FileNotFoundError."""
     with pytest.raises(FileNotFoundError):
         main(["--config", str(fake_config), "evaluate", "--split", "validation"])
+
+
+def test_evaluate_clifford_writes_metrics_and_both_figures(fake_config: Path) -> None:
+    """evaluate-clifford writes its metrics, the medians and the probabilities by size."""
+    directory = fake_config.parent
+    config = load_config(fake_config)
+    radius = config["actions"]["radius"]
+    model_config = {**config["model"], "name": "shared_scorer"}
+    for seed in config["evaluation"]["seeds"]:
+        path = model_path(config, "shared_scorer", seed, None)
+        save_model(build_model(model_config, None, radius), model_config, None, radius, path)
+
+    assert main(["--config", str(fake_config), "evaluate-clifford"]) == 0
+
+    metrics_path = directory / "results" / "metrics_clifford_validation.json"
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    figures = directory / "results" / "figures"
+    assert set(next(iter(metrics["qubits"].values()))["models"]) == {
+        "shared_scorer",
+        "shared_scorer_hammer",
+    }
+    assert (figures / "l1_relative_change_clifford_validation.png").exists()
+    assert (figures / "support_probability_clifford_validation.png").exists()
