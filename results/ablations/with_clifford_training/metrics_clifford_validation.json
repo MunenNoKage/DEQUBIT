@@ -1,0 +1,1287 @@
+{
+  "split": "validation",
+  "environment": {
+    "python": "3.13.7",
+    "numpy": "2.5.3",
+    "torch": "2.14.0+cu130",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "qubits": {
+    "11": {
+      "num_circuits": 60,
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_support_probability": 0.7497077546296295
+        },
+        "oracle": {
+          "median": -0.9947941876772313,
+          "first_quartile": -0.9968990950838861,
+          "third_quartile": -0.9923856592307043,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 1.0
+        },
+        "hammer": {
+          "median": -0.901747473285772,
+          "first_quartile": -0.9637151468701762,
+          "third_quartile": -0.8865833136726511,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 0.990457849852838
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.8898701516669595,
+          "median_std": 4.326002760325149e-05,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.8899321968877388,
+                "first_quartile": -0.9736572561437494,
+                "third_quartile": -0.8251143119849239,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9665821986728245
+              },
+              "sample": {
+                "median": -0.8899007411258321,
+                "first_quartile": -0.9737908176015129,
+                "third_quartile": -0.8251335796263957,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9665809461805555
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.8899350646495081,
+                "first_quartile": -0.9736625128740608,
+                "third_quartile": -0.8251309599203221,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9666000691166631
+              },
+              "sample": {
+                "median": -0.8899007411258321,
+                "first_quartile": -0.9737580249820383,
+                "third_quartile": -0.8251438961369391,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9665995732060185
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.8898314502757846,
+                "first_quartile": -0.9735584237915924,
+                "third_quartile": -0.8250202048129599,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9665449601632579
+              },
+              "sample": {
+                "median": -0.8898089727492143,
+                "first_quartile": -0.9736562545876342,
+                "third_quartile": -0.8249833494697367,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.966545138888889
+              }
+            }
+          }
+        },
+        "shared_scorer_hammer": {
+          "inference": "sample",
+          "median_mean": -0.9015940395272151,
+          "median_std": 0.001533921585677155,
+          "seeds": {
+            "0": {
+              "sample": {
+                "median": -0.9023474494199247,
+                "first_quartile": -0.9785063197262346,
+                "third_quartile": -0.8894099875092394,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9991384745146947
+              }
+            },
+            "1": {
+              "sample": {
+                "median": -0.8994556157336304,
+                "first_quartile": -0.9782711778256178,
+                "third_quartile": -0.8852004774552199,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9990367346203047
+              }
+            },
+            "2": {
+              "sample": {
+                "median": -0.9029790534280902,
+                "first_quartile": -0.9786071178340132,
+                "third_quartile": -0.8934683568834261,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9990841465583279
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9955392868862833,
+            "first_quartile": -0.9968990950838861,
+            "third_quartile": -0.9937834662266304,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.901747473285772,
+            "first_quartile": -0.9085055939678739,
+            "third_quartile": -0.8921213291295376,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.7827918778677169,
+            "first_quartile": -0.8158719034333364,
+            "third_quartile": -0.7247141478272028,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9008680001388945,
+            "first_quartile": -0.9125941066952737,
+            "third_quartile": -0.8848134626667506,
+            "improved_fraction": 1.0
+          }
+        },
+        "ghz": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9920328156773819,
+            "first_quartile": -0.9950087601567635,
+            "third_quartile": -0.9878273863148757,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9743806626414933,
+            "first_quartile": -0.9775831521669808,
+            "third_quartile": -0.9656894052621114,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.8822962708617812,
+            "first_quartile": -0.896309371267641,
+            "third_quartile": -0.8694233480302469,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9848089700367973,
+            "first_quartile": -0.9906902550500892,
+            "third_quartile": -0.9783695416380814,
+            "improved_fraction": 1.0
+          }
+        },
+        "hidden_shift": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9960110395715313,
+            "first_quartile": -0.9984146138869443,
+            "third_quartile": -0.9940243756387818,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.8832095689425086,
+            "first_quartile": -0.890225855254033,
+            "third_quartile": -0.8780445251882096,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.9741207815605852,
+            "first_quartile": -0.9751468942689709,
+            "third_quartile": -0.9736369426699713,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.8898590246766397,
+            "first_quartile": -0.8961661563690674,
+            "third_quartile": -0.8819701620898301,
+            "improved_fraction": 1.0
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.995913802744204,
+          -0.9939768222018907
+        ],
+        "hammer": [
+          -0.9090618796737553,
+          -0.8934875928128323
+        ],
+        "shared_scorer": [
+          -0.898904061419446,
+          -0.8697044008632017
+        ],
+        "shared_scorer_hammer": [
+          -0.917286519045442,
+          -0.8952516046147629
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": 0.07915186773125421,
+          "difference_low": 0.018465299173758276,
+          "difference_high": 0.09085135991564586,
+          "first_better_fraction": 0.38333333333333336,
+          "wilcoxon_p": 0.018487196819833886
+        },
+        "shared_scorer_hammer": {
+          "baseline": "hammer",
+          "median_difference": -0.007400687078429613,
+          "difference_low": -0.009267174149455881,
+          "difference_high": -0.003967472545596484,
+          "first_better_fraction": 0.7833333333333333,
+          "wilcoxon_p": 0.00013711774933910853
+        }
+      }
+    },
+    "20": {
+      "num_circuits": 60,
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_support_probability": 0.504540111400463
+        },
+        "oracle": {
+          "median": -0.9986317896959798,
+          "first_quartile": -1.0,
+          "third_quartile": -0.9970717361324899,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 1.0
+        },
+        "hammer": {
+          "median": -0.9352099410439072,
+          "first_quartile": -0.9574807182088356,
+          "third_quartile": -0.9306907272153611,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 0.9687498150190144
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.826269537194559,
+          "median_std": 0.006641936273482316,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.8309235414828704,
+                "first_quartile": -0.8893405555941692,
+                "third_quartile": -0.7496013081576872,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.8975794604162716
+              },
+              "sample": {
+                "median": -0.8309660630659266,
+                "first_quartile": -0.8893690925537826,
+                "third_quartile": -0.7496882820258407,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.8975842737268519
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.8309654197837864,
+                "first_quartile": -0.8894566695367242,
+                "third_quartile": -0.7499343807335881,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.897666162399918
+              },
+              "sample": {
+                "median": -0.8309661276814936,
+                "first_quartile": -0.8894823242947859,
+                "third_quartile": -0.7499534183867795,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.8976689091435185
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.8167293370763141,
+                "first_quartile": -0.8795966526951179,
+                "third_quartile": -0.7475609400645257,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.8935196597291767
+              },
+              "sample": {
+                "median": -0.8168764208362564,
+                "first_quartile": -0.8798108852293001,
+                "third_quartile": -0.7478025061159271,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.8935101996527778
+              }
+            }
+          }
+        },
+        "shared_scorer_hammer": {
+          "inference": "sample",
+          "median_mean": -0.991463796476685,
+          "median_std": 0.0049774787691632535,
+          "seeds": {
+            "0": {
+              "sample": {
+                "median": -0.9951471236494587,
+                "first_quartile": -0.9992779606769242,
+                "third_quartile": -0.9650369837072421,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9971167608064105
+              }
+            },
+            "1": {
+              "sample": {
+                "median": -0.994817108159723,
+                "first_quartile": -0.9992682187839561,
+                "third_quartile": -0.9628389782447618,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9969499397133392
+              }
+            },
+            "2": {
+              "sample": {
+                "median": -0.9844271576208732,
+                "first_quartile": -0.9990579180061241,
+                "third_quartile": -0.965677932848894,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9970455416893539
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9977251459942184,
+            "first_quartile": -0.9984305621407508,
+            "third_quartile": -0.9963500094551685,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9278796171934494,
+            "first_quartile": -0.9341157419474986,
+            "third_quartile": -0.9162215372548732,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.6793342388684875,
+            "first_quartile": -0.7282964202698708,
+            "third_quartile": -0.6408494057026651,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9599878076543957,
+            "first_quartile": -0.9638463129473931,
+            "third_quartile": -0.9558875763666195,
+            "improved_fraction": 1.0
+          }
+        },
+        "ghz": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9974089666961814,
+            "first_quartile": -0.998960238271873,
+            "third_quartile": -0.9960501395939272,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9578381034050001,
+            "first_quartile": -0.9585555474168987,
+            "third_quartile": -0.9574812487689054,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.8232229677154339,
+            "first_quartile": -0.8343471868347412,
+            "third_quartile": -0.8076497716806119,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9933310281439446,
+            "first_quartile": -0.9962562957530334,
+            "third_quartile": -0.9848350426856862,
+            "improved_fraction": 1.0
+          }
+        },
+        "hidden_shift": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -1.0,
+            "first_quartile": -1.0,
+            "third_quartile": -1.0,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9345549791438404,
+            "first_quartile": -0.9351936716944299,
+            "third_quartile": -0.9335085772386134,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.8903847404725835,
+            "first_quartile": -0.8930252119977964,
+            "third_quartile": -0.8867725297486091,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9993031188823867,
+            "first_quartile": -0.9993413198743187,
+            "third_quartile": -0.9992559549518324,
+            "improved_fraction": 1.0
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.9997989949748745,
+          -0.9978498120844175
+        ],
+        "hammer": [
+          -0.9374104164229484,
+          -0.9342762680659197
+        ],
+        "shared_scorer": [
+          -0.8393335634742858,
+          -0.8031701035703035
+        ],
+        "shared_scorer_hammer": [
+          -0.9961791151416708,
+          -0.9831994590409853
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": 0.12843864025173596,
+          "difference_low": 0.12174903355176847,
+          "difference_high": 0.15084069293870378,
+          "first_better_fraction": 0.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        },
+        "shared_scorer_hammer": {
+          "baseline": "hammer",
+          "median_difference": -0.03697052080199703,
+          "difference_low": -0.04973548863861088,
+          "difference_high": -0.035105975374354316,
+          "first_better_fraction": 1.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        }
+      }
+    },
+    "32": {
+      "num_circuits": 60,
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_support_probability": 0.32670120804398145
+        },
+        "oracle": {
+          "median": -0.9989791314226166,
+          "first_quartile": -1.0,
+          "third_quartile": -0.9980252238104756,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 1.0
+        },
+        "hammer": {
+          "median": -0.9297340765496305,
+          "first_quartile": -0.9572287840207272,
+          "third_quartile": -0.9020816280961381,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 0.9480060400475291
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.7537522938913627,
+          "median_std": 0.003245460463456622,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.7560319862880422,
+                "first_quartile": -0.7837677928405063,
+                "third_quartile": -0.47855960046878326,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.7637065078435342
+              },
+              "sample": {
+                "median": -0.7560471809931457,
+                "first_quartile": -0.783783665346121,
+                "third_quartile": -0.4785359043439623,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.7637071397569446
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.7560455168563758,
+                "first_quartile": -0.7837858108622554,
+                "third_quartile": -0.4785594150062373,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.7637167302890859
+              },
+              "sample": {
+                "median": -0.7560471809931457,
+                "first_quartile": -0.7837875828589703,
+                "third_quartile": -0.4785496070179615,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.7637165436921297
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.7492412125937129,
+                "first_quartile": -0.780850708521917,
+                "third_quartile": -0.47851221557363227,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.7619816014222064
+              },
+              "sample": {
+                "median": -0.7491625196877967,
+                "first_quartile": -0.7808081413062491,
+                "third_quartile": -0.4785051693532058,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.761988751446759
+              }
+            }
+          }
+        },
+        "shared_scorer_hammer": {
+          "inference": "sample",
+          "median_mean": -0.993136971066546,
+          "median_std": 0.0018276922517263764,
+          "seeds": {
+            "0": {
+              "sample": {
+                "median": -0.994535042710416,
+                "first_quartile": -0.9981175093052945,
+                "third_quartile": -0.9520960990063648,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9855063491262137
+              }
+            },
+            "1": {
+              "sample": {
+                "median": -0.9943206819640307,
+                "first_quartile": -0.9980472063626201,
+                "third_quartile": -0.9476804422447569,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9850390137733294
+              }
+            },
+            "2": {
+              "sample": {
+                "median": -0.9905551885251912,
+                "first_quartile": -0.9981664859344491,
+                "third_quartile": -0.9515553941851724,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9854301870311178
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9983441607894358,
+            "first_quartile": -0.998826572023541,
+            "third_quartile": -0.9973622027632024,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.8933797892097637,
+            "first_quartile": -0.900304018740136,
+            "third_quartile": -0.8899052508338645,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.45924359150089544,
+            "first_quartile": -0.4768539591012069,
+            "third_quartile": -0.43784158759120806,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.946350170403138,
+            "first_quartile": -0.9503446681803158,
+            "third_quartile": -0.9441956123954518,
+            "improved_fraction": 1.0
+          }
+        },
+        "ghz": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9981594974865347,
+            "first_quartile": -0.9992531663672309,
+            "third_quartile": -0.997175177467196,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9579200323354902,
+            "first_quartile": -0.9584694980908471,
+            "third_quartile": -0.9572913953046746,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.7544822883747857,
+            "first_quartile": -0.7632653270033559,
+            "third_quartile": -0.7454059871646669,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9928861521167474,
+            "first_quartile": -0.9971118822725115,
+            "third_quartile": -0.9891294501044577,
+            "improved_fraction": 1.0
+          }
+        },
+        "hidden_shift": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -1.0,
+            "first_quartile": -1.0,
+            "third_quartile": -1.0,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9297340765496305,
+            "first_quartile": -0.9307992376642176,
+            "third_quartile": -0.9286021219529738,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.7849819392084798,
+            "first_quartile": -0.7869623006028277,
+            "third_quartile": -0.7831350036126603,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.998168908044315,
+            "first_quartile": -0.9982404979164387,
+            "third_quartile": -0.9980333856674283,
+            "improved_fraction": 1.0
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.9998631561661832,
+          -0.9984495286862545
+        ],
+        "hammer": [
+          -0.9317285056346929,
+          -0.9261973546329609
+        ],
+        "shared_scorer": [
+          -0.7647505178318738,
+          -0.7432615679800093
+        ],
+        "shared_scorer_hammer": [
+          -0.9971085228363948,
+          -0.9863304175766734
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": 0.20401927566218359,
+          "difference_low": 0.19359036205853286,
+          "difference_high": 0.21418498002994502,
+          "first_better_fraction": 0.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        },
+        "shared_scorer_hammer": {
+          "baseline": "hammer",
+          "median_difference": -0.05289231431616498,
+          "difference_low": -0.060283402368096595,
+          "difference_high": -0.04278089843225824,
+          "first_better_fraction": 1.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        }
+      }
+    },
+    "48": {
+      "num_circuits": 60,
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_support_probability": 0.17850748697916666
+        },
+        "oracle": {
+          "median": -0.9991589644370084,
+          "first_quartile": -1.0,
+          "third_quartile": -0.9982785723844747,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 1.0
+        },
+        "hammer": {
+          "median": -0.8902837440969584,
+          "first_quartile": -0.9505953677274845,
+          "third_quartile": -0.8251936745790875,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 0.8998721414999703
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.5959080323878243,
+          "median_std": 7.207485735312857e-05,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.5959525861270683,
+                "first_quartile": -0.6323009646460143,
+                "third_quartile": -0.2968070132151982,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.5805904428633111
+              },
+              "sample": {
+                "median": -0.5959589970082118,
+                "first_quartile": -0.632296638010083,
+                "third_quartile": -0.2967993849115774,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.5805917245370371
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.5959557038053279,
+                "first_quartile": -0.6323081290136293,
+                "third_quartile": -0.2968111148425301,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.5805927409576784
+              },
+              "sample": {
+                "median": -0.5959589970082118,
+                "first_quartile": -0.6323083929432366,
+                "third_quartile": -0.29680232969107234,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.5805942563657409
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.5957672638222675,
+                "first_quartile": -0.6302000174953505,
+                "third_quartile": -0.296834694766385,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.580009304280956
+              },
+              "sample": {
+                "median": -0.5958061031470494,
+                "first_quartile": -0.6302418047898896,
+                "third_quartile": -0.29683490774198446,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.580017722800926
+              }
+            }
+          }
+        },
+        "shared_scorer_hammer": {
+          "inference": "sample",
+          "median_mean": -0.9918771695513356,
+          "median_std": 0.00026020238129966254,
+          "seeds": {
+            "0": {
+              "sample": {
+                "median": -0.9921743486005985,
+                "first_quartile": -0.9931785256951805,
+                "third_quartile": -0.9293765796951058,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9696751525609485
+              }
+            },
+            "1": {
+              "sample": {
+                "median": -0.9919165198531389,
+                "first_quartile": -0.992602737834747,
+                "third_quartile": -0.9228226361496272,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9690184809267077
+              }
+            },
+            "2": {
+              "sample": {
+                "median": -0.9915406402002691,
+                "first_quartile": -0.9922619431288218,
+                "third_quartile": -0.9311724278615803,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9702641963291235
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9985863559836918,
+            "first_quartile": -0.99902640340468,
+            "third_quartile": -0.9977073355290956,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.8145058193048238,
+            "first_quartile": -0.824240808034094,
+            "third_quartile": -0.7987941339795342,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.2744113226437862,
+            "first_quartile": -0.29571016530599514,
+            "third_quartile": -0.2524955156446666,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9088485759075585,
+            "first_quartile": -0.9264892806822467,
+            "third_quartile": -0.89858618114061,
+            "improved_fraction": 1.0
+          }
+        },
+        "ghz": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9985392155160381,
+            "first_quartile": -0.9994225128123285,
+            "third_quartile": -0.9978216415891763,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9511403383907876,
+            "first_quartile": -0.951600384474691,
+            "third_quartile": -0.9506031439990453,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.6360829911931551,
+            "first_quartile": -0.6468473758550095,
+            "third_quartile": -0.6320840286515358,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9934509768683122,
+            "first_quartile": -0.994405083251717,
+            "third_quartile": -0.9920599634504759,
+            "improved_fraction": 1.0
+          }
+        },
+        "hidden_shift": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -1.0,
+            "first_quartile": -1.0,
+            "third_quartile": -1.0,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.8902837440969584,
+            "first_quartile": -0.8914108623358625,
+            "third_quartile": -0.8882792792888796,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5958061031470494,
+            "first_quartile": -0.5971192807495898,
+            "third_quartile": -0.592162879921164,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9921239844952174,
+            "first_quartile": -0.9922711348401624,
+            "third_quartile": -0.9919206598794454,
+            "improved_fraction": 1.0
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.9998838208982969,
+          -0.9987171905848177
+        ],
+        "hammer": [
+          -0.8925779354168615,
+          -0.8867854316600404
+        ],
+        "shared_scorer": [
+          -0.5978485318939873,
+          -0.5905827069557622
+        ],
+        "shared_scorer_hammer": [
+          -0.992150302487038,
+          -0.9894035269988064
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": 0.31513848667257044,
+          "difference_low": 0.29893521672865886,
+          "difference_high": 0.3198902172236714,
+          "first_better_fraction": 0.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        },
+        "shared_scorer_hammer": {
+          "baseline": "hammer",
+          "median_difference": -0.09984721561706378,
+          "difference_low": -0.10125898800883204,
+          "difference_high": -0.08176286625019957,
+          "first_better_fraction": 1.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        }
+      }
+    },
+    "63": {
+      "num_circuits": 60,
+      "baselines": {
+        "identity": {
+          "median": 0.0,
+          "first_quartile": 0.0,
+          "third_quartile": 0.0,
+          "improved_fraction": 0.0,
+          "mean_support_probability": 0.09108470775462965
+        },
+        "oracle": {
+          "median": -0.9986097163344686,
+          "first_quartile": -0.9991465204328926,
+          "third_quartile": -0.9980582334699654,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 1.0
+        },
+        "hammer": {
+          "median": -0.8326299804309554,
+          "first_quartile": -0.9280145505926926,
+          "third_quartile": -0.6835016737316923,
+          "improved_fraction": 1.0,
+          "mean_support_probability": 0.8071248774267515
+        }
+      },
+      "models": {
+        "shared_scorer": {
+          "inference": "sample",
+          "median_mean": -0.4036943506987502,
+          "median_std": 1.525887751674404e-05,
+          "seeds": {
+            "0": {
+              "expected": {
+                "median": -0.4036843528088002,
+                "first_quartile": -0.5289184610591974,
+                "third_quartile": -0.17840643079785531,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.4132500012101409
+              },
+              "sample": {
+                "median": -0.40367303434947616,
+                "first_quartile": -0.5289226928726612,
+                "third_quartile": -0.178414838755248,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.41325177228009263
+              }
+            },
+            "1": {
+              "expected": {
+                "median": -0.4036990478494349,
+                "first_quartile": -0.5289225686633288,
+                "third_quartile": -0.17836397467638493,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.41321547661742114
+              },
+              "sample": {
+                "median": -0.4037021002732384,
+                "first_quartile": -0.5289226928726612,
+                "third_quartile": -0.1783897067853732,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.4132190393518519
+              }
+            },
+            "2": {
+              "expected": {
+                "median": -0.4037076583247309,
+                "first_quartile": -0.5274560178081544,
+                "third_quartile": -0.17841474468518698,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.4128641532609045
+              },
+              "sample": {
+                "median": -0.4037079174735361,
+                "first_quartile": -0.5274178155635043,
+                "third_quartile": -0.178414838755248,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.412875072337963
+              }
+            }
+          }
+        },
+        "shared_scorer_hammer": {
+          "inference": "sample",
+          "median_mean": -0.9663404624910864,
+          "median_std": 0.015149278931689974,
+          "seeds": {
+            "0": {
+              "sample": {
+                "median": -0.9749722430142493,
+                "first_quartile": -0.9896504745859265,
+                "third_quartile": -0.8874104207302215,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9564409052931059
+              }
+            },
+            "1": {
+              "sample": {
+                "median": -0.9450431043313761,
+                "first_quartile": -0.9890198919879198,
+                "third_quartile": -0.8990780337210698,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9560424860288769
+              }
+            },
+            "2": {
+              "sample": {
+                "median": -0.9790060401276335,
+                "first_quartile": -0.9897733837816525,
+                "third_quartile": -0.9059490054106087,
+                "improved_fraction": 1.0,
+                "mean_support_probability": 0.9590032193208182
+              }
+            }
+          }
+        }
+      },
+      "circuit_types": {
+        "bv": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9986635699812417,
+            "first_quartile": -0.9990900073576064,
+            "third_quartile": -0.9978282469743851,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.6205169091931002,
+            "first_quartile": -0.6800519125609232,
+            "third_quartile": -0.5771847837977674,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.15318367480456824,
+            "first_quartile": -0.17254195864376226,
+            "third_quartile": -0.13001342827576504,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.8831144322134536,
+            "first_quartile": -0.8951423866048505,
+            "third_quartile": -0.8563505647737362,
+            "improved_fraction": 1.0
+          }
+        },
+        "ghz": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9981798319462845,
+            "first_quartile": -0.998779524735449,
+            "third_quartile": -0.9971750471281075,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.9292195828099784,
+            "first_quartile": -0.930138428872775,
+            "third_quartile": -0.9281576028532021,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.5360909016836983,
+            "first_quartile": -0.542259317816632,
+            "third_quartile": -0.5287415709497502,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9924044830749335,
+            "first_quartile": -0.9930922200451963,
+            "third_quartile": -0.9895722901096091,
+            "improved_fraction": 1.0
+          }
+        },
+        "hidden_shift": {
+          "identity": {
+            "median": 0.0,
+            "first_quartile": 0.0,
+            "third_quartile": 0.0,
+            "improved_fraction": 0.0
+          },
+          "oracle": {
+            "median": -0.9989255823278979,
+            "first_quartile": -0.9995758011160134,
+            "third_quartile": -0.9983851580655027,
+            "improved_fraction": 1.0
+          },
+          "hammer": {
+            "median": -0.8326299804309554,
+            "first_quartile": -0.8358387110592584,
+            "third_quartile": -0.8289219159736185,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer": {
+            "median": -0.40369048595036966,
+            "first_quartile": -0.40681217237825823,
+            "third_quartile": -0.4024952741045973,
+            "improved_fraction": 1.0
+          },
+          "shared_scorer_hammer": {
+            "median": -0.9737022124624902,
+            "first_quartile": -0.9805725271593129,
+            "third_quartile": -0.9657701970227517,
+            "improved_fraction": 1.0
+          }
+        }
+      },
+      "median_intervals": {
+        "identity": [
+          0.0,
+          0.0
+        ],
+        "oracle": [
+          -0.9989533423268363,
+          -0.998297005627546
+        ],
+        "hammer": [
+          -0.8372484317724715,
+          -0.826549457735211
+        ],
+        "shared_scorer": [
+          -0.40824470461251716,
+          -0.4005867281907549
+        ],
+        "shared_scorer_hammer": [
+          -0.9810290128421191,
+          -0.9528323948401426
+        ]
+      },
+      "comparisons": {
+        "shared_scorer": {
+          "baseline": "hammer",
+          "median_difference": 0.4279034010806673,
+          "difference_low": 0.4173805838128839,
+          "difference_high": 0.4304619841611149,
+          "first_better_fraction": 0.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        },
+        "shared_scorer_hammer": {
+          "baseline": "hammer",
+          "median_difference": -0.1349305787070093,
+          "difference_low": -0.1470888237436584,
+          "difference_high": -0.12336729865180883,
+          "first_better_fraction": 1.0,
+          "wilcoxon_p": 1.6295557943119325e-11
+        }
+      }
+    }
+  }
+}
